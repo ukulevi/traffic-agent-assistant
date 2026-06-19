@@ -1,208 +1,216 @@
-# LaTeX Build Error Log (Run 17)
-SHA: 722f9425 | Fri Jun 19 14:43:59 UTC 2026
+# LaTeX Build Error Log (Run 18)
+SHA: 2f15c828 | Fri Jun 19 15:09:09 UTC 2026
 
 ## Fatal Errors (lines with !)
 
 ## Error keywords
+1817:LaTeX Warning: Citation `kipf2017gcn' on page 15 undefined on input line 31.
+1820:LaTeX Warning: Citation `hochreiter1997lstm' on page 15 undefined on input line
+1846:LaTeX Warning: Citation `lakshminarayanan2017ade' on page 17 undefined on input
+1850:LaTeX Warning: Citation `lewis2020rag' on page 17 undefined on input line 135.
+1854:LaTeX Warning: Citation `guo2023xiyansql' on page 18 undefined on input line 14
+1858:LaTeX Warning: Citation `wooldridge2009multiagent' on page 18 undefined on inpu
+1873:LaTeX Warning: Citation `pearl2018why' on page 19 undefined on input line 183.
+1886:./chapters/ch03_kien_truc.tex:96: LaTeX Error: Not allowed in LR mode.
 
 ## Last 200 lines of main.log
-* \paperwidth=597.50787pt
-* \paperheight=845.04684pt
-* \textwidth=441.01773pt
-* \textheight=688.5567pt
-* \oddsidemargin=27.31465pt
-* \evensidemargin=27.31465pt
-* \topmargin=-38.1381pt
-* \headheight=16.0pt
-* \headsep=25.0pt
-* \topskip=12.0pt
-* \footskip=30.0pt
-* \marginparwidth=35.0pt
-* \marginparsep=10.0pt
-* \columnsep=10.0pt
-* \skip\footins=10.8pt plus 4.0pt minus 2.0pt
-* \hoffset=0.0pt
-* \voffset=0.0pt
-* \mag=1000
-* \@twocolumnfalse
-* \@twosidefalse
-* \@mparswitchfalse
-* \@reversemarginfalse
-* (1in=72.27pt=25.4mm, 1cm=28.453pt)
+(Font)              size <6> substituted on input line 9.
 
 
-Package fontspec Info: 
-(fontspec)             Adjusting the maths setup (use [no-math] to avoid
-(fontspec)             this).
+LaTeX Font Warning: Font shape `OT1/cmr/m/n' in size <13> not available
+(Font)              size <12> substituted on input line 9.
 
-\symlegacymaths=\mathgroup6
-LaTeX Font Info:    Overwriting symbol font `legacymaths' in version `bold'
-(Font)                  OT1/cmr/m/n --> OT1/cmr/bx/n on input line 246.
-LaTeX Font Info:    Redeclaring math accent \acute on input line 246.
-LaTeX Font Info:    Redeclaring math accent \grave on input line 246.
-LaTeX Font Info:    Redeclaring math accent \ddot on input line 246.
-LaTeX Font Info:    Redeclaring math accent \tilde on input line 246.
-LaTeX Font Info:    Redeclaring math accent \bar on input line 246.
-LaTeX Font Info:    Redeclaring math accent \breve on input line 246.
-LaTeX Font Info:    Redeclaring math accent \check on input line 246.
-LaTeX Font Info:    Redeclaring math accent \hat on input line 246.
-LaTeX Font Info:    Redeclaring math accent \dot on input line 246.
-LaTeX Font Info:    Redeclaring math accent \mathring on input line 246.
-LaTeX Font Info:    Redeclaring math symbol \Gamma on input line 246.
-LaTeX Font Info:    Redeclaring math symbol \Delta on input line 246.
-LaTeX Font Info:    Redeclaring math symbol \Theta on input line 246.
-LaTeX Font Info:    Redeclaring math symbol \Lambda on input line 246.
-LaTeX Font Info:    Redeclaring math symbol \Xi on input line 246.
-LaTeX Font Info:    Redeclaring math symbol \Pi on input line 246.
-LaTeX Font Info:    Redeclaring math symbol \Sigma on input line 246.
-LaTeX Font Info:    Redeclaring math symbol \Upsilon on input line 246.
-LaTeX Font Info:    Redeclaring math symbol \Phi on input line 246.
-LaTeX Font Info:    Redeclaring math symbol \Psi on input line 246.
-LaTeX Font Info:    Redeclaring math symbol \Omega on input line 246.
-LaTeX Font Info:    Redeclaring math symbol \mathdollar on input line 246.
-LaTeX Font Info:    Redeclaring symbol font `operators' on input line 246.
-LaTeX Font Info:    Encoding `OT1' has changed to `TU' for symbol font
-(Font)              `operators' in the math version `normal' on input line 246.
 
-LaTeX Font Info:    Overwriting symbol font `operators' in version `normal'
-(Font)                  OT1/cmr/m/n --> TU/TeXGyreTermes(0)/m/n on input line 2
-46.
-LaTeX Font Info:    Encoding `OT1' has changed to `TU' for symbol font
-(Font)              `operators' in the math version `bold' on input line 246.
-LaTeX Font Info:    Overwriting symbol font `operators' in version `bold'
-(Font)                  OT1/cmr/bx/n --> TU/TeXGyreTermes(0)/m/n on input line 
-246.
-LaTeX Font Info:    Overwriting symbol font `operators' in version `normal'
-(Font)                  TU/TeXGyreTermes(0)/m/n --> TU/TeXGyreTermes(0)/m/n on 
-input line 246.
-LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `normal'
-(Font)                  OT1/cmr/m/it --> TU/TeXGyreTermes(0)/m/it on input line
- 246.
-LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `normal'
-(Font)                  OT1/cmr/bx/n --> TU/TeXGyreTermes(0)/b/n on input line 
-246.
-LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `normal'
-(Font)                  OT1/cmss/m/n --> TU/TeXGyreHeros(0)/m/n on input line 2
-46.
-LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `normal'
-(Font)                  OT1/cmtt/m/n --> TU/TeXGyreCursor(0)/m/n on input line 
-246.
-LaTeX Font Info:    Overwriting symbol font `operators' in version `bold'
-(Font)                  TU/TeXGyreTermes(0)/m/n --> TU/TeXGyreTermes(0)/b/n on 
-input line 246.
-LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `bold'
-(Font)                  OT1/cmr/bx/it --> TU/TeXGyreTermes(0)/b/it on input lin
-e 246.
-LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `bold'
-(Font)                  OT1/cmss/bx/n --> TU/TeXGyreHeros(0)/b/n on input line 
-246.
-LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `bold'
-(Font)                  OT1/cmtt/m/n --> TU/TeXGyreCursor(0)/b/n on input line 
-246.
-Package babel Info: 'vietnamese' activates 'vietnamese' shorthands.
-(babel)             Reported on input line 246.
-\c@lstlisting=\count427
-Package caption Info: Begin \AtBeginDocument code.
-Package caption Info: hyperref package is loaded.
-Package caption Info: End \AtBeginDocument code.
-LaTeX Info: Redefining \microtypecontext on input line 246.
-Package microtype Info: Applying patch `item' on input line 246.
-Package microtype Info: Applying patch `toc' on input line 246.
-Package microtype Info: Applying patch `eqnum' on input line 246.
-Package microtype Info: Applying patch `footnote' on input line 246.
-Package microtype Info: Applying patch `verbatim' on input line 246.
-LaTeX Info: Redefining \microtypesetup on input line 246.
-Package microtype Info: Character protrusion enabled (level 2).
-Package microtype Info: Using default protrusion set `alltext'.
-Package microtype Info: No adjustment of tracking.
-Package microtype Info: No adjustment of spacing.
-Package microtype Info: No adjustment of kerning.
+LaTeX Font Warning: Font shape `OT1/cmr/m/n' in size <6.5> not available
+(Font)              size <6> substituted on input line 9.
+
+LaTeX Font Info:    Font shape `TU/TeXGyreCursor(0)/m/n' will be
+(Font)              scaled to size 11.05008pt on input line 9.
 Package microtype Info: Loading generic protrusion settings for font family
-(microtype)             `TeXGyreTermes' (encoding: TU).
+(microtype)             `TeXGyreCursor' (encoding: TU).
 (microtype)             For optimal results, create family-specific settings.
 (microtype)             See the microtype manual for details.
-Package hyperref Info: Link coloring ON on input line 246.
-\@outlinefile=\write4
-\openout4 = `main.out'.
+[1
 
 
-Package hyperref Warning: Rerun to get /PageLabels entry.
+]) [2]
+No file main.toc.
+\tf@toc=\write5
+\openout5 = `main.toc'.
 
-*geometry* verbose mode - [ newgeometry ] result:
-* driver: xetex
-* paper: a4paper
-* layout: <same size as paper>
-* layoutoffset:(h,v)=(0.0pt,0.0pt)
-* modes: 
-* h-part:(L,W,R)=(51.21504pt, 495.07779pt, 51.21504pt)
-* v-part:(T,H,B)=(42.67912pt, 759.6886pt, 42.67912pt)
-* \paperwidth=597.50787pt
-* \paperheight=845.04684pt
-* \textwidth=495.07779pt
-* \textheight=759.6886pt
-* \oddsidemargin=-21.05495pt
-* \evensidemargin=-21.05495pt
-* \topmargin=-70.59087pt
-* \headheight=16.0pt
-* \headsep=25.0pt
-* \topskip=12.0pt
-* \footskip=30.0pt
-* \marginparwidth=35.0pt
-* \marginparsep=10.0pt
-* \columnsep=10.0pt
-* \skip\footins=10.8pt plus 4.0pt minus 2.0pt
-* \hoffset=0.0pt
-* \voffset=0.0pt
-* \mag=1000
-* \@twocolumnfalse
-* \@twosidefalse
-* \@mparswitchfalse
-* \@reversemarginfalse
-* (1in=72.27pt=25.4mm, 1cm=28.453pt)
+[3]
+No file main.lof.
+\tf@lof=\write6
+\openout6 = `main.lof'.
 
-LaTeX Font Info:    Trying to load font information for U+msa on input line 299
-.
-(/opt/texlive/texdir/texmf-dist/tex/latex/amsfonts/umsa.fd
-File: umsa.fd 2013/01/14 v3.01 AMS symbols A
-)
-(/opt/texlive/texdir/texmf-dist/tex/latex/microtype/mt-msa.cfg
-File: mt-msa.cfg 2006/02/04 v1.1 microtype config. file: AMS symbols (a) (RS)
-)
-LaTeX Font Info:    Trying to load font information for U+msb on input line 299
-.
+[4]
+No file main.lot.
+\tf@lot=\write7
+\openout7 = `main.lot'.
 
-(/opt/texlive/texdir/texmf-dist/tex/latex/amsfonts/umsb.fd
-File: umsb.fd 2013/01/14 v3.01 AMS symbols B
-)
-(/opt/texlive/texdir/texmf-dist/tex/latex/microtype/mt-msb.cfg
-File: mt-msb.cfg 2005/06/01 v1.0 microtype config. file: AMS symbols (b) (RS)
-)
-(/opt/texlive/texdir/texmf-dist/tex/latex/microtype/mt-cmr.cfg
-File: mt-cmr.cfg 2013/05/19 v2.2 microtype config. file: Computer Modern Roman 
-(RS)
-) [1
+[5] (./chapters/ch00_abbreviations.tex
+Underfull \hbox (badness 1038) in paragraph at lines 49--50
+[]|\TU/TeXGyreTermes(0)/m/n/13 Spatio-Temporal Graph Convolutional Network (Mạn
+g
+ []
 
 
-] [2]
-./main.tex:330: Argument of \__text_expand_loop:w has an extra }.
-<inserted text> 
-                \par 
-l.330 \chapter*{TÓM TẮT}
-                        
-I've run across a `}' that doesn't seem to match anything.
-For example, `\def\a#1{...}' and `\a}' would produce
-this error. If you simply proceed now, the `\par' that
-I've just inserted will cause me to report a runaway
-argument that might be the root of the problem. But if
-your `}' was spurious, just type `2' and it will go away.
+ignored: Infinite glue shrinkage found in box being split [6
+
+]
+ignored: Infinite glue shrinkage found in box being split [7]) [8] (./chapters/ch01_gio
+i_thieu.tex
+Chương 1.
+[9
+
+]
+Overfull \hbox (6.12372pt too wide) in paragraph at lines 59--59
+[]|\TU/TeXGyreTermes(0)/b/n/13 MO1| 
+ []
+
+
+Underfull \hbox (badness 2384) in paragraph at lines 59--59
+\TU/TeXGyreTermes(0)/m/n/13 không gian–thời gian chính
+ []
+
+
+Overfull \hbox (6.12372pt too wide) in paragraph at lines 61--61
+[]|\TU/TeXGyreTermes(0)/b/n/13 MO2| 
+ []
+
+
+Overfull \hbox (6.12372pt too wide) in paragraph at lines 62--62
+[]|\TU/TeXGyreTermes(0)/b/n/13 MO3| 
+ []
+
+
+Underfull \hbox (badness 2529) in paragraph at lines 62--62
+[]|\TU/TeXGyreTermes(0)/m/n/13 Truy xuất tri thức pháp lý
+ []
+
+
+Overfull \hbox (6.12372pt too wide) in paragraph at lines 64--64
+[]|\TU/TeXGyreTermes(0)/b/n/13 MO4| 
+ []
+
+
+Overfull \hbox (6.12372pt too wide) in paragraph at lines 65--65
+[]|\TU/TeXGyreTermes(0)/b/n/13 MO5| 
+ []
+
+
+Underfull \hbox (badness 1817) in paragraph at lines 65--65
+[]|\TU/TeXGyreTermes(0)/m/n/13 Thời gian phản hồi End-to-
+ []
+
+
+Overfull \hbox (6.12372pt too wide) in paragraph at lines 67--67
+[]|\TU/TeXGyreTermes(0)/b/n/13 MO6| 
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 67--68
+[]|\TU/TeXGyreTermes(0)/m/n/13 100% đề xuất có
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 67--68
+\TU/TeXGyreCursor(0)/m/n/13 legal_grounding \TU/TeXGyreTermes(0)/m/n/13 hợp
+ []
+
+[10] [11]) [12] [13] (./chapters/ch02_co_so_ly_thuyet.tex
+Chương 2.
+[14
+
+]
+
+LaTeX Warning: Citation `kipf2017gcn' on page 15 undefined on input line 31.
+
+
+LaTeX Warning: Citation `hochreiter1997lstm' on page 15 undefined on input line
+ 55.
+
+[15]
+Overfull \hbox (1.89072pt too wide) in paragraph at lines 93--94
+[]\TU/TeXGyreTermes(0)/m/n/13 Các công cụ mô phỏng vi mô (Microscopic Simulatio
+n) như SUMO (Simulation
+ []
+
+
+Underfull \hbox (badness 7326) in paragraph at lines 102--102
+[]|\TU/TeXGyreTermes(0)/b/n/13 Mô phỏng Vi mô
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 102--103
+[]|\TU/TeXGyreTermes(0)/b/n/13 Neural Surrogate
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 109--110
+[]|\TU/TeXGyreTermes(0)/m/n/13 Yêu cầu ADE +
+ []
+
+[16]
+
+LaTeX Warning: Citation `lakshminarayanan2017ade' on page 17 undefined on input
+ line 117.
+
+
+LaTeX Warning: Citation `lewis2020rag' on page 17 undefined on input line 135.
+
+[17]
+
+LaTeX Warning: Citation `guo2023xiyansql' on page 18 undefined on input line 14
+8.
+
+
+LaTeX Warning: Citation `wooldridge2009multiagent' on page 18 undefined on inpu
+t line 154.
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 167--167
+[]|\TU/TeXGyreTermes(0)/m/n/13 Legal & SOP
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 167--167
+[]|\TU/TeXGyreTermes(0)/m/n/13 Vector DB,
+ []
+
+[18]
+
+LaTeX Warning: Citation `pearl2018why' on page 19 undefined on input line 183.
+
+
+Overfull \hbox (6.25327pt too wide) in paragraph at lines 193--194
+[]\TU/TeXGyreTermes(0)/m/n/13 CF-VLA (Counterfactual–Vision–Language–Action) tr
+ong STWI thực hiện tầng
+ []
+
+[19]) [20] (./chapters/ch03_kien_truc.tex
+Chương 3.
+LaTeX Font Info:    Font shape `TU/TeXGyreCursor(0)/b/n' will be
+(Font)              scaled to size 9.30756pt on input line 21.
+
+./chapters/ch03_kien_truc.tex:96: LaTeX Error: Not allowed in LR mode.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.96 ...iny\itshape,text=accentorange]{Vòng lặp\\h
+                                                  iệu chỉnh}
+You've lost some text.  Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
 
  
 Here is how much of TeX's memory you used:
- 40874 strings out of 467992
- 875430 string characters out of 5431321
- 1620879 words of memory out of 5000000
- 69052 multiletter control sequences out of 15000+600000
- 633776 words of font info for 106 fonts, out of 8000000 for 9000
+ 41378 strings out of 467992
+ 886280 string characters out of 5431321
+ 1636879 words of memory out of 5000000
+ 69519 multiletter control sequences out of 15000+600000
+ 638251 words of font info for 137 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
- 84i,12n,96p,1001b,580s stack positions out of 10000i,1000n,20000p,200000b,200000s
-Output written on main.xdv (2 pages, 21876 bytes).
+ 84i,13n,96p,1001b,910s stack positions out of 10000i,1000n,20000p,200000b,200000s
+Output written on main.xdv (22 pages, 251636 bytes).
