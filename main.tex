@@ -32,6 +32,13 @@
   \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
 \newcommand{\passthrough}[1]{#1}
 
+% Scale images if necessary, so that they will not overflow the page margins
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\textwidth\textwidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+
 % Define colors
 \definecolor{bkblue}{RGB}{0,102,153}
 
