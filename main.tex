@@ -3,7 +3,9 @@
 % ============ PACKAGES ============
 \usepackage{geometry}
 \usepackage{fontspec}
-\usepackage[vietnamese,english]{babel}
+\usepackage{polyglossia}
+\setdefaultlanguage{vietnamese}
+\setotherlanguage{english}
 \usepackage{graphicx}
 \usepackage{float}
 \usepackage{tabularx}
@@ -194,8 +196,6 @@
 \SetKwInOut{Input}{Đầu vào}
 \SetKwInOut{Output}{Đầu ra}
 \SetKwComment{Comment}{/* }{ */}
-\SetAlCapFnt{\small}
-\SetAlCapNameFnt{\small}
 
 % ============ PANDOC COMPAT ============
 \providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
