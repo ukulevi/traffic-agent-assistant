@@ -94,7 +94,7 @@ def convert_md_file(md_path, chapters_dir, images_dir):
         f.write(content)
         
     # 5. Call pandoc to convert to LaTeX .tex
-    cmd = ['pandoc', temp_md_path, '-f', 'markdown', '-t', 'latex', '-o', tex_path]
+    cmd = ['pandoc', temp_md_path, '--listings', '-f', 'markdown', '-t', 'latex', '-o', tex_path]
     try:
         subprocess.run(cmd, check=True)
         print(f"Successfully compiled {filename} -> {tex_path}")
