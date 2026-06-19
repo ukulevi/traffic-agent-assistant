@@ -1,5 +1,5 @@
-# LaTeX Build Error Log (Run 19)
-SHA: 13448946 | Fri Jun 19 15:15:53 UTC 2026
+# LaTeX Build Error Log (Run 20)
+SHA: 975d395d | Fri Jun 19 15:23:12 UTC 2026
 
 ## Fatal Errors (lines with !)
 
@@ -15,206 +15,207 @@ SHA: 13448946 | Fri Jun 19 15:15:53 UTC 2026
 1893:LaTeX Warning: Reference `tab:workflow' on page 22 undefined on input line 106.
 2005:LaTeX Warning: Citation `jocher2023yolo' on page 27 undefined on input line 42.
 2017:LaTeX Warning: Citation `zhang2020bytetrack' on page 28 undefined on input line
-2057:./chapters/ch04_data_pipeline.tex:228: LaTeX Error: Not allowed in LR mode.
+2104:LaTeX Warning: Citation `chen2023bge' on page 44 undefined on input line 103.
+2287:./chapters/ch08_implementation.tex:46: Package pgfkeys Error: I do not know the
 
 ## Last 200 lines of main.log
-ong STWI thực hiện tầng
- []
-
-[19]) [20] (./chapters/ch03_kien_truc.tex
-Chương 3.
-LaTeX Font Info:    Font shape `TU/TeXGyreCursor(0)/b/n' will be
-(Font)              scaled to size 9.30756pt on input line 21.
-[21
-
-]
-
-LaTeX Warning: Reference `fig:e2e_flow' on page 22 undefined on input line 106.
-
-
-
-LaTeX Warning: Reference `tab:workflow' on page 22 undefined on input line 106.
-
-
-[22]
-Underfull \hbox (badness 1867) in paragraph at lines 175--176
-\TU/TeXGyreTermes(0)/m/n/13 với Tensor hiện tại + Vector sự
+Underfull \hbox (badness 2384) in paragraph at lines 125--125
+\TU/TeXGyreTermes(0)/m/n/13 khoản (Điều 1,
  []
 
 
-Underfull \hbox (badness 1365) in paragraph at lines 176--177
-[]|\TU/TeXGyreTermes(0)/m/n/13 Legal Agent dùng XiYanSQL và
- []
-
-[23]
-Underfull \hbox (badness 10000) in paragraph at lines 200--200
-[]|\TU/TeXGyreTermes(0)/m/n/13 InfluxDB +
+Underfull \hbox (badness 1062) in paragraph at lines 130--130
+[]|\TU/TeXGyreTermes(0)/m/n/13 Sliding window
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 211--211
-[]|\TU/TeXGyreTermes(0)/m/n/13 XiYanSQL +
+Underfull \hbox (badness 10000) in paragraph at lines 130--130
+\TU/TeXGyreTermes(0)/m/n/13 256 tokens,
  []
 
-
-Underfull \hbox (badness 10000) in paragraph at lines 211--212
-[]|\TU/TeXGyreTermes(0)/m/n/13 Text-to-SQL + In-memory
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 214--214
-[]|\TU/TeXGyreTermes(0)/m/n/13 LangChain /
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 214--215
-[]|\TU/TeXGyreTermes(0)/m/n/13 Multi-agent orchestration
- []
-
-
-Underfull \hbox (badness 2547) in paragraph at lines 221--222
-[]|\TU/TeXGyreTermes(0)/m/n/13 CI/CD — Build, Test, Release
- []
-
-[24] [25]
-Underfull \hbox (badness 10000) in paragraph at lines 241--241
-[]|\TU/TeXGyreTermes(0)/b/n/13 QC-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 243--243
-[]|\TU/TeXGyreTermes(0)/b/n/13 QC-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 243--243
-[]|\TU/TeXGyreTermes(0)/m/n/13 TTP (Time-to-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 244--244
-[]|\TU/TeXGyreTermes(0)/b/n/13 QC-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 246--246
-[]|\TU/TeXGyreTermes(0)/b/n/13 QC-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 246--247
-[]|\TU/TeXGyreTermes(0)/m/n/13 Toàn bộ features qua
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 247--247
-[]|\TU/TeXGyreTermes(0)/b/n/13 QC-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 249--249
-[]|\TU/TeXGyreTermes(0)/b/n/13 QC-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 250--250
-[]|\TU/TeXGyreTermes(0)/b/n/13 QC-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 252--252
-[]|\TU/TeXGyreTermes(0)/b/n/13 QC-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 252--253
-[]|\TU/TeXGyreTermes(0)/m/n/13 Phương án ngoài SOP phải
- []
-
-
-Underfull \hbox (badness 1515) in paragraph at lines 252--253
-\TU/TeXGyreTermes(0)/m/n/13 gắn nhãn \TU/TeXGyreCursor(0)/m/n/13 [CANH BAO -- C
-HUA
- []
-
-) [26] (./chapters/ch04_data_pipeline.tex
-Chương 4.
-
-Overfull \hbox (109.39952pt too wide) in paragraph at lines 35--36
+[44]
+Overfull \hbox (155.59709pt too wide) in paragraph at lines 173--174
  [][] 
  []
 
+[45] [46] [47]
+LaTeX Font Info:    Font shape `TU/TeXGyreCursor(0)/b/n' will be
+(Font)              scaled to size 11.05008pt on input line 263.
 
-LaTeX Warning: Citation `jocher2023yolo' on page 27 undefined on input line 42.
-
-
-
-Underfull \hbox (badness 1810) in paragraph at lines 67--67
-[]|\TU/TeXGyreTermes(0)/m/n/13 Buýt thường, buýt nhanh
+Overfull \hbox (2.23375pt too wide) in paragraph at lines 270--271
+\TU/TeXGyreTermes(0)/m/n/13 có khớp với nội dung thực sự trong Vector DB hay kh
+ông bằng cosine similarity
  []
 
-[27
+) [48] (./chapters/ch07_agent.tex
+Chương 7.
 
-]
-
-LaTeX Warning: Citation `zhang2020bytetrack' on page 28 undefined on input line
- 75.
-
-
-Underfull \hbox (badness 1603) in paragraph at lines 100--101
-[]|\TU/TeXGyreTermes(0)/m/n/13 Tốc độ trung bình của tất cả
+Underfull \hbox (badness 10000) in paragraph at lines 92--92
+[]|\TU/TeXGyreTermes(0)/m/n/13 What-if query
  []
 
 
-Overfull \hbox (26.38628pt too wide) in paragraph at lines 101--101
-[]|\TU/TeXGyreCursor(0)/m/n/13 vehicle_class_ratio| 
- []
-
-[28]
-Underfull \hbox (badness 10000) in paragraph at lines 121--121
-[]|\TU/TeXGyreTermes(0)/m/n/13 Carbon
- []
-
-[29]
-Overfull \hbox (15.45688pt too wide) in paragraph at lines 166--166
- []|[]| 
+Underfull \hbox (badness 10000) in paragraph at lines 92--92
+[]|\TU/TeXGyreTermes(0)/m/n/13 Task plan, final
  []
 
 
-Overfull \hbox (26.38628pt too wide) in paragraph at lines 168--168
-[]|\TU/TeXGyreCursor(0)/m/n/13 vehicle_class_ratio| 
+Underfull \hbox (badness 10000) in paragraph at lines 92--93
+[]|\TU/TeXGyreTermes(0)/m/n/13 Task planning,
  []
 
 
-Overfull \hbox (9.85388pt too wide) in paragraph at lines 181--181
- []|[]| 
+Underfull \hbox (badness 10000) in paragraph at lines 94--94
+[]|\TU/TeXGyreTermes(0)/m/n/13 Simulation
  []
 
 
-Underfull \hbox (badness 1365) in paragraph at lines 188--189
-[]|\TU/TeXGyreTermes(0)/m/n/13 Mã hóa vòng ngày trong
+Underfull \hbox (badness 10000) in paragraph at lines 94--95
+[]|\TU/TeXGyreCursor(0)/m/n/13 POST
  []
 
-[30]
 
-./chapters/ch04_data_pipeline.tex:228: LaTeX Error: Not allowed in LR mode.
+Overfull \hbox (33.3196pt too wide) in paragraph at lines 94--95
+\TU/TeXGyreCursor(0)/m/n/13 /internal/simulate| 
+ []
 
-See the LaTeX manual or LaTeX Companion for explanation.
+
+Underfull \hbox (badness 10000) in paragraph at lines 95--95
+[]|\TU/TeXGyreTermes(0)/m/n/13 SOP text, legal
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 95--96
+[]|\TU/TeXGyreTermes(0)/m/n/13 Vector DB
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 95--96
+\TU/TeXGyreTermes(0)/m/n/13 search,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 97--97
+[]|\TU/TeXGyreTermes(0)/m/n/13 Evaluation
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 97--97
+[]|\TU/TeXGyreTermes(0)/m/n/13 Sim results,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 97--97
+[]|\TU/TeXGyreTermes(0)/m/n/13 Proposed action
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 97--98
+[]|\TU/TeXGyreTermes(0)/m/n/13 Reasoning,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 98--98
+[]|\TU/TeXGyreTermes(0)/m/n/13 CF-VLA
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 98--98
+[]|\TU/TeXGyreTermes(0)/m/n/13 Final action
+ []
+
+
+Underfull \hbox (badness 1168) in paragraph at lines 98--99
+[]|\TU/TeXGyreTermes(0)/m/n/13 ADE API (2nd
+ []
+
+[49
+
+] [50] [51] [52] [53]
+Overfull \hbox (5.00488pt too wide) in paragraph at lines 304--304
+ []|\TU/TeXGyreTermes(0)/b/n/13 Thought 
+ []
+
+
+Overfull \hbox (5.00488pt too wide) in paragraph at lines 306--306
+ []|\TU/TeXGyreTermes(0)/b/n/13 Thought 
+ []
+
+
+Overfull \hbox (5.00488pt too wide) in paragraph at lines 310--310
+ []|\TU/TeXGyreTermes(0)/b/n/13 Thought 
+ []
+
+
+Overfull \hbox (5.00488pt too wide) in paragraph at lines 315--315
+ []|\TU/TeXGyreTermes(0)/b/n/13 Thought 
+ []
+
+) [54] (./chapters/ch08_implementation.tex
+Chương 8.
+
+Underfull \hbox (badness 10000) in paragraph at lines 14--15
+[]|\TU/TeXGyreTermes(0)/b/n/13 Deliverable
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 18--19
+[]|\TU/TeXGyreTermes(0)/m/n/13 Tensor
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 18--19
+\TU/TeXGyreCursor(0)/m/n/13 [B,12,14]
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 19--19
+[]|\TU/TeXGyreTermes(0)/m/n/13 Tầng 2: ML &
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 19--20
+[]|\TU/TeXGyreTermes(0)/m/n/13 ADE TTP
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 21--22
+[]|\TU/TeXGyreTermes(0)/m/n/13 Vector DB +
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 22--23
+[]|\TU/TeXGyreTermes(0)/m/n/13 API E2E +
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 22--23
+\TU/TeXGyreTermes(0)/m/n/13 CF-VLA +
+ []
+
+
+./chapters/ch08_implementation.tex:46: Package pgfkeys Error: I do not know the
+ key '/pgfgantt/compress calendar' and I am going to ignore it. Perhaps you mis
+spelled it.
+
+See the pgfkeys package documentation for explanation.
 Type  H <return>  for immediate help.
  ...                                              
                                                   
-l.228 ...eft, font=\small\bfseries] {Time Steps\\$
-                                                  T=12$\\(60 phút)};
-You've lost some text.  Try typing  <return>  to proceed.
-If that doesn't work, type  X <return>  to quit.
+l.46 ]{2026-06}{2026-09}
+                        
+This error message was generated by an \errmessage
+command, so I can't give any explicit help.
+Pretend that you're Hercule Poirot: Examine all clues,
+and deduce the truth by order and method.
 
  
 Here is how much of TeX's memory you used:
- 41592 strings out of 467992
- 890204 string characters out of 5431321
- 1638879 words of memory out of 5000000
- 69726 multiletter control sequences out of 15000+600000
- 638912 words of font info for 142 fonts, out of 8000000 for 9000
+ 42483 strings out of 467992
+ 904642 string characters out of 5431321
+ 2028879 words of memory out of 5000000
+ 70594 multiletter control sequences out of 15000+600000
+ 640946 words of font info for 160 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
- 84i,15n,96p,1001b,910s stack positions out of 10000i,1000n,20000p,200000b,200000s
-Output written on main.xdv (32 pages, 417868 bytes).
+ 84i,17n,96p,1001b,2006s stack positions out of 10000i,1000n,20000p,200000b,200000s
+Output written on main.xdv (56 pages, 1062628 bytes).
