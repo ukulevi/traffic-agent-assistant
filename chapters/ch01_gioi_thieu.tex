@@ -1,0 +1,138 @@
+\chapter{Giới thiệu}
+
+\section{Bối cảnh và Động lực Nghiên cứu}
+
+Đô thị hóa nhanh chóng tại các thành phố lớn của Việt Nam, đặc biệt là Thành phố Hồ Chí Minh và Hà Nội, đã tạo ra áp lực khổng lồ lên hệ thống hạ tầng giao thông. Theo báo cáo của Sở Giao thông Vận tải TP.HCM năm 2025, mật độ phương tiện đã đạt trên 8,9 triệu xe máy và 1,2 triệu ô tô lưu thông trên diện tích đô thị khoảng 2.095 km$^2$, tương đương hơn 4.000 phương tiện/km$^2$ --- một trong những mật độ cao nhất Đông Nam Á.
+
+Hệ quả trực tiếp là tình trạng tắc nghẽn giao thông xảy ra thường xuyên, kéo dài và ngày càng khó kiểm soát. Một sự cố nhỏ --- tai nạn, vỡ ống nước, ngập cục bộ --- tại một nút giao trọng điểm có thể nhanh chóng gây ra hiện tượng \textit{tắc nghẽn tầng} (Cascade Congestion), lan rộng ra nhiều tuyến đường trong bán kính 2--5 km chỉ trong vòng 10--15 phút.
+
+\begin{tcolorbox}[warnbox]
+Năm 2024, TP.HCM ghi nhận trung bình \textbf{31 điểm tắc đường thường xuyên} vào giờ cao điểm sáng (7:00--9:00) và chiều (17:00--19:00). Chi phí kinh tế do ùn tắc giao thông ước tính lên đến \textbf{1,2 tỷ USD/năm} (nguồn: ADB, 2024).
+\end{tcolorbox}
+
+Các trung tâm điều hành giao thông (TOC --- Traffic Operations Center) hiện tại chủ yếu dựa vào \textbf{phán đoán thủ công} của người điều hành thông qua màn hình CCTV. Quy trình này có những hạn chế cố hữu:
+
+\begin{enumerate}[leftmargin=1.5cm, itemsep=4pt]
+  \item \textbf{Tốc độ phản ứng chậm:} Người điều hành cần 10--20 phút để đánh giá tình hình và quyết định phương án phân luồng, trong khi ùn tắc có thể lan rộng chỉ sau 5 phút.
+  \item \textbf{Thiếu khả năng dự báo:} Hệ thống hiện tại không thể trả lời câu hỏi ``Nếu tôi đóng đường X, lưu lượng ở đường Y sẽ thay đổi thế nào?''
+  \item \textbf{Phụ thuộc vào kinh nghiệm cá nhân:} Chất lượng quyết định điều phối phụ thuộc hoàn toàn vào trình độ và kinh nghiệm của từng điều hành viên.
+  \item \textbf{Rủi ro sai sót pháp lý:} Các quyết định phân luồng, cấm đường đột xuất đôi khi thiếu cơ sở pháp lý, gây khiếu nại và tranh chấp.
+\end{enumerate}
+
+Sự bùng nổ của Trí tuệ Nhân tạo, đặc biệt là Mạng nơ-ron Đồ thị Không gian--Thời gian (STGCN), Mô hình Ngôn ngữ Lớn (LLM) và hệ thống Đa tác tử (Multi-Agent), mở ra cơ hội xây dựng một hệ thống hỗ trợ ra quyết định thế hệ mới --- một ``\textit{Trưởng phòng điều phối giao thông ảo}'' có khả năng phân tích, mô phỏng và đề xuất phương án trong thời gian gần thực.
+
+\section{Phát biểu Bài toán}
+
+\textbf{Bài toán tổng quát} được phát biểu như sau:
+
+\begin{tcolorbox}[notebox]
+\textbf{Cho trước:}
+\begin{itemize}[itemsep=2pt]
+  \item Luồng dữ liệu thời gian thực từ $N$ camera CCTV và $M$ cảm biến môi trường tại các nút giao thông.
+  \item Cơ sở tri thức chứa SOP vận hành và Luật GTĐB.
+  \item Một kịch bản sự cố $S$ được mô tả bằng ngôn ngữ tự nhiên (tiếng Việt).
+\end{itemize}
+
+\textbf{Yêu cầu:} Hệ thống phải tự động:
+\begin{enumerate}[itemsep=2pt]
+  \item Mô phỏng tác động của kịch bản $S$ lên mạng lưới giao thông trong thời gian $< 3$ phút.
+  \item Đề xuất phương án điều phối tối ưu có trích dẫn căn cứ pháp lý.
+  \item Tự phản biện và xác nhận phương án không gây tắc nghẽn tầng trước khi xuất báo cáo.
+\end{enumerate}
+\end{tcolorbox}
+
+Bài toán này thuộc lớp bài toán \textit{What-if Analysis} (Phân tích điều kiện giả định) kết hợp với \textit{Causal Reasoning} (Suy luận nhân quả), đòi hỏi sự tích hợp của nhiều lĩnh vực: học máy, tối ưu hóa, xử lý ngôn ngữ tự nhiên và hệ thống đa tác tử.
+
+\section{Mục tiêu Dự án}
+
+Dự án STWI đặt ra các mục tiêu kỹ thuật cụ thể và đo lường được:
+
+\begin{table}[H]
+\centering
+\caption{Mục tiêu kỹ thuật của Dự án STWI}
+\label{tab:objectives}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{>{\bfseries}p{0.8cm} p{5.5cm} p{5.5cm}}
+\toprule
+\textbf{MO} & \textbf{Mục tiêu} & \textbf{Chỉ số đo lường} \\
+\midrule
+MO1 & Dự báo lưu lượng giao thông không gian--thời gian chính xác & RMSE $< 15$ xe/5 phút, F1-Score $> 0{,}85$ (phát hiện ùn tắc) \\
+\rowcolor{rowgray}
+MO2 & Mô phỏng kịch bản What-if tốc độ cao & TTP $P_{99} < 500$ms \\
+MO3 & Truy xuất tri thức pháp lý chính xác & Recall@5 $> 90\%$ trên tập câu hỏi chuẩn \\
+\rowcolor{rowgray}
+MO4 & Đảm bảo an toàn điều phối qua CF-VLA & 100\% đề xuất vượt qua kiểm tra V/C $\leq 0{,}9$ \\
+MO5 & Thời gian phản hồi End-to-End & $< 3$ phút từ câu hỏi đến báo cáo \\
+\rowcolor{rowgray}
+MO6 & Chính sách không ảo giác (No-Hallucination) & 100\% đề xuất có \texttt{legal\_grounding} hợp lệ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Phạm vi Nghiên cứu}
+
+\textbf{Trong phạm vi (In-scope):}
+\begin{itemize}[leftmargin=1.5cm, itemsep=3pt]
+  \item Mạng lưới 1.000 nút giao thông tại TP.HCM, dữ liệu từ CCTV và cảm biến môi trường.
+  \item Kịch bản What-if liên quan đến: tai nạn, ngập úng, đóng đường đột xuất, sự kiện đặc biệt.
+  \item Đề xuất điều phối lưu lượng (phân luồng, điều chỉnh chu kỳ đèn, cấm đường tạm thời).
+  \item Căn cứ pháp lý từ Luật GTĐB Việt Nam và SOP của Sở GTVT TP.HCM.
+\end{itemize}
+
+\textbf{Ngoài phạm vi (Out-of-scope):}
+\begin{itemize}[leftmargin=1.5cm, itemsep=3pt]
+  \item Triển khai thực tế lên hạ tầng CCTV vật lý (giai đoạn Proof-of-Concept dùng dữ liệu synthetic).
+  \item Kiểm soát đèn giao thông trực tiếp (hệ thống chỉ \textit{đề xuất}, không \textit{thực thi}).
+  \item Xử lý giao thông liên tỉnh và đường cao tốc quốc gia.
+\end{itemize}
+
+\section{Đóng góp Chính}
+
+Dự án STWI đóng góp các điểm mới sau vào lĩnh vực điều phối giao thông thông minh:
+
+\begin{enumerate}[leftmargin=1.5cm, itemsep=5pt]
+  \item \textbf{Kiến trúc 4 tầng tích hợp:} Lần đầu tiên kết hợp đồng thời STGCN, Neural Surrogate Model, Schema-Level RAG và CF-VLA trong một hệ thống điều phối giao thông thống nhất.
+
+  \item \textbf{Mô hình ADE cho giao thông:} Áp dụng Adversarial Diverse Deep Ensemble vào bài toán dự báo giao thông với tốc độ suy luận $< 500$ms --- nhanh hơn 100$\times$ so với mô phỏng vi mô SUMO.
+
+  \item \textbf{CF-VLA Safety Loop:} Cơ chế phản biện phản thực tế bắt buộc đảm bảo mọi đề xuất điều phối không gây tắc nghẽn tầng --- một đảm bảo an toàn mà các hệ thống AI giao thông hiện tại chưa có.
+
+  \item \textbf{No-Hallucination Policy:} Mọi đề xuất phải được neo (grounded) vào SOP và Luật GTĐB, loại bỏ hoàn toàn nguy cơ đề xuất vô căn cứ của LLM.
+
+  \item \textbf{XiYanSQL + RAG Hybrid:} Kết hợp semantic search (Vector DB) và text-to-SQL (XiYanSQL) để truy vấn cả tri thức phi cấu trúc (văn bản pháp lý) và cấu trúc (số liệu mô phỏng) trong cùng một pipeline.
+\end{enumerate}
+
+\section{Cấu trúc Báo cáo}
+
+Báo cáo được tổ chức theo cấu trúc sau:
+
+\begin{table}[H]
+\centering
+\caption{Cấu trúc báo cáo và nội dung từng chương}
+\label{tab:structure}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{>{\bfseries\centering}p{2.2cm} p{10cm}}
+\toprule
+\textbf{Chương} & \textbf{Nội dung} \\
+\midrule
+Chương 1 & Giới thiệu bối cảnh, động lực, mục tiêu và phạm vi dự án \\
+\rowcolor{rowgray}
+Chương 2 & Cơ sở lý thuyết: GCN, LSTM, Surrogate Models, RAG, Multi-Agent, CF \\
+Chương 3 & Kiến trúc hệ thống tổng thể 4 tầng và luồng xử lý End-to-End \\
+\rowcolor{rowgray}
+Chương 4 & Đặc tả Tầng 1: Thu thập và chuẩn hóa dữ liệu đa phương thức \\
+Chương 5 & Đặc tả Tầng 2: Mô hình học máy và mô phỏng nơ-ron (ADE) \\
+\rowcolor{rowgray}
+Chương 6 & Đặc tả Tầng 3: Cơ sở tri thức đô thị và hệ thống RAG \\
+Chương 7 & Đặc tả Tầng 4: Tác tử AI đa tác tử và luồng suy luận CF-VLA \\
+\rowcolor{rowgray}
+Chương 8 & Kế hoạch triển khai theo giai đoạn (Phase 0--4, 12 tuần) \\
+Chương 9 & Phương pháp đánh giá, kiểm thử và chỉ số hiệu năng \\
+\rowcolor{rowgray}
+Chương 10 & Phân tích và quản lý rủi ro \\
+Kết luận & Tóm tắt kết quả và định hướng phát triển \\
+\rowcolor{rowgray}
+Phụ lục & Đặc tả API REST, Schema dữ liệu, Bộ câu hỏi kiểm thử \\
+\bottomrule
+\end{tabular}
+\end{table}

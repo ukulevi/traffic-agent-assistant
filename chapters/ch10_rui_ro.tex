@@ -1,0 +1,110 @@
+\chapter{Phân tích và Quản lý Rủi ro}
+
+\section{Phương pháp Phân tích Rủi ro}
+
+Dự án STWI áp dụng phương pháp \textbf{Risk Matrix} kết hợp với \textbf{FMEA (Failure Mode and Effects Analysis)} để nhận diện, đánh giá và lập kế hoạch ứng phó rủi ro. Mỗi rủi ro được đánh giá theo hai chiều:
+
+\begin{itemize}[itemsep=3pt]
+  \item \textbf{Xác suất (P):} 1 = Rất thấp, 2 = Thấp, 3 = Trung bình, 4 = Cao, 5 = Rất cao.
+  \item \textbf{Tác động (I):} 1 = Không đáng kể, 2 = Nhỏ, 3 = Trung bình, 4 = Lớn, 5 = Thảm họa.
+  \item \textbf{Điểm rủi ro (RPN):} $\text{RPN} = P \times I$. RPN $\geq 12$: Rủi ro cao, cần ứng phó ngay.
+\end{itemize}
+
+\section{Ma trận Rủi ro Tổng thể}
+
+\begin{landscape}
+\begin{table}[H]
+\centering
+\caption{Bảng đăng ký rủi ro (Risk Register) đầy đủ của dự án STWI}
+\label{tab:risk_register}
+\renewcommand{\arraystretch}{1.5}
+\small
+\begin{tabular}{>{\centering}p{0.8cm} p{3.5cm} >{\centering}p{1cm} >{\centering}p{1cm} >{\centering}p{1cm} p{4cm} p{4cm}}
+\toprule
+\textbf{ID} & \textbf{Mô tả Rủi ro} & \textbf{P} & \textbf{I} & \textbf{RPN} & \textbf{Biện pháp Phòng ngừa} & \textbf{Biện pháp Ứng phó} \\
+\midrule
+R01 & TTP ADE $P_{99} > 500$ms do model quá lớn & 4 & 5 & \cellcolor{alertred!60}\textbf{20} & Benchmark sau mỗi sprint & Quantize INT8 $\to$ Pruning $\to$ Reduce ensemble \\
+\rowcolor{rowgray}
+R02 & BGE-m3 recall thấp với văn bản pháp luật tiếng Việt & 3 & 4 & \cellcolor{alertred!40}\textbf{12} & Đánh giá sớm với 50 câu hỏi mẫu & Fine-tune trên corpus pháp lý VN + Hybrid BM25 \\
+R03 & CF-VLA vòng lặp không hội tụ sau 3 lần & 2 & 4 & \cellcolor{alertyellow!60}\textbf{8} & Giới hạn cứng 3 vòng trong code & Xuất nhãn [CANH BAO]; escalate lên Operator \\
+\rowcolor{rowgray}
+R04 & In-memory DB mất dữ liệu khi crash & 3 & 3 & \cellcolor{alertyellow!50}\textbf{9} & WAL (Write-Ahead Log) cho DuckDB & Snapshot sau mỗi 5 phút; retry từ checkpoint \\
+R05 & XiYanSQL sinh SQL sai với câu hỏi phức tạp & 3 & 3 & \cellcolor{alertyellow!50}\textbf{9} & Few-shot examples trong system prompt & SQL Validator layer; self-correct $\leq 3$ lần \\
+\rowcolor{rowgray}
+R06 & CCTV downtime $>$ 15 phút & 2 & 4 & \cellcolor{alertyellow!60}\textbf{8} & Redundant camera coverage & Imputation từ lân cận; cảnh báo Operator \\
+R07 & GPU VRAM thiếu cho ADE ensemble & 3 & 3 & \cellcolor{alertyellow!50}\textbf{9} & Monitor VRAM; profiling sớm & Model quantization; giảm batch size \\
+\rowcolor{rowgray}
+R08 & Văn bản SOP lỗi thời, không cập nhật & 2 & 5 & \cellcolor{alertred!40}\textbf{10} & Pipeline tự động cập nhật định kỳ & Review thủ công hàng tháng; version control KB \\
+R09 & LLM hallucinate dù có RAG & 2 & 5 & \cellcolor{alertred!40}\textbf{10} & Strict system prompt + citation check & Hallucination detector; reject và retry \\
+\rowcolor{rowgray}
+R10 & Tensor shape thay đổi không được phê duyệt & 1 & 5 & \cellcolor{alertyellow!40}\textbf{5} & CI assertion \texttt{shape==(B,12,14)} & Block PR; yêu cầu HĐ Kiến trúc phê duyệt \\
+R11 & Network latency giữa các service container & 3 & 2 & \cellcolor{alertgreen!50}\textbf{6} & Co-locate services trong cùng host & Giao thức gRPC thay REST nội bộ \\
+\rowcolor{rowgray}
+R12 & Adversarial perturbation FGSM không đủ đa dạng & 2 & 3 & \cellcolor{alertgreen!50}\textbf{6} & Test với PGD, CW attacks thêm & Bổ sung Carlini-Wagner adversarial examples \\
+R13 & Dashboard UI chậm khi nhiều nodes & 2 & 2 & \cellcolor{alertgreen!40}\textbf{4} & Virtualize rendering & WebGL heatmap; pagination cho node list \\
+\rowcolor{rowgray}
+R14 & Dữ liệu lịch sử không đại diện đủ corner cases & 3 & 4 & \cellcolor{alertred!40}\textbf{12} & Thu thập chủ động thêm dữ liệu & RealGen augmentation; synthetic data generation \\
+\bottomrule
+\end{tabular}
+\end{table}
+\end{landscape}
+
+\section{Phân tích Chi tiết Rủi ro Cao}
+
+\subsection{R01 --- TTP ADE Vượt 500ms (RPN = 20)}
+
+Đây là rủi ro cao nhất do có tác động thảm họa: nếu Surrogate Model không đáp ứng SLA, toàn bộ What-if pipeline bị ảnh hưởng.
+
+\textbf{Kế hoạch ứng phó theo cấp độ:}
+\begin{enumerate}[leftmargin=1.5cm, itemsep=4pt]
+  \item \textbf{Cấp 1 (TTP = 500--700ms):} Áp dụng PyTorch INT8 Quantization. Giảm độ chính xác nhẹ nhưng tốc độ tăng 2--4$\times$.
+  \item \textbf{Cấp 2 (TTP = 700--1000ms):} Pruning 30\% tham số ít quan trọng (magnitude-based). Giảm ensemble size từ 4 xuống 2.
+  \item \textbf{Cấp 3 (TTP $>$ 1000ms):} Caching kết quả ADE với hash của incident vector (TTL = 5 phút). Các query giống nhau dùng lại kết quả.
+  \item \textbf{Cấp 4 (failsafe):} Chuyển sang Linear Approximation Model (RMSE cao hơn nhưng $P_{99} < 50$ms).
+\end{enumerate}
+
+\subsection{R09 --- LLM Hallucination (RPN = 10)}
+
+Dù RAG cung cấp context, LLM vẫn có thể tổng hợp thông tin sai hoặc trộn lẫn điều khoản từ các nguồn khác nhau.
+
+\textbf{Cơ chế phòng thủ nhiều lớp:}
+\begin{itemize}[leftmargin=1.5cm, itemsep=3pt]
+  \item \textbf{Lớp 1 (Retrieval):} Chỉ dùng top-5 chunks có cosine similarity $> 0{,}75$.
+  \item \textbf{Lớp 2 (Generation):} System prompt yêu cầu trích dẫn chính xác từng câu.
+  \item \textbf{Lớp 3 (Verification):} Hallucination Detector kiểm tra \texttt{legal\_grounding} field bằng cách so sánh ngược với Vector DB.
+  \item \textbf{Lớp 4 (Fallback):} Nếu similarity $< 0{,}85$, tự động gắn nhãn [CANH BAO].
+\end{itemize}
+
+\section{Kế hoạch Giám sát Rủi ro}
+
+\begin{table}[H]
+\centering
+\caption{Lịch giám sát rủi ro theo tuần}
+\label{tab:risk_monitoring}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{p{3.5cm} p{3cm} p{5.5cm}}
+\toprule
+\textbf{Hoạt động} & \textbf{Tần suất} & \textbf{Công cụ / Phương pháp} \\
+\midrule
+TTP Benchmark (R01) & Mỗi sprint (2 tuần) & Automated benchmark script; alert nếu $P_{99} > 400$ms \\
+\rowcolor{rowgray}
+RAG Quality Check (R02) & Hàng tuần & Đánh giá Recall@5 trên 20 câu hỏi mẫu \\
+KB Freshness Check (R08) & Hàng tháng & Kiểm tra ngày cập nhật SOP vs bản mới nhất của Sở GTVT \\
+\rowcolor{rowgray}
+Hallucination Audit (R09) & Hàng tuần & Review 50 response ngẫu nhiên bởi chuyên gia \\
+CI Shape Assertion (R10) & Mỗi commit & Tự động trong GitHub Actions CI pipeline \\
+\rowcolor{rowgray}
+System Health Dashboard & Liên tục (24/7) & Grafana + Prometheus; alert qua Slack \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Kế hoạch Dự phòng (Contingency Plan)}
+
+Trong trường hợp hệ thống gặp sự cố nghiêm trọng trong quá trình vận hành thực tế, cần có kế hoạch dự phòng để đảm bảo Trung tâm điều phối giao thông không bị gián đoạn:
+
+\begin{itemize}[leftmargin=1.5cm, itemsep=4pt]
+  \item \textbf{Fallback Mode:} Khi tất cả Tầng 2--4 không hoạt động, Dashboard chỉ hiển thị dữ liệu CCTV real-time (Tầng 1) để Operator điều hành thủ công.
+  \item \textbf{Circuit Breaker:} Sau 3 lần timeout liên tiếp, hệ thống tự động chuyển sang Fallback Mode và gửi alert.
+  \item \textbf{Human-in-the-Loop:} Mọi đề xuất của AI đều phải được Operator xác nhận trước khi thực thi.
+\end{itemize}

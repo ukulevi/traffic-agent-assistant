@@ -1,0 +1,272 @@
+\chapter{Tầng 3: Cơ sở Tri thức Đô thị và Hệ thống RAG}
+
+\section{Tổng quan Tầng Tri thức}
+
+Tầng 3 đóng vai trò là \textbf{bộ nhớ pháp lý} của hệ thống STWI --- đảm bảo rằng mọi đề xuất điều phối đều được neo (grounded) vào:
+\begin{itemize}[itemsep=3pt]
+  \item \textbf{SOP (Standard Operating Procedures):} Quy trình vận hành tiêu chuẩn của Sở GTVT TP.HCM cho từng loại sự cố.
+  \item \textbf{Luật GTĐB:} Các điều khoản pháp lý quy định về phân luồng, cấm đường, tốc độ tạm thời.
+  \item \textbf{Số liệu mô phỏng cấu trúc:} Kết quả từ Tầng 2 (ma trận lưu lượng, V/C ratio).
+\end{itemize}
+
+\section{Kiến trúc Tổng quan Tầng RAG}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.5cm and 0.8cm, scale=0.88, transform shape]
+
+  % Ingestion Pipeline (offline)
+  \node[font=\small\bfseries, text=tier1col] (offline_label) at (-4.5,3.5)
+    {Luồng Nạp dữ liệu (Offline)};
+
+  \node[sysbox=tier1col, text width=2.6cm, minimum height=1.0cm] (sop)
+    at (-5.5,2.5) {SOP Sở GTVT\\(PDF/Word)};
+  \node[sysbox=tier1col, text width=2.6cm, minimum height=1.0cm] (law)
+    at (-3.0,2.5) {Luật GTĐB\\(văn bản pháp lý)};
+  \node[sysbox=tier1col, text width=2.6cm, minimum height=1.0cm] (log)
+    at (-0.5,2.5) {Log lịch sử\\(case studies)};
+
+  \node[sysbox=tier2col, text width=2.8cm, minimum height=1.0cm] (chunk)
+    at (-3.0,1.2) {Chunking\\Sentence-level\\Max 512 tokens};
+  \node[sysbox=tier2col, text width=2.8cm, minimum height=1.0cm] (emb)
+    at (-3.0,-0.2) {BGE-m3\\Multilingual\\Embedding};
+  \node[sysbox=tier3col, text width=3.2cm, minimum height=1.2cm] (vdb)
+    at (-3.0,-1.6) {Vector Database\\(Qdrant / Milvus)\\Cosine Similarity};
+
+  \draw[arrow] (sop) -- (chunk);
+  \draw[arrow] (law) -- (chunk);
+  \draw[arrow] (log) -- (chunk);
+  \draw[arrow] (chunk) -- (emb);
+  \draw[arrow] (emb) -- (vdb);
+
+  % Query Pipeline (online)
+  \node[font=\small\bfseries, text=tier4col] (online_label) at (4.0,3.5)
+    {Luồng Truy vấn (Online)};
+
+  \node[sysbox=tier4col, text width=2.8cm, minimum height=1.0cm] (query)
+    at (4.0,2.5) {Agent Query\\(ngôn ngữ tự nhiên)};
+  \node[sysbox=tier2col, text width=2.8cm, minimum height=1.0cm] (q_emb)
+    at (4.0,1.2) {BGE-m3\\Query Embedding};
+  \node[sysbox=tier3col, text width=2.8cm, minimum height=1.0cm] (search)
+    at (4.0,-0.2) {Semantic Search\\Top-$k$ chunks};
+  \node[sysbox=tier4col, text width=2.8cm, minimum height=1.0cm] (ctx)
+    at (4.0,-1.6) {Context Assembly\\$+$ Legal Grounding};
+  \node[sysbox=tier4col, text width=2.8cm, minimum height=1.2cm,
+    fill=alertgreen!50, draw=green!50!black] (ans)
+    at (4.0,-3.0) {Agent Response\\với trích dẫn pháp lý};
+
+  \draw[arrow] (query) -- (q_emb);
+  \draw[arrow] (q_emb) -- (search);
+  \draw[arrow] (search) -- (ctx);
+  \draw[arrow] (ctx) -- (ans);
+
+  % Cross-connect
+  \draw[dasharrow, bkblue!70] (vdb) -- (search);
+
+  % XiYanSQL branch
+  \node[sysbox=tier2col, text width=2.8cm, minimum height=1.0cm] (xsql)
+    at (4.0,-4.5) {XiYanSQL\\Text-to-SQL\\In-memory DB};
+
+  \draw[dasharrow, accentorange!80] (ans.south) -- (xsql.north)
+    node[midway, right, font=\tiny\itshape]{Nếu cần số liệu};
+
+\end{tikzpicture}
+\caption{Kiến trúc tổng quan Tầng RAG của STWI}
+\label{fig:rag_arch}
+\end{figure}
+
+\section{Cơ sở Dữ liệu Vector}
+
+\subsection{Nguồn Dữ liệu Tích hợp}
+
+\begin{table}[H]
+\centering
+\caption{Các nguồn dữ liệu được tích hợp vào Vector Database}
+\label{tab:knowledge_sources}
+\renewcommand{\arraystretch}{1.5}
+\begin{tabular}{>{\centering}p{0.8cm} p{4cm} p{7cm}}
+\toprule
+\textbf{ID} & \textbf{Nguồn dữ liệu} & \textbf{Nội dung và Ví dụ} \\
+\midrule
+KB-1 & SOP Sở GTVT TP.HCM & Quy trình xử lý: tràn dầu, đổ cây, ngập cục bộ, tai nạn liên hoàn; Phối hợp CSGT, Cứu hỏa, Y tế \\
+\rowcolor{rowgray}
+KB-2 & Luật GTĐB và Nghị định & Điều kiện cấm đường tạm thời, giới hạn tốc độ đặc biệt, quyền ưu tiên phương tiện, phân luồng hợp pháp \\
+KB-3 & Log kịch bản lịch sử & 500+ case studies xử lý sự cố thành công, được dùng làm tiền lệ tham khảo \\
+\rowcolor{rowgray}
+KB-4 & Bản đồ giao thông & Năng lực đường (capacity), loại đường, số làn, tốc độ thiết kế \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Mô hình Nhúng BGE-m3}
+
+BGE-m3 \cite{chen2023bge} (Beijing Academy of AI General Embedding, Multi-lingual Multi-functionality Multi-granularity) được chọn vì:
+
+\begin{itemize}[itemsep=4pt]
+  \item \textbf{Hỗ trợ tiếng Việt tốt:} Được huấn luyện trên corpus đa ngôn ngữ bao gồm tiếng Việt với dấu phụ đầy đủ.
+  \item \textbf{Đa chức năng:} Hỗ trợ đồng thời dense retrieval, sparse retrieval và multi-vector retrieval.
+  \item \textbf{Độ dài context lớn:} Xử lý được đoạn văn bản dài tới 8.192 tokens.
+  \item \textbf{Kích thước embedding:} 1.024 chiều, cân bằng giữa độ chính xác và hiệu năng.
+\end{itemize}
+
+\subsection{Chiến lược Chunking}
+
+Chunking là bước quan trọng ảnh hưởng trực tiếp đến chất lượng truy xuất:
+
+\begin{table}[H]
+\centering
+\caption{Chiến lược chunking theo loại văn bản pháp lý}
+\label{tab:chunking}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{p{3cm} p{3cm} p{6cm}}
+\toprule
+\textbf{Loại văn bản} & \textbf{Chiến lược} & \textbf{Lý do} \\
+\midrule
+Điều khoản Luật & Theo điều khoản (Điều 1, Điều 2...) & Mỗi điều khoản là một đơn vị pháp lý độc lập \\
+\rowcolor{rowgray}
+SOP & Theo bước thực hiện & Mỗi bước SOP cần được tra cứu độc lập \\
+Case Studies & Theo sự cố & Mỗi case study là một đơn vị tham chiếu \\
+\rowcolor{rowgray}
+Văn bản dài & Sliding window 256 tokens, overlap 64 & Đảm bảo không mất ngữ cảnh ở biên chunk \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Truy xuất Schema-Level với XiYanSQL}
+
+\subsection{Hạn chế của RAG Thuần Văn bản}
+
+Sau khi ADE hoàn thành mô phỏng, kết quả (ma trận V/C ratio, lưu lượng dự báo) được lưu vào In-memory Database có cấu trúc bảng. RAG truyền thống không thể truy vấn chính xác dữ liệu này vì:
+
+\begin{itemize}[itemsep=3pt]
+  \item Câu hỏi: ``\textit{V/C ratio tại ngã tư Nguyễn Huệ -- Lê Lợi sau khi đóng đường là bao nhiêu?}''
+  \item Semantic search sẽ trả về các đoạn văn bản \textit{mô tả} về V/C ratio, không phải giá trị số thực tế.
+  \item Dữ liệu số cần được truy vấn chính xác bằng SQL, không phải xấp xỉ bằng similarity.
+\end{itemize}
+
+\subsection{XiYanSQL Pipeline}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.5cm and 0.9cm, scale=0.88, transform shape]
+  \node[startend] (q) {Câu hỏi NL};
+  \node[procnode, right=1.2cm of q, text width=3.5cm] (xi) {XiYanSQL\\Schema-aware\\Text-to-SQL};
+  \node[procnode, right=1.2cm of xi, text width=3.5cm] (val) {SQL Validator\\Syntax + Schema\\Check};
+  \node[procnode, right=1.2cm of val, text width=3.5cm] (db) {DuckDB\\In-memory\\Execution};
+  \node[startend, right=1.2cm of db,
+    fill=alertgreen!60, draw=green!50!black, text width=2.8cm] (res)
+    {Kết quả số\\chính xác};
+
+  \draw[arrow] (q) -- (xi);
+  \draw[arrow] (xi) -- (val);
+  \draw[arrow] (val) -- (db);
+  \draw[arrow] (db) -- (res);
+
+  % Error path
+  \node[procnode, below=1.0cm of val, text width=3cm] (fix) {LLM Self-Correct\\Retry $\leq 3$ lần};
+  \draw[arrow] (val.south) -- node[left,font=\tiny]{Lỗi} (fix.north);
+  \draw[arrow] (fix.west) -- ++(-0.8,0) |- (xi.south);
+
+  % Schema annotation
+  \node[below=1.5cm of xi, font=\tiny, text=codegray, text width=4cm, align=center]
+    {Schema cung cấp cho LLM:\\simulation\_results(node\_id,\\timestamp, vc\_ratio,\\avg\_velocity, volume)};
+\end{tikzpicture}
+\caption{Luồng xử lý XiYanSQL: từ câu hỏi ngôn ngữ tự nhiên đến kết quả SQL}
+\label{fig:xiyansql_flow}
+\end{figure}
+
+\subsection{Schema In-memory Database}
+
+\begin{lstlisting}[caption={Schema In-memory Database lưu kết quả mô phỏng},label={lst:db_schema}]
+-- Schema chinh: Ket qua mo phong Surrogate ADE
+CREATE TABLE simulation_results (
+    node_id        VARCHAR(50)  NOT NULL,  -- Ma nut giao (e.g., 'NGT_001')
+    scenario_id    VARCHAR(50)  NOT NULL,  -- Ma kich ban What-if
+    step           INTEGER      NOT NULL,  -- Buoc du bao (1-6, tuong ung 5-30 phut)
+    timestamp      TIMESTAMP    NOT NULL,  -- Thoi diem du bao
+    vc_ratio       FLOAT        NOT NULL,  -- Volume/Capacity ratio [0, 2.0+]
+    avg_velocity   FLOAT        NOT NULL,  -- Van toc trung binh (km/h)
+    volume         FLOAT        NOT NULL,  -- Luu luong du bao (PCU/5min)
+    congestion_lvl INTEGER      NOT NULL,  -- 0=binh thuong, 1=un u, 2=ket cung
+    PRIMARY KEY (node_id, scenario_id, step)
+);
+
+-- Schema phu: Ket qua kiem tra CF-VLA
+CREATE TABLE cfvla_checks (
+    check_id       INTEGER      PRIMARY KEY,
+    scenario_id    VARCHAR(50)  NOT NULL,
+    iteration      INTEGER      NOT NULL,  -- Vong lap 1, 2, 3
+    node_checked   VARCHAR(50)  NOT NULL,
+    vc_after       FLOAT        NOT NULL,
+    passed         BOOLEAN      NOT NULL,  -- TRUE neu vc_after <= 0.9
+    checked_at     TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+);
+\end{lstlisting}
+
+\section{RealGen --- Xử lý Kịch bản Cận biên}
+
+\subsection{Thách thức Corner Cases}
+
+Mô hình ADE được huấn luyện trên phân phối lịch sử giao thông. Khi Operator đặt câu hỏi về kịch bản \textit{chưa từng xảy ra} (out-of-distribution), ADE có nguy cơ:
+\begin{itemize}[itemsep=3pt]
+  \item Extrapolate sai lạc, cho kết quả không thực tế.
+  \item Uncertainty cao nhưng không biết cách xử lý.
+  \item Dự báo lạc quan quá mức, gây nguy hiểm khi triển khai.
+\end{itemize}
+
+\textbf{Ví dụ Corner Case:} \textit{``Tai nạn liên hoàn 5 xe container + mưa lớn 200mm/h + sự kiện đại nhạc hội tại SVĐ Thống Nhất cùng thời điểm.''}
+
+\subsection{Cơ chế RealGen}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.5cm and 1.0cm, scale=0.88, transform shape]
+  \node[sysbox=tier4col, text width=3cm, minimum height=1.2cm] (q)
+    {Kịch bản mới\\(chưa từng có)};
+
+  \node[sysbox=tier2col, right=1.2cm of q, text width=3.2cm, minimum height=1.2cm] (rg)
+    {RealGen\\Retrieval Module\\(Similarity Search)};
+
+  \node[sysbox=tier3col, right=1.2cm of rg, text width=3.2cm, minimum height=1.2cm] (hist)
+    {Historical\\Corner Cases DB\\(500+ records)};
+
+  \node[sysbox=tier2col, below=1.0cm of rg, text width=3.2cm, minimum height=1.2cm] (aug)
+    {Augmentation\\Blend retrieved\\+ current data};
+
+  \node[sysbox=tier1col, right=1.2cm of aug, text width=3.2cm, minimum height=1.2cm] (ade)
+    {ADE Surrogate\\Enriched Input\\$\to$ Chính xác hơn};
+
+  \draw[arrow] (q) -- (rg);
+  \draw[arrow] (hist) -- (rg);
+  \draw[arrow] (rg) -- (aug) node[midway, right, font=\tiny]{Top-3\\tương tự};
+  \draw[arrow] (aug) -- (ade);
+  \draw[arrow] (q.south) -- ++(0,-1.0) -| (aug.west);
+\end{tikzpicture}
+\caption{Cơ chế RealGen xử lý kịch bản cận biên}
+\label{fig:realgen}
+\end{figure}
+
+\subsection{Chỉ số Tương đồng Kịch bản}
+
+RealGen tính độ tương đồng giữa kịch bản mới $\mathbf{c}_{\text{new}}$ và kịch bản lịch sử $\mathbf{c}_{\text{hist},j}$ theo công thức:
+
+\begin{equation}
+  \text{sim}(\mathbf{c}_{\text{new}}, \mathbf{c}_{\text{hist},j}) = \alpha \cdot \cos(\mathbf{e}_{\text{new}}, \mathbf{e}_j) + (1-\alpha) \cdot \exp\!\left(-\frac{\|\mathbf{c}_{\text{new}} - \mathbf{c}_j\|_2}{\tau}\right)
+  \label{eq:realgen_sim}
+\end{equation}
+
+với $\mathbf{e}$ là text embedding của mô tả kịch bản, $\alpha = 0{,}6$, $\tau = 2{,}0$.
+
+\section{Chính sách Không Ảo giác (No-Hallucination Policy)}
+
+\begin{tcolorbox}[dangerbox]
+\textbf{Quy tắc bất biến (QC-7):} Mọi response từ Legal Agent \textbf{phải kèm theo trường \texttt{legal\_grounding}} với định dạng: \texttt{"[Tên nguồn] Điều X, Khoản Y: [Trích dẫn nguyên văn]"}. Response thiếu trường này sẽ bị từ chối bởi Evaluation Agent.
+\end{tcolorbox}
+
+Cơ chế đảm bảo No-Hallucination:
+\begin{enumerate}[leftmargin=1.5cm, itemsep=4pt]
+  \item \textbf{Source Attribution:} Mỗi chunk trong Vector DB gắn metadata nguồn gốc (tên văn bản, điều khoản, ngày ban hành).
+  \item \textbf{Citation Injection:} System prompt bắt buộc LLM trích dẫn chính xác nguồn được retrieve.
+  \item \textbf{Hallucination Detector:} Evaluation Agent kiểm tra xem \texttt{legal\_grounding} có khớp với nội dung thực sự trong Vector DB hay không bằng cosine similarity $> 0{,}85$.
+  \item \textbf{Fallback Label:} Nếu không tìm được căn cứ phù hợp, Agent tự động gắn nhãn \texttt{[CANH BAO -- CHUA KIEM CHUNG]} thay vì bịa đặt.
+\end{enumerate}

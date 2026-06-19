@@ -1,0 +1,105 @@
+\section{Danh sách Đầy đủ Các Endpoint}
+
+\begin{table}[H]
+\centering
+\caption{Danh sách REST API Endpoints của hệ thống STWI}
+\label{tab:api_endpoints}
+\renewcommand{\arraystretch}{1.5}
+\begin{tabular}{p{1.5cm} p{4.5cm} p{6cm}}
+\toprule
+\textbf{Method} & \textbf{Path} & \textbf{Mô tả} \\
+\midrule
+\texttt{POST} & \texttt{/api/v1/agent/what-if} & Gửi kịch bản What-if, nhận báo cáo \\
+\rowcolor{rowgray}
+\texttt{GET} & \texttt{/api/v1/scenario/\{id\}} & Lấy kết quả kịch bản đã xử lý \\
+\texttt{GET} & \texttt{/api/v1/status} & Health check toàn hệ thống \\
+\rowcolor{rowgray}
+\texttt{GET} & \texttt{/api/v1/nodes} & Danh sách tất cả nút giao thông \\
+\texttt{GET} & \texttt{/api/v1/nodes/\{id\}/status} & Trạng thái real-time một nút \\
+\rowcolor{rowgray}
+\texttt{POST} & \texttt{/api/v1/simulate} & Gọi ADE trực tiếp (internal use) \\
+\texttt{POST} & \texttt{/api/v1/rag/query} & Truy vấn Vector DB trực tiếp \\
+\rowcolor{rowgray}
+\texttt{GET} & \texttt{/api/v1/metrics} & Prometheus metrics endpoint \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Mô tả Chi tiết Request/Response}
+
+\subsection{POST /api/v1/agent/what-if}
+
+\textbf{Request Schema (JSON):}
+
+\begin{lstlisting}[caption={Request schema cho What-if API},label={lst:req_schema}]
+{
+  "scenario":    string,   // Bat buoc: Mo ta kich ban (tieng Viet/Anh)
+  "operator_id": string,   // Bat buoc: ID nguoi dieu hanh
+  "constraints": {
+    "max_computation_time_ms": integer,  // Default: 180000 (3 phut)
+    "priority": "low"|"normal"|"high",   // Default: "normal"
+    "cf_vla_enabled": boolean,           // Default: true (KHONG the false)
+    "nodes_of_interest": [string],       // Tuy chon: danh sach node ID
+  }
+}
+\end{lstlisting}
+
+\textbf{Response Schema (JSON):}
+
+\begin{lstlisting}[caption={Response schema đầy đủ với 7 trường bắt buộc},label={lst:resp_schema}]
+{
+  "status":             "success"|"error"|"timeout",
+  "scenario_id":        string,          // UUID cua kich ban
+  "recommended_action": {                // Bat buoc
+    "primary":          string,
+    "secondary":        string,
+    "signal_timing":    object,
+    "confidence":       float            // 0.0 - 1.0
+  },
+  "simulation_metrics": {               // Bat buoc
+    "affected_nodes":   [string],
+    "node_vc_ratios":   {string: float},
+    "clearance_time_mins": integer,
+    "max_vc_after":     float
+  },
+  "legal_grounding": {                  // Bat buoc (QC-7)
+    "sop_ref":          string,
+    "law_ref":          string,
+    "source_chunks":    [string],
+    "confidence":       float
+  },
+  "cf_vla_reflection": {               // Bat buoc
+    "iterations":       integer,
+    "initial_rejected": boolean,
+    "rejection_reason": string|null,
+    "corrections_applied": [string]
+  },
+  "latency_ms":         integer,        // Bat buoc
+  "timestamp":          string,         // ISO 8601
+  "warning_label":      string|null     // "[CANH BAO...]" neu ngoai SOP
+}
+\end{lstlisting}
+
+\section{Mã lỗi và Xử lý}
+
+\begin{table}[H]
+\centering
+\caption{Bảng mã lỗi API}
+\label{tab:error_codes}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{>{\centering}p{1.5cm} p{3.5cm} p{6.5cm}}
+\toprule
+\textbf{HTTP} & \textbf{Error Code} & \textbf{Nguyên nhân và Xử lý} \\
+\midrule
+400 & \texttt{INVALID\_SCENARIO} & Kịch bản rỗng hoặc không parse được \\
+\rowcolor{rowgray}
+400 & \texttt{CF\_VLA\_DISABLED} & Không được phép tắt CF-VLA (QC-5) \\
+408 & \texttt{TIMEOUT} & Vượt quá \texttt{max\_computation\_time\_ms} \\
+\rowcolor{rowgray}
+422 & \texttt{NO\_LEGAL\_GROUNDING} & Legal Agent không tìm được căn cứ pháp lý \\
+500 & \texttt{ADE\_FAILURE} & Surrogate Model lỗi; xem log để debug \\
+\rowcolor{rowgray}
+503 & \texttt{SYSTEM\_DEGRADED} & Fallback mode, một tầng đang không hoạt động \\
+\bottomrule
+\end{tabular}
+\end{table}

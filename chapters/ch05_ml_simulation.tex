@@ -1,0 +1,371 @@
+\chapter{Tầng 2: Mô hình Học Máy và Mô phỏng Nơ-ron}
+
+\section{Tổng quan Tầng Dự báo}
+
+Tầng 2 là lõi AI của hệ thống STWI, chịu trách nhiệm hai chức năng song song:
+\begin{itemize}[itemsep=3pt]
+  \item \textbf{Dự báo dài hạn:} Mô hình STGCN + Stacked LSTM học từ dữ liệu lịch sử để dự báo lưu lượng 30 phút tương lai.
+  \item \textbf{Mô phỏng tức thời:} Mô hình ADE (Neural Surrogate) phản hồi truy vấn What-if trong $< 500$ms.
+\end{itemize}
+
+\section{Đồ thị Giao thông và Biểu diễn Không gian}
+
+\subsection{Xây dựng Ma trận Kề}
+
+Mạng lưới 1.000 nút giao thông được biểu diễn bằng đồ thị $\mathcal{G} = (\mathcal{V}, \mathcal{E}, \mathbf{W})$. Ma trận trọng số $\mathbf{W}$ được xây dựng từ dữ liệu bản đồ thực (OpenStreetMap):
+
+\begin{equation}
+  W_{ij} = \begin{cases}
+    \exp\!\left(-\dfrac{d_{ij}^2}{2\sigma^2}\right) & \text{nếu } (v_i, v_j) \in \mathcal{E} \text{ và } d_{ij} \leq d_{\max} \\
+    0 & \text{ngược lại}
+  \end{cases}
+  \label{eq:weight_matrix}
+\end{equation}
+
+với $d_{ij}$ là khoảng cách đường phố (km) giữa nút $i$ và $j$, $\sigma = 1{,}5$ km (bán kính ảnh hưởng trực tiếp), $d_{\max} = 3$ km.
+
+\subsection{Kiến trúc Mô hình STGCN + Stacked LSTM}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.6cm and 0.7cm, scale=0.88, transform shape]
+
+  % Input
+  \node[sysbox=tier1col, text width=3.2cm, minimum height=1.3cm] (inp)
+    {Tensor Đầu vào\\$\mathbf{X} \in \mathbb{R}^{B \times 12 \times 14}$};
+
+  % GCN stack
+  \node[sysbox=tier2col, right=1.2cm of inp, text width=3cm, minimum height=1.3cm] (gcn1)
+    {GCN Lớp 1\\$\tilde{\mathbf{D}}^{-\frac{1}{2}}\tilde{\mathbf{A}}\tilde{\mathbf{D}}^{-\frac{1}{2}}\mathbf{H}^{(0)}\mathbf{W}^{(0)}$};
+  \node[sysbox=tier2col, right=1cm of gcn1, text width=3cm, minimum height=1.3cm] (gcn2)
+    {GCN Lớp 2\\Spatial Features\\$\mathbf{H}^{(2)} \in \mathbb{R}^{N \times 64}$};
+
+  % LSTM stack
+  \node[sysbox=tier3col, right=1.2cm of gcn2, text width=3cm, minimum height=1.3cm] (lstm1)
+    {LSTM Lớp 1\\hidden $= 128$\\Temporal Feat.};
+  \node[sysbox=tier3col, right=1cm of lstm1, text width=3cm, minimum height=1.3cm] (lstm2)
+    {LSTM Lớp 2\\hidden $= 64$\\High-level Feat.};
+
+  % Output
+  \node[sysbox=tier3col, right=1cm of lstm2, text width=3cm, minimum height=1.3cm] (lstm3)
+    {LSTM Lớp 3\\Dropout $0{,}3$};
+  \node[sysbox=tier1col, right=1cm of lstm3, text width=3cm, minimum height=1.3cm] (out)
+    {Dự báo\\$\hat{\mathbf{Y}} \in \mathbb{R}^{B \times 6 \times 3}$\\(6 bước $\times$ 30 min)};
+
+  % Arrows
+  \draw[arrow] (inp) -- (gcn1);
+  \draw[arrow] (gcn1) -- (gcn2) node[midway,above,font=\tiny]{ReLU};
+  \draw[arrow] (gcn2) -- (lstm1);
+  \draw[arrow] (lstm1) -- (lstm2);
+  \draw[arrow] (lstm2) -- (lstm3);
+  \draw[arrow] (lstm3) -- (out);
+
+  % Label groups
+  \node[above=0.5cm of gcn1, font=\small\bfseries, text=tier2col]
+    {\underline{Spatial Module (GCN)}};
+  \node[above=0.5cm of lstm2, font=\small\bfseries, text=tier3col]
+    {\underline{Temporal Module (Stacked LSTM)}};
+
+\end{tikzpicture}
+\caption{Kiến trúc mô hình STGCN + Stacked LSTM}
+\label{fig:stgcn_lstm}
+\end{figure}
+
+\subsection{Chi tiết Lớp GCN}
+
+Với $L=2$ lớp GCN, quá trình cập nhật đặc trưng diễn ra như sau:
+
+\begin{equation}
+  \mathbf{H}^{(1)} = \text{ReLU}\!\left(\hat{\mathbf{A}}\mathbf{X}_t\mathbf{W}^{(0)}\right), \qquad
+  \mathbf{H}^{(2)} = \text{ReLU}\!\left(\hat{\mathbf{A}}\mathbf{H}^{(1)}\mathbf{W}^{(1)}\right)
+  \label{eq:gcn_layers}
+\end{equation}
+
+trong đó $\hat{\mathbf{A}} = \tilde{\mathbf{D}}^{-1/2}\tilde{\mathbf{A}}\tilde{\mathbf{D}}^{-1/2}$ là ma trận kề chuẩn hóa, $\mathbf{X}_t \in \mathbb{R}^{N \times 14}$ là đặc trưng tại bước thời gian $t$.
+
+\textbf{Số tham số của module GCN:}
+\begin{align}
+  |\theta_{\text{GCN-1}}| &= 14 \times 32 = 448 \text{ tham số} \notag\\
+  |\theta_{\text{GCN-2}}| &= 32 \times 64 = 2.048 \text{ tham số} \notag
+\end{align}
+
+\subsection{Stacked LSTM --- Chi tiết Tham số}
+
+Đầu ra của GCN $\mathbf{H}^{(2)} \in \mathbb{R}^{B \times T \times N \times 64}$ được reshape thành sequence $\mathbb{R}^{B \times 12 \times (N \cdot 64)}$ trước khi đưa vào LSTM. Cấu hình Stacked LSTM:
+
+\begin{table}[H]
+\centering
+\caption{Tham số cấu hình Stacked LSTM}
+\label{tab:lstm_config}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{>{\bfseries}p{2.5cm} p{2.5cm} p{2.5cm} p{2.5cm} p{2cm}}
+\toprule
+\textbf{Lớp} & \textbf{Input size} & \textbf{Hidden size} & \textbf{Dropout} & \textbf{Params} \\
+\midrule
+LSTM-1 & $N \times 64$ & 128 & 0.1 & $\sim$4M \\
+\rowcolor{rowgray}
+LSTM-2 & 128 & 64 & 0.2 & 49.4K \\
+LSTM-3 & 64 & 64 & 0.3 & 33.0K \\
+\rowcolor{rowgray}
+Linear & 64 & $6 \times 3$ & --- & 1.1K \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Hàm Loss và Huấn luyện}
+
+Hàm mất mát kết hợp RMSE và MAE:
+
+\begin{equation}
+  \mathcal{L} = \alpha \cdot \text{RMSE}(\hat{\mathbf{Y}}, \mathbf{Y}) + (1-\alpha) \cdot \text{MAE}(\hat{\mathbf{Y}}, \mathbf{Y})
+  \label{eq:loss}
+\end{equation}
+
+với $\alpha = 0{,}7$ để nhấn mạnh các sai lệch lớn (ùn tắc nặng). Bộ tối ưu Adam với learning rate $3 \times 10^{-4}$, warmup 5 epoch, cosine decay.
+
+\begin{lstlisting}[caption={Huấn luyện STGCN+LSTM với PyTorch (trích)},label={lst:training}]
+import torch
+import torch.nn as nn
+from torch_geometric.nn import GCNConv
+
+class STGCNLSTMModel(nn.Module):
+    def __init__(self, num_nodes: int, in_features: int = 14,
+                 gcn_hidden: int = 64, lstm_hidden: int = 128,
+                 forecast_steps: int = 6, out_features: int = 3):
+        super().__init__()
+        self.N = num_nodes
+        # Spatial Module
+        self.gcn1 = GCNConv(in_features, 32)
+        self.gcn2 = GCNConv(32, gcn_hidden)
+        # Temporal Module
+        self.lstm = nn.LSTM(
+            input_size=num_nodes * gcn_hidden,
+            hidden_size=lstm_hidden, num_layers=3,
+            batch_first=True, dropout=0.2
+        )
+        # Output projection
+        self.head = nn.Linear(lstm_hidden, forecast_steps * out_features)
+        self.forecast_steps = forecast_steps
+        self.out_features = out_features
+
+    def forward(self, x: torch.Tensor, edge_index: torch.Tensor,
+                edge_weight: torch.Tensor) -> torch.Tensor:
+        B, T, N, F = x.shape  # [Batch, 12, N_nodes, 14]
+
+        # 1. GCN tren tung buoc thoi gian
+        spatial_feats = []
+        for t in range(T):
+            h = torch.relu(self.gcn1(x[:, t], edge_index, edge_weight))
+            h = torch.relu(self.gcn2(h, edge_index, edge_weight))
+            spatial_feats.append(h)               # [B, N, 64]
+        spatial_seq = torch.stack(spatial_feats, dim=1)  # [B, 12, N, 64]
+
+        # 2. Flatten nodes -> sequence dau vao LSTM
+        seq = spatial_seq.view(B, T, -1)          # [B, 12, N*64]
+
+        # 3. Stacked LSTM
+        lstm_out, _ = self.lstm(seq)              # [B, 12, 128]
+        last_hidden = lstm_out[:, -1, :]          # [B, 128]
+
+        # 4. Dau ra du bao
+        out = self.head(last_hidden)              # [B, 6*3]
+        return out.view(B, self.forecast_steps, self.out_features)
+\end{lstlisting}
+
+\section{Mô hình Thay thế Nơ-ron (ADE Surrogate)}
+
+\subsection{Động lực Thiết kế}
+
+Mô hình STGCN+LSTM ở trên được thiết kế cho \textit{dự báo offline} từ dữ liệu lịch sử. Tuy nhiên, trong luồng What-if, hệ thống cần phản hồi hàng chục truy vấn giả định mỗi giây với SLA nghiêm ngặt: $P_{99} < 500$ms. STGCN+LSTM không thể đáp ứng vì:
+
+\begin{itemize}[itemsep=3pt]
+  \item Graph convolution có độ phức tạp $\mathcal{O}(N \cdot E)$ với $E$ là số cạnh trong đồ thị.
+  \item Mỗi truy vấn What-if cần thay đổi một phần của đồ thị (ví dụ: xóa cạnh tương ứng với đường đóng), yêu cầu tính lại toàn bộ.
+\end{itemize}
+
+\textbf{Giải pháp:} Huấn luyện offline ADE để xấp xỉ hàm $f_{\text{STGCN}}: (\mathbf{X}, \mathbf{c}) \mapsto \hat{\mathbf{Y}}$, trong đó $\mathbf{c} \in \mathbb{R}^{d_c}$ là vector sự cố (incident vector).
+
+\subsection{Kiến trúc ADE}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.5cm and 1.0cm, scale=0.88, transform shape]
+  % Input
+  \node[sysbox=tier1col, text width=3.5cm, minimum height=1.2cm] (inp)
+    {Input: Tensor Hiện tại\\$+$ Vector sự cố $\mathbf{c}$};
+
+  % Adversarial branch
+  \node[sysbox=accentorange, text width=2.5cm, minimum height=1.1cm,
+    fill=alertyellow!60, draw=accentorange!80, text=accentorange!70!black,
+    above right=0.5cm and 1.2cm of inp] (adv)
+    {Adversarial\\Perturbation\\$\epsilon \nabla_x \mathcal{L}$};
+
+  % Sub-models
+  \node[sysbox=tier2col, text width=2.8cm, minimum height=1.1cm,
+    below right=0.2cm and 1.5cm of inp] (m1) {Sub-model 1\\(MLP Deep)};
+  \node[sysbox=tier2col, text width=2.8cm, minimum height=1.1cm,
+    below=0.5cm of m1] (m2) {Sub-model 2\\(CNN-1D)};
+  \node[sysbox=tier2col, text width=2.8cm, minimum height=1.1cm,
+    below=0.5cm of m2] (m3) {Sub-model 3\\(Transformer)};
+  \node[sysbox=tier2col, text width=2.8cm, minimum height=1.1cm,
+    below=0.5cm of m3] (mN) {Sub-model $N$\\(MLP Wide)};
+
+  % Aggregation
+  \node[sysbox=tier3col, text width=3cm, minimum height=1.2cm,
+    right=1.5cm of m2] (agg)
+    {Aggregation\\Weighted Mean\\+ Uncertainty};
+
+  % Output
+  \node[sysbox=tier1col, text width=3cm, minimum height=1.2cm,
+    right=1.2cm of agg] (out)
+    {Output\\$\hat{\mathbf{Y}}_{\text{WI}}$\\$\sim 100$--$300$ms};
+
+  % Arrows
+  \draw[arrow] (inp) -- (m1);
+  \draw[arrow] (inp) -- (m2);
+  \draw[arrow] (inp) -- (m3);
+  \draw[arrow] (inp) -- (mN);
+  \draw[arrow, accentorange!80] (adv) -- (m1);
+  \draw[arrow, accentorange!80] (adv) -- (m2);
+  \draw[arrow] (m1) -- (agg);
+  \draw[arrow] (m2) -- (agg);
+  \draw[arrow] (m3) -- (agg);
+  \draw[arrow] (mN) -- (agg);
+  \draw[arrow] (agg) -- (out);
+
+  % Vertical dots
+  \node[font=\Large] at ($(m3)!0.5!(mN) + (-0.0,0)$) {$\vdots$};
+
+\end{tikzpicture}
+\caption{Kiến trúc mô hình ADE (Adversarial Diverse Deep Ensemble)}
+\label{fig:ade_arch}
+\end{figure}
+
+\subsection{Vector Sự cố (Incident Vector)}
+
+Vector sự cố $\mathbf{c} \in \mathbb{R}^{10}$ mã hóa tất cả thông tin về kịch bản What-if:
+
+\begin{table}[H]
+\centering
+\caption{Cấu trúc Vector sự cố đầu vào ADE}
+\label{tab:incident_vector}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{>{\centering}p{1.2cm} p{4cm} p{6cm}}
+\toprule
+\textbf{Dim} & \textbf{Tên} & \textbf{Mô tả} \\
+\midrule
+$c_1$ & \texttt{incident\_node\_id} & ID nút bị ảnh hưởng (One-hot encoded) \\
+\rowcolor{rowgray}
+$c_2$ & \texttt{incident\_type} & 0=tai nạn, 1=ngập, 2=đóng đường, 3=sự kiện \\
+$c_3$ & \texttt{severity} & Mức độ nghiêm trọng $\in [0,1]$ \\
+\rowcolor{rowgray}
+$c_4$ & \texttt{lanes\_closed} & Số làn đường đóng $\in \{0,1,2,3,4\}$ \\
+$c_5$ & \texttt{duration\_min} & Thời gian dự kiến (phút) \\
+\rowcolor{rowgray}
+$c_6$--$c_8$ & \texttt{affected\_edges} & Vector nhị phân các cạnh bị ảnh hưởng \\
+$c_9$ & \texttt{time\_of\_day} & Giờ trong ngày (chuẩn hóa 0--1) \\
+\rowcolor{rowgray}
+$c_{10}$ & \texttt{weather\_flag} & 0=bình thường, 1=mưa, 2=ngập \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Quy trình Huấn luyện ADE}
+
+\begin{algorithm}[H]
+\caption{Huấn luyện ADE Surrogate Model}
+\label{alg:ade_train}
+\SetKwFor{ForEach}{for each}{do}{end}
+\Input{Dữ liệu lịch sử $\mathcal{D} = \{(\mathbf{X}_i, \mathbf{c}_i, \mathbf{Y}_i)\}_{i=1}^{M}$, số sub-models $N$}
+\Output{Bộ sub-models $\{f_{\theta_1}, \ldots, f_{\theta_N}\}$}
+\BlankLine
+\tcc{Bước 1: Tạo Corner Cases từ lịch sử}
+$\mathcal{D}_{\text{corner}} \leftarrow \text{ExtractCornerCases}(\mathcal{D})$\;
+\BlankLine
+\tcc{Bước 2: Sinh dữ liệu đối kháng (FGSM)}
+\ForEach{$(\mathbf{X}_i, \mathbf{c}_i, \mathbf{Y}_i) \in \mathcal{D}_{\text{corner}}$}{
+  $\mathbf{X}'_i \leftarrow \mathbf{X}_i + \epsilon \cdot \text{sign}(\nabla_{\mathbf{X}} \mathcal{L}(\mathbf{X}_i, \mathbf{Y}_i))$\;
+  $\mathcal{D}_{\text{adv}} \leftarrow \mathcal{D}_{\text{adv}} \cup \{(\mathbf{X}'_i, \mathbf{c}_i, \mathbf{Y}_i)\}$\;
+}
+$\mathcal{D}_{\text{train}} \leftarrow \mathcal{D} \cup \mathcal{D}_{\text{adv}}$\;
+\BlankLine
+\tcc{Bước 3: Huấn luyện độc lập từng sub-model}
+\ForEach{$m \in \{1, \ldots, N\}$}{
+  Khởi tạo $\theta_m$ ngẫu nhiên (seed khác nhau)\;
+  Huấn luyện $f_{\theta_m}$ trên $\mathcal{D}_{\text{train}}$ với kiến trúc riêng\;
+  Ghi lại validation loss $\mathcal{L}_m^{\text{val}}$\;
+}
+\BlankLine
+\tcc{Bước 4: Tính trọng số ensemble}
+$w_m \leftarrow \exp(-\mathcal{L}_m^{\text{val}}) / \sum_{j} \exp(-\mathcal{L}_j^{\text{val}})$ \quad $\forall m$\;
+\Return $\{f_{\theta_m}, w_m\}_{m=1}^{N}$
+\end{algorithm}
+
+\section{Đánh giá Mô hình}
+
+\subsection{Bộ Chỉ số Đánh giá}
+
+\begin{table}[H]
+\centering
+\caption{Bộ chỉ số đánh giá Tầng 2}
+\label{tab:metrics_t2}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{p{2.5cm} p{3.5cm} p{5.5cm}}
+\toprule
+\textbf{Chỉ số} & \textbf{Ngưỡng mục tiêu} & \textbf{Mô tả} \\
+\midrule
+RMSE & $< 15$ xe/5 phút & Sai số RMS lưu lượng dự báo \\
+\rowcolor{rowgray}
+MAE & $< 10$ xe/5 phút & Sai số tuyệt đối trung bình \\
+F1 (ùn tắc) & $> 0{,}85$ & F1-Score phát hiện trạng thái ùn tắc \\
+\rowcolor{rowgray}
+TTP $P_{99}$ & $< 500$ms & Thời gian inference ADE, đo tại P99 \\
+TTP $P_{50}$ & $< 150$ms & Thời gian inference trung vị \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Benchmark Tốc độ}
+
+\begin{tcolorbox}[dangerbox]
+\textbf{Ràng buộc cứng về hiệu năng (QC-2):} Nếu $P_{99}$ TTP vượt 500ms, Surrogate Model \textbf{phải được tối ưu lại} theo thứ tự ưu tiên: (1) Quantization INT8, (2) Model Pruning 20--30\%, (3) Giảm ensemble size từ $N$ xuống $N/2$, (4) Caching kết quả với similar vector hash.
+\end{tcolorbox}
+
+\begin{lstlisting}[caption={Benchmark TTP với percentile đo lường},label={lst:benchmark}]
+import time
+import numpy as np
+from typing import List
+
+def benchmark_ade_ttp(model, test_inputs: List, n_runs: int = 1000) -> dict:
+    """
+    Benchmark Time-to-Prediction cua ADE Surrogate Model.
+    Ket qua phai dat: P99 < 500ms, P50 < 150ms.
+    """
+    latencies_ms = []
+
+    for inp in test_inputs[:n_runs]:
+        t0 = time.perf_counter()
+        _ = model.predict(inp)  # Forward pass
+        t1 = time.perf_counter()
+        latencies_ms.append((t1 - t0) * 1000)
+
+    latencies = np.array(latencies_ms)
+    results = {
+        'P50_ms':  float(np.percentile(latencies, 50)),
+        'P95_ms':  float(np.percentile(latencies, 95)),
+        'P99_ms':  float(np.percentile(latencies, 99)),
+        'mean_ms': float(np.mean(latencies)),
+        'max_ms':  float(np.max(latencies)),
+    }
+
+    # Kiem tra rang buoc cung QC-2
+    if results['P99_ms'] > 500:
+        raise RuntimeError(
+            f"[QC-2 VIOLATION] TTP P99 = {results['P99_ms']:.1f}ms > 500ms. "
+            "Can toi uu lai model truoc khi deploy."
+        )
+
+    print(f"TTP Benchmark: P50={results['P50_ms']:.1f}ms | "
+          f"P99={results['P99_ms']:.1f}ms | Max={results['max_ms']:.1f}ms")
+    return results
+\end{lstlisting}

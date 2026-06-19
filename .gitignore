@@ -11,8 +11,9 @@
 *.out
 *.synctex.gz
 
-# Generated chapters and web deploy folder
-chapters/
+# Generated chapters (pandoc output from docs/*.md - regenerated on CI)
+chapters/0*.tex
+chapters/temp_*.md
 web_deploy/
 
 # Generated mermaid images

@@ -1,0 +1,320 @@
+\chapter{Tầng 1: Thu thập và Chuẩn hóa Dữ liệu}
+
+\section{Tổng quan Tầng Thu thập Dữ liệu}
+
+Tầng 1 là lớp nền tảng của hệ thống STWI, có nhiệm vụ tiếp nhận dữ liệu thô từ phần cứng ngoại vi và chuyển hóa thành Tensor chuẩn hóa $\mathbf{X} \in \mathbb{R}^{B \times 12 \times 14}$ để cung cấp cho Tầng 2. Dữ liệu đến từ hai nguồn chính: (1) Mạng lưới camera CCTV và (2) Hệ thống cảm biến môi trường và khí tượng.
+
+\section{Phân hệ Thị giác Máy tính (CCTV Pipeline)}
+
+\subsection{Kiến trúc Pipeline CCTV}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.6cm and 0.5cm, scale=0.9, transform shape]
+  \node[sysbox=tier1col, text width=2.8cm, minimum height=1.5cm] (cam)
+    {Camera CCTV\\1.000 điểm\\25 FPS};
+  \node[sysbox=tier2col, right=1.2cm of cam, text width=3cm, minimum height=1.5cm] (yolo)
+    {YOLOv8\\Object Detection\\NVIDIA TensorRT};
+  \node[sysbox=tier2col, right=1.2cm of yolo, text width=3cm, minimum height=1.5cm] (bt)
+    {ByteTrack\\Multi-Object\\Tracking};
+  \node[sysbox=tier3col, right=1.2cm of bt, text width=3.5cm, minimum height=1.5cm] (agg)
+    {Aggregation\\Chu kỳ 5 phút\\/camera};
+  \node[sysbox=tier4col, right=1.2cm of agg, text width=2.8cm, minimum height=1.5cm] (tsdb)
+    {TimeSeries DB\\InfluxDB\\/ TimescaleDB};
+
+  \draw[arrow] (cam) -- (yolo);
+  \draw[arrow] (yolo) -- (bt);
+  \draw[arrow] (bt) -- (agg);
+  \draw[arrow] (agg) -- (tsdb);
+
+  % Output labels
+  \node[below=0.6cm of agg, font=\tiny\itshape, text=codegray, text width=3.5cm, align=center]
+    {3 biến:\\traffic\_volume\\avg\_velocity\\vehicle\_class};
+  \node[below=0.6cm of tsdb, font=\tiny\itshape, text=codegray, text width=2.8cm, align=center]
+    {JSON records\\timestamped};
+\end{tikzpicture}
+\caption{Luồng xử lý dữ liệu CCTV --- từ Camera đến TimeSeries DB}
+\label{fig:cctv_pipeline}
+\end{figure}
+
+\subsection{YOLOv8 -- Phát hiện Phương tiện}
+
+YOLOv8 \cite{jocher2023yolo} là kiến trúc phát hiện vật thể (object detection) thời gian thực tiên tiến, xử lý mỗi khung hình (frame) trong một lần forward pass duy nhất:
+
+\begin{itemize}[leftmargin=1.5cm, itemsep=4pt]
+  \item \textbf{Backbone:} CSPDarknet53 với C2f modules cho trích xuất đặc trưng đa tỉ lệ.
+  \item \textbf{Neck:} PANet (Path Aggregation Network) để kết hợp đặc trưng từ nhiều tỉ lệ.
+  \item \textbf{Head:} Decoupled head dự báo bounding box và class score độc lập.
+  \item \textbf{Tốc độ inference:} $\sim$3ms/frame trên NVIDIA A100 với TensorRT FP16.
+\end{itemize}
+
+Các lớp phương tiện cần nhận diện:
+
+\begin{table}[H]
+\centering
+\caption{Phân loại phương tiện trong STWI CCTV Pipeline}
+\label{tab:vehicle_class}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{>{\centering}p{1.5cm} p{3.5cm} p{5cm} p{2cm}}
+\toprule
+\textbf{Lớp ID} & \textbf{Loại phương tiện} & \textbf{Ví dụ cụ thể} & \textbf{PCU$^*$} \\
+\midrule
+0 & Xe máy & Xe ga, xe số, xe đạp điện & 0.5 \\
+\rowcolor{rowgray}
+1 & Ô tô con & Sedan, SUV, MPV & 1.0 \\
+2 & Xe tải & Tải nhỏ, tải trung, container & 2.0--3.5 \\
+\rowcolor{rowgray}
+3 & Xe buýt & Buýt thường, buýt nhanh BRT & 2.5 \\
+\bottomrule
+\multicolumn{4}{l}{\small $^*$PCU: Passenger Car Unit --- đơn vị quy đổi ra xe con tương đương}
+\end{tabular}
+\end{table}
+
+\subsection{ByteTrack -- Theo dõi Đa đối tượng}
+
+ByteTrack \cite{zhang2020bytetrack} giải quyết vấn đề đếm trùng phương tiện giữa các frame liên tiếp bằng cách theo dõi \textit{tất cả} bounding box (bao gồm cả các detection có confidence thấp):
+
+\begin{enumerate}[leftmargin=1.5cm, itemsep=4pt]
+  \item \textbf{High-confidence detections} ($\text{conf} \geq \theta_{\text{high}}$): Ghép với tracks hiện có theo IoU (Hungarian algorithm).
+  \item \textbf{Low-confidence detections} ($\theta_{\text{low}} \leq \text{conf} < \theta_{\text{high}}$): Thử ghép với các tracks bị miss ở bước trên.
+  \item \textbf{Kalman Filter}: Dự báo vị trí track trong frame tiếp theo để xử lý occlusion.
+\end{enumerate}
+
+Kết quả: Mỗi phương tiện được gán ID duy nhất, cho phép tính lưu lượng thực (không đếm trùng) và vận tốc trung bình từ quỹ đạo di chuyển.
+
+\subsection{Các Biến Đầu ra từ CCTV}
+
+Sau mỗi chu kỳ 5 phút, pipeline CCTV xuất 3 biến cho mỗi nút giao:
+
+\begin{table}[H]
+\centering
+\caption{Biến đặc trưng từ CCTV Pipeline}
+\label{tab:cctv_features}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{p{3.5cm} p{2.5cm} p{6cm}}
+\toprule
+\textbf{Tên biến} & \textbf{Đơn vị} & \textbf{Mô tả} \\
+\midrule
+\texttt{traffic\_volume} & xe/5 phút & Tổng số phương tiện đi qua nút giao (PCU-weighted) \\
+\rowcolor{rowgray}
+\texttt{avg\_velocity} & km/h & Tốc độ trung bình của tất cả phương tiện \\
+\texttt{vehicle\_class\_ratio} & $[0,1]$ & Tỷ lệ ô tô trong tổng lưu lượng \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Phân hệ Cảm biến Môi trường và Khí tượng}
+
+\subsection{Mạng lưới Cảm biến}
+
+Hệ thống tích hợp dữ liệu từ hai loại cảm biến:
+
+\begin{table}[H]
+\centering
+\caption{Danh sách biến cảm biến môi trường và khí tượng}
+\label{tab:sensors}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{p{2cm} p{3.2cm} p{2.5cm} p{4cm}}
+\toprule
+\textbf{Nhóm} & \textbf{Biến} & \textbf{Ký hiệu} & \textbf{Đơn vị / Dải giá trị} \\
+\midrule
+\multirow{5}{*}{Khí thải} & Carbon monoxide & CO & $\mu$g/m$^3$, 0--500 \\
+  & Carbon dioxide & CO$_2$ & ppm, 300--5.000 \\
+  & Nitrogen oxides & NO$_x$ & $\mu$g/m$^3$, 0--200 \\
+  & Bụi mịn nhỏ & PM$_{2.5}$ & $\mu$g/m$^3$, 0--250 \\
+  & Bụi mịn lớn & PM$_{10}$ & $\mu$g/m$^3$, 0--400 \\
+\midrule
+\rowcolor{rowgray}
+\multirow{3}{*}{Khí tượng} & Nhiệt độ & $T$ & $^\circ$C, 15--42 \\
+\rowcolor{rowgray}
+  & Độ ẩm & $H$ & \%, 30--100 \\
+\rowcolor{rowgray}
+  & Tốc độ gió & $W$ & m/s, 0--20 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{tcolorbox}[tipbox]
+\textbf{Logic kỹ thuật quan trọng:} Tốc độ gió $W$ có mối quan hệ phi tuyến với PM$_{2.5}$ và PM$_{10}$: gió mạnh ($W > 5$ m/s) phát tán bụi nhanh, nhưng gió yếu ($W < 1$ m/s) cho phép bụi tích tụ. Mô hình STGCN cần nắm bắt được mối quan hệ này để dự báo chất lượng không khí trong điều kiện ùn tắc kéo dài.
+\end{tcolorbox}
+
+\subsection{Giao thức Thu thập và Xử lý Mất dữ liệu}
+
+Cảm biến giao tiếp qua MQTT với broker trung tâm. Chiến lược xử lý dữ liệu thiếu:
+
+\begin{itemize}[leftmargin=1.5cm, itemsep=3pt]
+  \item \textbf{Ngắt $< 15$ phút:} Linear interpolation giữa hai điểm đo lân cận.
+  \item \textbf{Ngắt 15--60 phút:} Sử dụng giá trị trung bình theo giờ tương ứng từ lịch sử 30 ngày.
+  \item \textbf{Ngắt $> 60$ phút:} Đánh dấu flag `\texttt{sensor\_unavailable}', loại nút này khỏi graph inference.
+\end{itemize}
+
+\section{Cấu trúc và Chuẩn hóa Dữ liệu}
+
+\subsection{14 Biến Đặc trưng (Feature Engineering)}
+
+Sau khi thu thập, dữ liệu được ghép thành vector đặc trưng 14 chiều cho mỗi nút giao tại mỗi bước thời gian 5 phút:
+
+\begin{table}[H]
+\centering
+\caption{14 biến đặc trưng đầu vào cho mô hình STGCN+LSTM}
+\label{tab:features}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{>{\centering}p{1.5cm} >{\centering}p{0.8cm} p{3.5cm} p{5cm}}
+\toprule
+\textbf{Nhóm} & \textbf{ID} & \textbf{Tên biến} & \textbf{Mô tả} \\
+\midrule
+\multirow{3}{*}{Giao thông} & F1 & \texttt{traffic\_volume} & Lưu lượng xe (PCU/5 min) \\
+  & F2 & \texttt{avg\_velocity} & Vận tốc trung bình (km/h) \\
+  & F3 & \texttt{vehicle\_class\_ratio} & Tỷ lệ ô tô $(0, 1)$ \\
+\midrule
+\rowcolor{rowgray}
+\multirow{5}{*}{Khí thải} & F4 & \texttt{co\_level} & Nồng độ CO ($\mu$g/m$^3$) \\
+\rowcolor{rowgray}
+  & F5 & \texttt{co2\_level} & Nồng độ CO$_2$ (ppm) \\
+\rowcolor{rowgray}
+  & F6 & \texttt{nox\_level} & Nồng độ NO$_x$ ($\mu$g/m$^3$) \\
+\rowcolor{rowgray}
+  & F7 & \texttt{pm25\_level} & Bụi mịn PM$_{2.5}$ ($\mu$g/m$^3$) \\
+\rowcolor{rowgray}
+  & F8 & \texttt{pm10\_level} & Bụi mịn PM$_{10}$ ($\mu$g/m$^3$) \\
+\midrule
+\multirow{3}{*}{Khí tượng} & F9 & \texttt{temperature} & Nhiệt độ ($^\circ$C) \\
+  & F10 & \texttt{humidity} & Độ ẩm (\%) \\
+  & F11 & \texttt{wind\_speed} & Tốc độ gió (m/s) \\
+\midrule
+\rowcolor{rowgray}
+\multirow{3}{*}{Phụ trợ} & F12 & \texttt{hour\_sin} & $\sin(2\pi \cdot \text{hour}/24)$ \\
+\rowcolor{rowgray}
+  & F13 & \texttt{day\_of\_week} & Mã hóa vòng ngày trong tuần \\
+\rowcolor{rowgray}
+  & F14 & \texttt{signal\_phase} & Pha đèn tín hiệu hiện tại $\in \{0,1,2\}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Chuẩn hóa MinMaxScaler}
+
+Do các features có thang đo rất khác nhau (nhiệt độ 15--42$^\circ$C vs lưu lượng 0--2.000 PCU), toàn bộ phải chuẩn hóa về dải $(0, 1)$:
+
+\begin{equation}
+  x_{\text{norm}} = \frac{x - x_{\min}}{x_{\max} - x_{\min}}
+  \label{eq:minmax}
+\end{equation}
+
+\begin{tcolorbox}[dangerbox]
+\textbf{Yêu cầu bắt buộc (QC-4):} Tham số $x_{\min}$, $x_{\max}$ được fit \textbf{chỉ trên tập training}. Tuyệt đối không fit lại khi inference để tránh data leakage. Scaler state phải được serialize (pickle) và lưu cùng với model checkpoint.
+\end{tcolorbox}
+
+\subsection{Xây dựng 3D Tensor}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[scale=0.85]
+  % Draw 3D cuboid
+  \def\dx{5.5} \def\dy{2.5} \def\dz{3.5}
+  \def\ox{0.8} \def\oy{0.6}
+
+  % Front face
+  \draw[fill=bklightblue!50, draw=bkblue!60] (0,0) -- (\dx,0) -- (\dx,\dy) -- (0,\dy) -- cycle;
+  % Top face
+  \draw[fill=tier1col!15, draw=bkblue!60]
+    (0,\dy) -- (\ox,\dy+\oy) -- (\dx+\ox,\dy+\oy) -- (\dx,\dy) -- cycle;
+  % Right face
+  \draw[fill=tier2col!15, draw=bkblue!60]
+    (\dx,0) -- (\dx+\ox,\oy) -- (\dx+\ox,\dy+\oy) -- (\dx,\dy) -- cycle;
+
+  % Dimension labels
+  \draw[<->, thick, bkblue!80] (-0.4,0) -- (-0.4,\dy)
+    node[midway, left, font=\small\bfseries] {Time Steps\\$T=12$\\(60 phút)};
+  \draw[<->, thick, bkblue!80] (0,-0.5) -- (\dx,-0.5)
+    node[midway, below, font=\small\bfseries] {Features $F=14$};
+  \draw[<->, thick, bkblue!80] (\dx+\ox+0.3, \oy) -- (\dx+\ox+0.3, \dy+\oy)
+    node[midway, right, font=\small\bfseries] {Batch $B$};
+
+  % Grid lines on front face (time steps)
+  \foreach \y in {0.417,0.833,...,2.083}{
+    \draw[gray!40, thin] (0,\y*\dy/2.5) -- (\dx,\y*\dy/2.5);
+  }
+  % Grid lines (features)
+  \foreach \x in {0.393,0.786,...,5.107}{
+    \draw[gray!40, thin] (\x,0) -- (\x,\dy);
+  }
+
+  % Labels inside cube
+  \node[font=\small\bfseries, text=bkblue] at (\dx/2, \dy/2)
+    {\texttt{[B, 12, 14]}};
+
+  % Annotation arrows
+  \node[right=0.3cm of {(\dx+\ox, \dy/2+\oy/2)}, font=\tiny, text=codegray, text width=2.5cm, align=left]
+    {$B = 32$ hoặc $64$\\tùy VRAM GPU};
+  \node[below=0.2cm of {(\dx/2,-0.5)}, font=\tiny, text=codegray, text width=5cm, align=center]
+    {14 features: 3 GT + 5 KT + 3 KK + 3 PT};
+  \node[left=0.3cm of {(-0.4,\dy/2)}, font=\tiny, text=codegray, text width=2.2cm, align=right]
+    {12 bước $\times$ 5 phút\\$= 60$ phút lịch sử};
+\end{tikzpicture}
+\caption{Cấu trúc 3D Tensor đầu vào của Tầng 2}
+\label{fig:tensor_3d}
+\end{figure}
+
+Tensor 3D $\mathbf{X} \in \mathbb{R}^{B \times 12 \times 14}$ được xây dựng bằng cơ chế \textbf{sliding window}:
+
+\begin{lstlisting}[caption={Xây dựng 3D Tensor với Sliding Window (PyTorch)},label={lst:tensor_build}]
+import torch
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler
+
+class TrafficTensorBuilder:
+    """Xay dung 3D Tensor [Batch, TimeSteps, Features] cho STGCN."""
+
+    def __init__(self, time_steps: int = 12, features: int = 14):
+        self.T = time_steps   # 12 buoc x 5 phut = 60 phut lich su
+        self.F = features     # 14 bien dac trung
+        self.scaler = MinMaxScaler(feature_range=(0, 1))
+        self._scaler_fitted = False
+
+    def fit_scaler(self, raw_data: np.ndarray) -> None:
+        """Fit scaler CHI TREN tap training. KHONG goi lai khi inference."""
+        if raw_data.shape[1] != self.F:
+            raise ValueError(f"Expected {self.F} features, got {raw_data.shape[1]}")
+        self.scaler.fit(raw_data)
+        self._scaler_fitted = True
+
+    def build(self, raw_window: np.ndarray) -> torch.Tensor:
+        """
+        Tham so:
+            raw_window: [N_timesteps, N_features] - du lieu thu trong cua mot nut
+        Tra ve:
+            tensor: [1, 12, 14] - Tensor san sang cho model
+        """
+        if not self._scaler_fitted:
+            raise RuntimeError("Scaler chua duoc fit. Goi fit_scaler() truoc.")
+
+        # 1. Lay 12 buoc gan nhat
+        window = raw_window[-self.T:, :]           # [12, 14]
+
+        # 2. Chuan hoa MinMax
+        normalized = self.scaler.transform(window) # [12, 14]
+
+        # 3. Chuyen sang Tensor va them batch dim
+        tensor = torch.tensor(normalized, dtype=torch.float32)
+        return tensor.unsqueeze(0)                 # [1, 12, 14]
+
+    def build_batch(self, windows: list) -> torch.Tensor:
+        """Xay dung batch tensor cho nhieu nut giao."""
+        tensors = [self.build(w) for w in windows]
+        batch = torch.cat(tensors, dim=0)          # [B, 12, 14]
+        assert batch.shape[1:] == (12, 14), f"Sai shape: {batch.shape}"
+        return batch
+\end{lstlisting}
+
+\section{Kiến trúc Lưu trữ và Đồng bộ Dữ liệu}
+
+Để đảm bảo đồng bộ dữ liệu từ nhiều nguồn (CCTV và cảm biến có thể có độ trễ khác nhau), pipeline sử dụng kiến trúc \textbf{Event-Driven + Time-Window Buffering}:
+
+\begin{enumerate}[leftmargin=1.5cm, itemsep=4pt]
+  \item Tất cả messages được publish lên message broker (MQTT) với timestamp chính xác.
+  \item Time-window buffer (5 phút) tích lũy dữ liệu từ tất cả sensors tại một nút.
+  \item Sau khi cửa sổ đóng, data aggregator tính toán trung bình và ghép thành vector 14 chiều.
+  \item Nếu một cảm biến thiếu dữ liệu, áp dụng chiến lược imputation tương ứng.
+  \item Vector hoàn chỉnh được ghi vào InfluxDB với key `\texttt{node\_id + timestamp}'.
+\end{enumerate}

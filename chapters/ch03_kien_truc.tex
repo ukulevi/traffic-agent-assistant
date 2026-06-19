@@ -1,0 +1,255 @@
+\chapter{Kiến trúc Hệ thống Tổng thể}
+
+\section{Tổng quan Kiến trúc 4 Tầng}
+
+Hệ thống STWI được thiết kế theo kiến trúc \textbf{4 tầng phân cấp} (Layered 4-Tier Architecture), trong đó mỗi tầng đảm nhận một chức năng rõ ràng và giao tiếp với các tầng lân cận thông qua các giao diện (interfaces) được chuẩn hóa.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.5cm and 0.8cm, scale=0.88, transform shape]
+
+  % ===== TIER 1 =====
+  \node[groupbox=tier1col, minimum width=13.5cm, minimum height=3.2cm] (t1box) at (0,0) {};
+  \node[anchor=north west, font=\small\bfseries\color{tier1col!80!black}]
+    at (t1box.north west) [xshift=8pt,yshift=-6pt]
+    {TẦNG 1 --- Thu thập \& Chuẩn hóa Dữ liệu};
+
+  \node[sysbox=tier1col, text width=3cm] (cctv) at (-4.5,-0.2) {Camera CCTV\\1.000 điểm\\YOLOv8 + ByteTrack};
+  \node[sysbox=tier1col, text width=2.8cm] (sensor) at (-1.2,-0.2) {Cảm biến MT\\CO, NO$_x$\\PM$_{2.5}$, PM$_{10}$};
+  \node[sysbox=tier1col, text width=2.8cm] (weather) at (2.0,-0.2) {Trạm Khí tượng\\Nhiệt, Ẩm, Gió};
+  \node[sysbox=tier1col, text width=3.2cm, fill=tier1col!25] (norm) at (5.2,-0.2)
+    {MinMaxScaler\\$\downarrow$\\Tensor \texttt{[B,12,14]}};
+
+  \draw[arrow, tier1col!80!black] (cctv) -- (norm);
+  \draw[arrow, tier1col!80!black] (sensor) -- (norm);
+  \draw[arrow, tier1col!80!black] (weather) -- (norm);
+
+  % ===== TIER 2 =====
+  \node[groupbox=tier2col, minimum width=13.5cm, minimum height=3.2cm] (t2box) at (0,-4.2) {};
+  \node[anchor=north west, font=\small\bfseries\color{tier2col!80!black}]
+    at (t2box.north west) [xshift=8pt,yshift=-6pt]
+    {TẦNG 2 --- Dự báo \& Giả lập};
+
+  \node[sysbox=tier2col, text width=4.2cm] (stgcn) at (-2.8,-4.4)
+    {STGCN + Stacked LSTM\\Học đặc trưng\\Không gian--Thời gian};
+  \node[sysbox=tier2col, text width=4.2cm, fill=tier2col!25] (ade) at (2.8,-4.4)
+    {Surrogate ADE\\Suy luận What-if\\$< 500$ms (P99)};
+
+  \draw[arrow, tier2col!80!black] (stgcn) -- (ade);
+
+  % ===== TIER 3 =====
+  \node[groupbox=tier3col, minimum width=13.5cm, minimum height=3.2cm] (t3box) at (0,-8.4) {};
+  \node[anchor=north west, font=\small\bfseries\color{tier3col!80!black}]
+    at (t3box.north west) [xshift=8pt,yshift=-6pt]
+    {TẦNG 3 --- Tri thức Đô thị (RAG)};
+
+  \node[sysbox=tier3col, text width=3cm] (vdb) at (-4.5,-8.6)
+    {Vector DB\\SOP + Luật GTĐB\\BGE-m3};
+  \node[sysbox=tier3col, text width=3cm] (xsql) at (-0.8,-8.6)
+    {XiYanSQL\\Text-to-SQL\\In-memory DB};
+  \node[sysbox=tier3col, text width=3.2cm, fill=tier3col!25] (realgen) at (3.2,-8.6)
+    {RealGen\\Corner Case\\Retrieval};
+
+  \draw[arrow, tier3col!80!black] (vdb) -- (xsql);
+  \draw[arrow, tier3col!80!black] (xsql) -- (realgen);
+
+  % ===== TIER 4 =====
+  \node[groupbox=tier4col, minimum width=13.5cm, minimum height=3.8cm] (t4box) at (0,-13.0) {};
+  \node[anchor=north west, font=\small\bfseries\color{tier4col!80!black}]
+    at (t4box.north west) [xshift=8pt,yshift=-6pt]
+    {TẦNG 4 --- Tác tử AI Điều phối};
+
+  \node[sysbox=tier4col, text width=3cm] (orc) at (-4.8,-13.3)
+    {Orchestrator\\LangChain\\/ CrewAI};
+  \node[sysbox=tier4col, text width=2.8cm] (sim_ag) at (-1.6,-13.3)
+    {Simulation\\Agent};
+  \node[sysbox=tier4col, text width=2.8cm] (leg_ag) at (1.4,-13.3)
+    {Legal \&\\SOP Agent};
+  \node[sysbox=tier4col, text width=2.8cm] (eva_ag) at (4.2,-13.3)
+    {Evaluation\\Agent};
+  \node[sysbox=tier4col, text width=3.5cm, fill=tier4col!25] (cfvla) at (0,-14.8)
+    {CF-VLA Engine\\Counterfactual Reflection\\V/C $\leq 0{,}9$ check};
+
+  \draw[arrow, tier4col!60] (orc) -- (sim_ag);
+  \draw[arrow, tier4col!60] (orc) -- (leg_ag);
+  \draw[arrow, tier4col!60] (orc) -- (eva_ag);
+  \draw[arrow, tier4col!60] (sim_ag) -- (cfvla);
+  \draw[arrow, tier4col!60] (leg_ag) -- (cfvla);
+  \draw[arrow, tier4col!60] (eva_ag) -- (cfvla);
+
+  % OUTPUT
+  \node[startend, text width=3.5cm, fill=alertgreen!60, draw=green!60!black] (dash)
+    at (0,-16.6) {Dashboard / Operator\\Báo cáo + Đề xuất};
+
+  % INTER-TIER ARROWS
+  \draw[arrow, bkblue!70, line width=1.2pt] (norm.south) -- ++(0,-0.6) -|
+    node[midway,above,font=\tiny\bfseries]{Tensor 3D} (stgcn.north);
+  \draw[arrow, bkblue!70, line width=1.2pt] (ade.south) -- ++(0,-0.5) -|
+    node[midway,above,font=\tiny\bfseries]{Kết quả sim} (sim_ag.north);
+  \draw[arrow, bkblue!70, line width=1.2pt] (xsql.south) -- ++(0,-0.5) -|
+    node[midway,above,font=\tiny\bfseries]{Tri thức} (leg_ag.north);
+  \draw[arrow, bkblue!70, line width=1.2pt] (cfvla.south) -- (dash.north);
+
+  % Feedback arrow
+  \draw[dasharrow, accentorange!80, line width=1pt]
+    (dash.east) -- ++(1.2,0) -- ++(0,3.5)
+    node[midway,right,font=\tiny\itshape,text=accentorange]{Vòng lặp\\hiệu chỉnh}
+    -- (ade.east);
+
+\end{tikzpicture}
+\caption{Kiến trúc tổng thể 4 tầng của Hệ thống STWI}
+\label{fig:arch_overview}
+\end{figure}
+
+\section{Luồng Dữ liệu End-to-End}
+
+Luồng xử lý đầy đủ từ khi Operator đặt câu hỏi What-if đến khi nhận báo cáo được mô tả trong Hình~\ref{fig:e2e_flow} và các bước chi tiết trong Bảng~\ref{tab:workflow}.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.5cm and 1.2cm, scale=0.9, transform shape]
+
+  % Nodes
+  \node[startend] (op) {Operator};
+  \node[procnode, below=0.7cm of op, text width=3.8cm] (parse)
+    {Orchestrator: Phân rã kịch bản\\What-if thành subtasks};
+
+  \node[procnode, below left=0.8cm and 1.2cm of parse, text width=3.2cm] (sim_task)
+    {Simulation Agent:\\Tải Tensor 3D\\+ Vector sự cố};
+  \node[procnode, below right=0.8cm and 1.2cm of parse, text width=3.2cm] (leg_task)
+    {Legal Agent:\\XiYanSQL truy vấn\\Vector DB SOP};
+
+  \node[procnode, below=1.1cm of sim_task, text width=3.2cm] (ade_run)
+    {ADE Inference\\$\sim$100--300ms};
+  \node[procnode, below=1.1cm of leg_task, text width=3.2cm] (rag_run)
+    {Semantic Search\\Cosine Similarity};
+
+  \node[procnode, below right=1cm and 0cm of ade_run, text width=4cm] (eval)
+    {Evaluation Agent:\\Đề xuất phương án sơ bộ};
+
+  \node[procnode, below=0.8cm of eval, text width=4.2cm] (cf)
+    {CF-VLA: Mô phỏng lại\\Kiểm tra V/C nút lân cận};
+  \node[decnode, below=0.8cm of cf] (check) {V/C\\$\leq 0{,}9$?};
+
+  \node[procnode, below left=0.8cm and 0.8cm of check, text width=3cm] (correct)
+    {Hiệu chỉnh phương án\\(tối đa 3 vòng)};
+  \node[startend, below right=0.8cm and 0.5cm of check,
+    fill=alertgreen!60, draw=green!50!black, text width=3.2cm] (out)
+    {Xuất báo cáo\\lên Dashboard};
+
+  % Arrows
+  \draw[arrow] (op) -- (parse);
+  \draw[arrow] (parse) -- (sim_task);
+  \draw[arrow] (parse) -- (leg_task);
+  \draw[arrow] (sim_task) -- (ade_run);
+  \draw[arrow] (leg_task) -- (rag_run);
+  \draw[arrow] (ade_run) -- (eval);
+  \draw[arrow] (rag_run) -- (eval);
+  \draw[arrow] (eval) -- (cf);
+  \draw[arrow] (cf) -- (check);
+  \draw[arrow] (check) -- node[left,font=\small]{Không} (correct);
+  \draw[arrow] (check) -- node[right,font=\small]{Có} (out);
+  \draw[arrow] (correct.north) -- ++(0,0.4) -| (cf.west);
+
+  % Time labels
+  \node[right=0.2cm of ade_run, font=\tiny\itshape, text=codegray]{$<500$ms};
+  \node[left=0.2cm of rag_run, font=\tiny\itshape, text=codegray]{$\sim$1--2s};
+  \node[right=0.2cm of cf, font=\tiny\itshape, text=codegray]{$<500$ms};
+
+\end{tikzpicture}
+\caption{Luồng xử lý End-to-End của Hệ thống STWI}
+\label{fig:e2e_flow}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\caption{Mô tả chi tiết từng bước trong luồng xử lý E2E}
+\label{tab:workflow}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{>{\bfseries\centering}p{1.5cm} p{4cm} p{6.5cm}}
+\toprule
+\textbf{Bước} & \textbf{Tên} & \textbf{Chi tiết} \\
+\midrule
+B1 & Tiếp nhận \& Phân rã & Operator nhập câu hỏi. Orchestrator phân tích và giao song song cho Simulation Agent \& Legal Agent. \\
+\rowcolor{rowgray}
+B2 & Mô phỏng Số liệu & Simulation Agent kích hoạt ADE với Tensor hiện tại + Vector sự cố. Kết quả ($\sim$200ms) lưu vào In-memory DB. \\
+B3 & Truy xuất Tri thức & Legal Agent dùng XiYanSQL và Semantic Search để lấy SOP + căn cứ pháp lý. \\
+\rowcolor{rowgray}
+B4 & Sinh Đề xuất Sơ bộ & Evaluation Agent tổng hợp kết quả từ B2 và B3, sinh phương án phân luồng. \\
+B5 & CF-VLA Reflection & Kích hoạt mô phỏng lần 2 với tải surge tại nút lân cận. Kiểm tra V/C $\leq 0{,}9$. \\
+\rowcolor{rowgray}
+B6 & Hiệu chỉnh (nếu cần) & Nếu V/C $> 0{,}9$, hiệu chỉnh phương án và lặp lại B5 (tối đa 3 lần). \\
+B7 & Xuất Báo cáo & Phương án an toàn được định dạng JSON + text và đẩy lên Dashboard. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Ngăn xếp Công nghệ (Technology Stack)}
+
+\begin{table}[H]
+\centering
+\caption{Ngăn xếp công nghệ của hệ thống STWI}
+\label{tab:techstack}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{p{2.5cm} p{3.5cm} p{6.2cm}}
+\toprule
+\textbf{Tầng} & \textbf{Công nghệ} & \textbf{Vai trò} \\
+\midrule
+\multirow{3}{*}{Tầng 1} & YOLOv8 & Object detection trên luồng video CCTV \\
+  & ByteTrack & Multi-object tracking, chống đếm trùng \\
+  & InfluxDB + TimescaleDB & Lưu trữ chuỗi thời gian tần suất cao \\
+\midrule
+\rowcolor{rowgray}
+\multirow{3}{*}{Tầng 2} & PyTorch 2.x & Training và inference STGCN + LSTM \\
+\rowcolor{rowgray}
+  & torch-geometric & Graph neural network layers \\
+\rowcolor{rowgray}
+  & MLflow & Theo dõi thí nghiệm và quản lý mô hình \\
+\midrule
+\multirow{3}{*}{Tầng 3} & Qdrant / Milvus & Vector database engine \\
+  & BGE-m3 & Multilingual embedding model \\
+  & XiYanSQL + DuckDB & Text-to-SQL + In-memory analytics \\
+\midrule
+\rowcolor{rowgray}
+\multirow{3}{*}{Tầng 4} & LangChain / CrewAI & Multi-agent orchestration framework \\
+\rowcolor{rowgray}
+  & FastAPI & REST API server (async) \\
+\rowcolor{rowgray}
+  & React + WebSocket & Dashboard real-time \\
+\midrule
+\multirow{2}{*}{Hạ tầng} & Docker Compose & Container orchestration (dev) \\
+  & GitHub Actions & CI/CD --- Build, Test, Release PDF \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Quy chuẩn Kỹ thuật Bắt buộc}
+
+\begin{tcolorbox}[dangerbox]
+Các quy chuẩn trong phần này là \textbf{bất khả xâm phạm}. Mọi thay đổi yêu cầu phê duyệt của Hội đồng Kiến trúc. Vi phạm bất kỳ quy chuẩn nào sẽ khiến bản build bị từ chối (CI fail).
+\end{tcolorbox}
+
+\begin{table}[H]
+\centering
+\caption{Quy chuẩn kỹ thuật bắt buộc của hệ thống STWI}
+\label{tab:constraints}
+\renewcommand{\arraystretch}{1.5}
+\begin{tabular}{>{\bfseries}p{1cm} p{4.5cm} p{6cm}}
+\toprule
+\textbf{QC} & \textbf{Quy chuẩn} & \textbf{Chi tiết / Ngưỡng} \\
+\midrule
+QC-1 & Latency End-to-End & Tổng thời gian từ câu hỏi đến báo cáo \textbf{$< 3$ phút} \\
+\rowcolor{rowgray}
+QC-2 & TTP (Time-to-Prediction) & Surrogate Model inference $P_{99}$ \textbf{$< 500$ms} \\
+QC-3 & Tensor Shape & Input \textbf{bắt buộc} là \texttt{[Batch, 12, 14]}. Mọi thay đổi qua HĐ Kiến trúc \\
+\rowcolor{rowgray}
+QC-4 & Chuẩn hóa dữ liệu & Toàn bộ features qua \texttt{MinMaxScaler} về dải \textbf{$(0, 1)$} \\
+QC-5 & CF-VLA bắt buộc & \textbf{KHÔNG ĐƯỢC} bypass luồng Counterfactual Reflection \\
+\rowcolor{rowgray}
+QC-6 & Ngưỡng an toàn V/C & Phương án chỉ được phê duyệt khi V/C $\leq 0{,}9$ tại \textbf{tất cả} nút \\
+QC-7 & No-Hallucination & Mọi đề xuất \textbf{phải có} trích dẫn pháp lý \texttt{legal\_grounding} \\
+\rowcolor{rowgray}
+QC-8 & Nhãn cảnh báo & Phương án ngoài SOP phải gắn nhãn \texttt{[CANH BAO -- CHUA KIEM CHUNG]} \\
+\bottomrule
+\end{tabular}
+\end{table}

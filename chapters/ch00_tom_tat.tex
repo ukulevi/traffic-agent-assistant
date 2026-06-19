@@ -1,0 +1,25 @@
+Báo cáo này trình bày đặc tả kỹ thuật toàn diện cho hệ thống \textbf{SmartTraffic What-If (STWI)} --- một nền tảng điều phối giao thông đô thị thông minh thế hệ mới được phát triển tại Trường Đại học Bách Khoa, Đại học Quốc gia TP.HCM.
+
+Hệ thống STWI được thiết kế nhằm giải quyết bài toán cốt lõi trong quản lý giao thông đô thị: \textit{khả năng dự báo và phản ứng theo thời gian thực với các kịch bản sự cố bất ngờ}. Thay vì chỉ giám sát tình trạng giao thông hiện tại, STWI cho phép người điều hành đặt các câu hỏi ``What-if'' (Điều gì xảy ra nếu...) bằng ngôn ngữ tự nhiên và nhận được báo cáo phân tích chi tiết, đề xuất phương án điều phối có căn cứ pháp lý, trong thời gian dưới 3 phút.
+
+\bigskip
+\textbf{Kiến trúc hệ thống} được tổ chức thành 4 tầng (Tiers) tương tác khép kín:
+
+\begin{itemize}[leftmargin=1.5cm, itemsep=4pt]
+  \item \textbf{Tầng 1 --- Thu thập \& Chuẩn hóa Dữ liệu:} Xử lý luồng dữ liệu đa phương thức từ 1.000 camera CCTV (dùng YOLOv8 + ByteTrack) và mạng lưới cảm biến môi trường (CO, NO$_x$, PM$_{2.5}$, v.v.), chuẩn hóa qua MinMaxScaler thành Tensor 3D có shape \texttt{[Batch, 12, 14]}.
+
+  \item \textbf{Tầng 2 --- Dự báo \& Giả lập:} Mô hình học sâu lai STGCN + Stacked LSTM nắm bắt đặc trưng Không gian--Thời gian của dòng xe. Mô hình thay thế ADE (Adversarial Diverse Deep Ensemble) cho phép suy luận kịch bản trong thời gian $<500$ms.
+
+  \item \textbf{Tầng 3 --- Tri thức Đô thị (RAG):} Vector Database lưu trữ SOP và Luật GTĐB được nhúng bằng BGE-m3. Module XiYanSQL dịch câu hỏi tự nhiên sang SQL để truy vấn chính xác số liệu cấu trúc. RealGen tái tạo các kịch bản cận biên (Corner Cases) để tăng độ chính xác.
+
+  \item \textbf{Tầng 4 --- Tác tử Điều phối (Multi-Agent):} Khung đa tác tử xây dựng trên LangChain/CrewAI với Orchestrator điều phối 3 tác tử con. Cơ chế CF-VLA (Counterfactual--Vision--Language--Action) thực hiện phản biện phản thực tế bắt buộc trước khi xuất bất kỳ đề xuất nào, đảm bảo V/C ratio tại tất cả nút lân cận $\leq 0{,}9$.
+\end{itemize}
+
+\bigskip
+\textbf{Các kết quả kỳ vọng:} Hệ thống đạt thời gian phản hồi end-to-end dưới 3 phút, thời gian suy luận lõi AI ($P_{99}$) dưới 500ms, 100\% đề xuất có trích dẫn pháp lý (Zero Hallucination Policy), và tự động hiệu chỉnh phương án khi phát hiện nguy cơ tắc nghẽn tầng (Cascade Congestion).
+
+\bigskip
+\textbf{Cấu trúc báo cáo:} Tài liệu gồm 10 chương, bao phủ từ cơ sở lý thuyết (Chương 2), đặc tả kỹ thuật chi tiết từng tầng (Chương 3--7), kế hoạch triển khai theo giai đoạn (Chương 8), phương pháp đánh giá (Chương 9) và phân tích rủi ro (Chương 10), kèm theo phụ lục đặc tả API và schema dữ liệu.
+
+\bigskip
+\noindent\textbf{Từ khóa:} Điều phối giao thông thông minh, STGCN, LSTM, Neural Surrogate Model, RAG, Multi-Agent AI, Counterfactual Reasoning, What-if Analysis, CF-VLA.

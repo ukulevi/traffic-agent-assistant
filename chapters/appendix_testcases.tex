@@ -1,0 +1,89 @@
+\section{Bộ Câu hỏi Kiểm thử Chức năng (Functional Test Suite)}
+
+Bộ câu hỏi kiểm thử được thiết kế để bao phủ tất cả luồng xử lý chính của hệ thống STWI.
+
+\begin{longtable}{>{\centering}p{0.8cm} p{5cm} p{4cm} p{2.8cm}}
+\caption{Bộ câu hỏi kiểm thử hệ thống STWI (30 kịch bản)} \label{tab:testcases} \\
+\toprule
+\textbf{TC} & \textbf{Kịch bản What-if} & \textbf{Kết quả mong đợi} & \textbf{CF-VLA} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{TC} & \textbf{Kịch bản What-if} & \textbf{Kết quả mong đợi} & \textbf{CF-VLA} \\
+\midrule
+\endhead
+\bottomrule
+\endlastfoot
+
+TC01 & Tai nạn tại ngã tư Nguyễn Huệ -- Lê Lợi, đóng 2 làn phía Bắc & Phân luồng sang Đồng Khởi + SOP-14 citation & Iteration 1--2 \\
+\rowcolor{rowgray}
+TC02 & Ngập úng tuyến đường Nguyễn Văn Cừ đoạn Q5, mực nước 30cm & Cấm xe máy; đề xuất phân luồng ô tô & Iteration 1 \\
+TC03 & Đóng cầu Sài Gòn để bảo dưỡng 48 giờ & Phân luồng qua cầu Thủ Thiêm; kiểm tra V/C 3 nút & Iteration 2 \\
+\rowcolor{rowgray}
+TC04 & Sự kiện hòa nhạc tại SVĐ Thống Nhất (20.000 người), dự kiến 21:00 & Tăng tần suất đèn xanh đường Đinh Tiên Hoàng & Iteration 1 \\
+TC05 & Tai nạn liên hoàn 3 xe tải tại nút giao Bình Chánh & Kích hoạt RealGen (corner case); SOP khẩn cấp & Iteration 3 \\
+\rowcolor{rowgray}
+TC06 & Vỡ ống nước đường 3/2, Q10, ước tính sửa chữa 4 giờ & Phân luồng sang Cách mạng Tháng 8 & Iteration 1 \\
+TC07 & Xe container lật tại nút giao Xa Lộ Hà Nội -- Bình Thái & Đóng toàn bộ hướng; đề xuất 2 tuyến thay thế & Iteration 2 \\
+\rowcolor{rowgray}
+TC08 & Biểu tình tập hợp (không cho phép xe) tại khu vực Nhà thờ Đức Bà & [CANH BAO] label; không có SOP cụ thể & Không có SOP \\
+TC09 & Mưa lớn cấp 9, ngập 5 điểm trên đường Kinh Dương Vương & Phân cấp ưu tiên 5 điểm ngập; RealGen flood & Iteration 2 \\
+\rowcolor{rowgray}
+TC10 & Cháy nổ tại nhà máy KCN Tân Bình, cần thông xe cho PCCC & Ưu tiên tuyệt đối xe PCCC theo Luật GT Điều 22 & Iteration 1 \\
+TC11 & Đường Hoàng Văn Thụ kẹt cứng do 3 sự cố cùng lúc & Multi-incident handling; Cascade check 5 nút & Iteration 3 \\
+\rowcolor{rowgray}
+TC12 & Kiểm tra SQL: V/C ratio ngã tư A sau simulation? & XiYanSQL trả về giá trị số chính xác & Không áp dụng \\
+TC13 & Tốc độ trung bình trục đường Nam Kỳ Khởi Nghĩa sau 30 phút? & avg\_velocity từ In-memory DB & Không áp dụng \\
+\rowcolor{rowgray}
+TC14 & Đóng cả 4 làn đường X vĩnh viễn & CF-VLA phát hiện không hội tụ; xuất [CANH BAO] & Iteration 3 (fail) \\
+TC15 & Kịch bản tốt nhất: không đóng đường nào & Confirm trạng thái bình thường; no action needed & Iteration 1 \\
+\end{longtable}
+
+\section{Kịch bản Kiểm thử CF-VLA Đặc biệt}
+
+\begin{table}[H]
+\centering
+\caption{Kiểm thử tập trung vào CF-VLA Safety Loop}
+\label{tab:cfvla_tests}
+\renewcommand{\arraystretch}{1.5}
+\begin{tabular}{>{\centering}p{1.2cm} p{5cm} p{4cm} p{2cm}}
+\toprule
+\textbf{Test} & \textbf{Điều kiện} & \textbf{Kỳ vọng} & \textbf{Pass/Fail} \\
+\midrule
+CFT01 & Gọi API với \texttt{cf\_vla\_enabled=false} & HTTP 400 + \texttt{CF\_VLA\_DISABLED} & Pass \\
+\rowcolor{rowgray}
+CFT02 & Đề xuất tốt, V/C tất cả nút $\leq 0{,}9$ ngay lần 1 & Xuất ngay, \texttt{iterations=1} & Pass \\
+CFT03 & V/C nút C = 0.95 lần 1, correction hạ xuống 0.83 & \texttt{iterations=2}, correction log đầy đủ & Pass \\
+\rowcolor{rowgray}
+CFT04 & Sau 3 lần lặp vẫn V/C $> 0{,}9$ & Xuất với \texttt{[CANH BAO -- CHUA KIEM CHUNG]} & Pass \\
+CFT05 & Đo thời gian CF-VLA (2 iterations) & Tổng CF-VLA $< 1{,}5$s & Pass \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Tiêu chí Chấp nhận Hệ thống (System Acceptance Criteria)}
+
+\begin{table}[H]
+\centering
+\caption{Bảng tiêu chí chấp nhận hệ thống STWI trước khi go-live}
+\label{tab:acceptance}
+\renewcommand{\arraystretch}{1.5}
+\begin{tabular}{>{\centering}p{1cm} p{5cm} p{3cm} p{3cm}}
+\toprule
+\textbf{AC} & \textbf{Tiêu chí} & \textbf{Phương pháp kiểm tra} & \textbf{Ngưỡng} \\
+\midrule
+AC-1 & TTP ADE $P_{99}$ & Automated benchmark 1.000 runs & $< 500$ms \\
+\rowcolor{rowgray}
+AC-2 & E2E Latency $P_{99}$ (10 concurrent) & Load test 30 phút & $< 3$ phút \\
+AC-3 & CF-VLA luôn bật & 100 API calls kiểm tra log & 100\% ON \\
+\rowcolor{rowgray}
+AC-4 & No-Hallucination rate & Review 50 responses bởi luật sư & 100\% valid citation \\
+AC-5 & Data Pipeline uptime & Giám sát 72h liên tục & $> 99{,}5\%$ \\
+\rowcolor{rowgray}
+AC-6 & RAG Recall@5 & Đánh giá trên 50 câu hỏi chuẩn & $> 90\%$ \\
+AC-7 & CF-VLA hội tụ trong $\leq 3$ vòng & 30 kịch bản kiểm thử SC-A--F & $> 90\%$ kịch bản \\
+\rowcolor{rowgray}
+AC-8 & Tensor shape validation & CI pipeline assertion & 100\% pass \\
+\bottomrule
+\end{tabular}
+\end{table}
