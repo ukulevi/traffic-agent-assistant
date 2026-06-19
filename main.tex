@@ -1,36 +1,51 @@
 \documentclass[12pt,a4paper]{report}
 
 % ============ PACKAGES ============
+% 1. Document geometry and fonts
 \usepackage{geometry}
 \usepackage{fontspec}
-\usepackage{polyglossia}
-\setdefaultlanguage{vietnamese}
-\setotherlanguage{english}
+\usepackage[vietnamese]{babel}
+
+% 2. Math
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+
+% 3. Colors (must come before tikz, tcolorbox, listings)
+\usepackage[dvipsnames,svgnames,x11names]{xcolor}
+
+% 4. Graphics and diagrams
 \usepackage{graphicx}
 \usepackage{float}
-\usepackage{tabularx}
-\usepackage{hyperref}
-\usepackage{titlesec}
-\usepackage{setspace}
-\usepackage{indentfirst}
-\usepackage{enumitem}
-\usepackage{fancyhdr}
-\usepackage{tocloft}
-\usepackage{array}
-\usepackage{xcolor}
 \usepackage{tikz}
 \usepackage{pgfgantt}
 \usepackage{pdflscape}
-\usepackage{listings}
+\usepackage{rotating}
+
+% 5. Tables
+\usepackage{tabularx}
+\usepackage{array}
 \usepackage{multirow}
 \usepackage{colortbl}
 \usepackage{booktabs}
 \usepackage{longtable}
-\usepackage{amsmath}
-\usepackage{amssymb}
-\usepackage{amsthm}
+\usepackage{makecell}
+\usepackage{diagbox}
+
+% 6. Code and algorithms
+\usepackage{listings}
 \usepackage[ruled,vlined,linesnumbered]{algorithm2e}
+
+% 7. Boxes
 \usepackage[most]{tcolorbox}
+
+% 8. Layout and typography
+\usepackage{titlesec}
+\usepackage{setspace}
+\usepackage{indentfirst}
+\usepackage[shortlabels]{enumitem}
+\usepackage{fancyhdr}
+\usepackage{tocloft}
 \usepackage{caption}
 \usepackage{subcaption}
 \usepackage{chngcntr}
@@ -38,9 +53,9 @@
 \usepackage{microtype}
 \usepackage{perpage}
 \usepackage{pifont}
-\usepackage{makecell}
-\usepackage{diagbox}
-\usepackage{rotating}
+
+% 9. hyperref LAST (standard LaTeX practice)
+\usepackage{hyperref}
 
 % TikZ libraries
 \usetikzlibrary{

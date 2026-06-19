@@ -59,6 +59,13 @@ jobs:
             -halt-on-error
             -file-line-error
 
+      - name: Show LaTeX Errors on Failure
+        if: failure()
+        run: |
+          echo "=== LaTeX Error Log (last 100 lines) ==="
+          tail -100 main.log 2>/dev/null || echo "(main.log not found)"
+          echo "=== End of Log ==="
+
       - name: Verify PDF was created
         run: |
           if [ -f main.pdf ]; then
