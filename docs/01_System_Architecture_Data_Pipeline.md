@@ -9,7 +9,6 @@
 | **Phiên bản** | 1.1 |
 | **Ngày tạo** | 15/06/2026 |
 | **Cập nhật lần cuối** | 15/06/2026 |
-| **Tác giả** | Nhóm Nghiên cứu STWI |
 | **Trạng thái** | 📝 Đang soạn thảo (Draft) |
 | **Phân loại** | Tài liệu nội bộ — Đặc tả kỹ thuật |
 

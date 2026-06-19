@@ -1,0 +1,211 @@
+\documentclass[12pt,a4paper]{article}
+
+% Packages
+\usepackage{geometry}
+\usepackage{fontspec}
+\usepackage[vietnamese]{babel}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{tabularx}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{setspace}
+\usepackage{indentfirst}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{tocloft}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{pdflscape}
+\usepackage{listings}
+\usepackage[textfont=it,labelfont=normalfont]{caption}
+\usepackage{chngcntr}
+
+% Pandoc compatibility packages
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{calc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+% Define colors
+\definecolor{bkblue}{RGB}{0,102,153}
+
+% Removed XeTeX font settings
+
+\lstset{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    tabsize=2,
+    language=Verilog,
+    keywordstyle=\color{blue}\bfseries,
+    commentstyle=\color{green!60!black}
+}
+
+\counterwithin{figure}{section}
+\counterwithin{table}{section}
+
+% Footnote settings - reset per page
+\usepackage{perpage}
+\MakePerPage{footnote}
+
+% Main geometry for portrait pages
+\geometry{
+ a4paper,
+ left=2.5cm,
+ right=2.5cm,
+ top=2cm,
+ bottom=2cm,
+}
+
+% Set font size to 13pt for main content
+\renewcommand{\normalsize}{\fontsize{13pt}{15.6pt}\selectfont}
+\normalsize
+
+% Paragraph formatting per regulations
+\setlength{\parindent}{1cm}
+\setlength{\parskip}{6pt}
+\linespread{1.3}
+
+% Section formatting
+\titleformat{\section}
+  {\centering\normalfont\fontsize{14}{17}\bfseries\MakeUppercase}
+  {CHƯƠNG \thesection.\ }{0em}{}
+\titlespacing*{\section}{0pt}{12pt}{6pt}
+
+\titleformat{\subsection}
+  {\normalfont\fontsize{13}{16}\bfseries}
+  {\thesubsection.}{0.5em}{}
+
+\titleformat{\subsubsection}
+  {\normalfont\fontsize{13}{16}\itshape}
+  {\thesubsubsection.}{0.5em}{}
+
+% Page numbering
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+
+\begin{document}
+
+\begin{titlepage}
+    \newgeometry{left=1.5cm, right=1.5cm, top=1cm, bottom=1cm}
+    
+    % Khung viền xanh kép
+    \begin{tikzpicture}[remember picture, overlay]
+        \draw[bkblue, line width=2pt] 
+            ([shift={(0.8cm,-0.8cm)}]current page.north west) 
+            rectangle 
+            ([shift={(-0.8cm,0.8cm)}]current page.south east);
+        \draw[bkblue, line width=0.5pt] 
+            ([shift={(1cm,-1cm)}]current page.north west) 
+            rectangle 
+            ([shift={(-1cm,1cm)}]current page.south east);
+    \end{tikzpicture}
+    
+    \centering
+    
+    \vspace*{0.5cm}
+    
+    {\fontsize{14}{17}\selectfont \textbf{TRƯỜNG ĐẠI HỌC BÁCH KHOA}}
+    
+    \vspace{0.2cm}
+    
+    {\fontsize{14}{17}\selectfont \textbf{ĐẠI HỌC QUỐC GIA -- THÀNH PHỐ HỒ CHÍ MINH}}
+    
+    \vspace{0.3cm}
+    
+    {\color{bkblue} \textbf{------}}
+    
+    \vspace{0.8cm}
+    
+    % \includegraphics[height=2.5cm]{images/logo_bk.png} % Nếu có
+    
+    \vspace{1cm}
+    
+    {\fontsize{14}{17}\selectfont \textbf{BÁO CÁO ĐẶC TẢ KỸ THUẬT DỰ ÁN}}
+    
+    \vspace{0.3cm}
+    
+    {\fontsize{14}{17}\selectfont \color{bkblue} \textbf{DỰ ÁN:}}
+    
+    \vspace{0.2cm}
+    
+    {\fontsize{18}{22}\selectfont \textbf{SMARTTRAFFIC WHAT-IF (STWI)}}
+
+    \vspace{1.2cm}
+    
+    {\fontsize{13}{16}\selectfont \textbf{HỆ THỐNG ĐIỀU PHỐI GIAO THÔNG THÔNG MINH}}
+    
+    \vspace{1.5cm}
+    
+    \begin{center}
+    \renewcommand{\arraystretch}{1.4}
+    \fontsize{12}{15}\selectfont
+    \begin{tabular}{ll}
+        \textbf{Mã tài liệu:} & STWI-DOC-SYSTEM \\
+        \textbf{Phiên bản:} & 1.1 \\
+        \textbf{Trạng thái:} & Bản đặc tả kỹ thuật tổng thể \\
+        \textbf{Phân loại:} & Tài liệu kỹ thuật dự án \\
+    \end{tabular}
+    \end{center}
+    
+    \vfill
+    
+    {\fontsize{13}{16}\selectfont \textit{Thành phố Hồ Chí Minh -- \the\year}}
+    
+    \vspace{0.5cm}
+    
+    \restoregeometry
+\end{titlepage}
+
+% ============ TÓM TẮT TỪ VỰNG ============
+\newpage
+\section*{DANH MỤC CÁC TỪ VIẾT TẮT}
+\addcontentsline{toc}{section}{DANH MỤC CÁC TỪ VIẾT TẮT}
+
+\begin{tabular}{l p{12cm}}
+    \textbf{STWI} & SmartTraffic What-If (Hệ thống giả lập giao thông thông minh) \\
+    \textbf{SOP} & Standard Operating Procedure (Quy trình vận hành tiêu chuẩn) \\
+    \textbf{RAG} & Retrieval-Augmented Generation (Truy xuất tăng cường phát sinh) \\
+    \textbf{STGCN} & Spatio-Temporal Graph Convolutional Network (Mạng nơ-ron đồ thị không-thời gian) \\
+    \textbf{LSTM} & Long Short-Term Memory (Mạng bộ nhớ ngắn dài hạn) \\
+    \textbf{CF-VLA} & Counterfactual Vision-Language-Action (Mô hình Phản thực tế - Thị giác - Ngôn ngữ - Hành động) \\
+    \textbf{ADE} & Adversarial Diverse Deep Ensemble (Thuật toán học máy dự báo biên) \\
+    \textbf{GTĐB} & Giao thông đường bộ \\
+\end{tabular}
+
+% ============ MỤC LỤC ============
+\newpage
+\tableofcontents
+
+% ============ NỘI DUNG ============
+\newpage
+\input{chapters/00_STWI_Summary_and_Guidelines.tex}
+\newpage
+\input{chapters/01_System_Architecture_Data_Pipeline.tex}
+\newpage
+\input{chapters/02_ML_and_Simulation_Specification.tex}
+\newpage
+\input{chapters/03_Knowledge_Base_and_RAG_Design.tex}
+\newpage
+\input{chapters/04_AI_Agent_Orchestrator_CF_VLA.tex}
+
+% ============ TÀI LIỆU THAM KHẢO ============
+\newpage
+\addcontentsline{toc}{section}{TÀI LIỆU THAM KHẢO}
+\begin{thebibliography}{99}
+    \bibitem{bushnell} \textbf{Michael L. Bushnell, Vishwani D. Agrawal}, \textit{Essentials of Electronic Testing for Digital, Memory and Mixed-Signal VLSI Circuits}, Springer, 2000. \textbf{Chương 7: Design for Testability}.
+    \bibitem{wang2006} \textbf{Laung-Terng Wang, Cheng-Wen Wu, Xiaoqing Wen}, \textit{VLSI Test Principles and Architectures: Design for Testability}, Morgan Kaufmann, 2006.
+    \bibitem{nthu} \textbf{NTHU DFT Lecture Slides} -- \textit{Full Scan vs Partial Scan comparison}, National Tsing Hua University, Department of CS.
+    \bibitem{umar} \textbf{Rana Umar Nadeem} -- \textit{Design for Testability: Scan Chain Architectures}, Technical Publication/Blog series on DFT.
+    \bibitem{synopsys_test} \textbf{Synopsys, Inc.} -- \textit{Test Compression Technology}, Whitepaper/Documentation on Adaptive Scanning.
+    \bibitem{synopsys_dft} \textbf{Synopsys, Inc.} -- \textit{DFT Compiler User Guide}, Official tool documentation for scan synthesis and insertion.
+    \bibitem{eichelberger} \textbf{E. B. Eichelberger} -- \textit{IBM LSSD Architecture}, LSSD standard for Level-Sensitive Scan Design.
+    \bibitem{abramovici} \textbf{Miron Abramovici, et al.} -- \textit{Digital System Test and Testable Design}, Nguồn trích xuất các sơ đồ khối và hình ảnh minh họa trong các slide mạch khả kiểm.
+\end{thebibliography}
+
+\end{document}
