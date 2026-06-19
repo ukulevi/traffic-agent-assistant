@@ -1,9 +1,9 @@
-\documentclass[12pt,a4paper]{article}
+\documentclass[12pt,a4paper]{report}
 
-% Packages
+% ============ PACKAGES ============
 \usepackage{geometry}
 \usepackage{fontspec}
-\usepackage[vietnamese]{babel}
+\usepackage[vietnamese,english]{babel}
 \usepackage{graphicx}
 \usepackage{float}
 \usepackage{tabularx}
@@ -17,205 +17,484 @@
 \usepackage{array}
 \usepackage{xcolor}
 \usepackage{tikz}
+\usepackage{pgfgantt}
 \usepackage{pdflscape}
 \usepackage{listings}
-\usepackage[textfont=it,labelfont=normalfont]{caption}
-\usepackage{chngcntr}
-
-% Pandoc compatibility packages
-\usepackage{longtable}
+\usepackage{multirow}
+\usepackage{colortbl}
 \usepackage{booktabs}
-\usepackage{calc}
+\usepackage{longtable}
 \usepackage{amsmath}
 \usepackage{amssymb}
-\providecommand{\tightlist}{%
-  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
-\newcommand{\passthrough}[1]{#1}
+\usepackage{amsthm}
+\usepackage[ruled,vlined,linesnumbered]{algorithm2e}
+\usepackage[most]{tcolorbox}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{chngcntr}
+\usepackage{calc}
+\usepackage{microtype}
+\usepackage{perpage}
+\usepackage{pifont}
+\usepackage{makecell}
+\usepackage{diagbox}
+\usepackage{rotating}
 
-% Scale images if necessary, so that they will not overflow the page margins
+% TikZ libraries
+\usetikzlibrary{
+  arrows.meta,
+  positioning,
+  shapes.geometric,
+  shapes.misc,
+  fit,
+  backgrounds,
+  decorations.pathreplacing,
+  calc,
+  shadows.blur,
+  patterns,
+  matrix,
+  chains,
+  mindmap,
+  trees
+}
+
+% ============ FONTS ============
+\setmainfont[Ligatures=TeX]{TeX Gyre Termes}
+\setmonofont[Scale=0.85]{TeX Gyre Cursor}
+\setsansfont[Ligatures=TeX]{TeX Gyre Heros}
+
+% ============ COLORS ============
+\definecolor{bkblue}{RGB}{0,82,165}
+\definecolor{bklightblue}{RGB}{219,234,254}
+\definecolor{tier1col}{RGB}{30,58,95}
+\definecolor{tier2col}{RGB}{59,31,110}
+\definecolor{tier3col}{RGB}{26,77,26}
+\definecolor{tier4col}{RGB}{92,45,0}
+\definecolor{accentorange}{RGB}{234,88,12}
+\definecolor{codegreen}{rgb}{0,0.55,0}
+\definecolor{codegray}{rgb}{0.45,0.45,0.45}
+\definecolor{codeblue}{rgb}{0.1,0.1,0.75}
+\definecolor{codeback}{RGB}{248,248,252}
+\definecolor{alertblue}{RGB}{219,234,254}
+\definecolor{alertyellow}{RGB}{254,249,195}
+\definecolor{alertred}{RGB}{254,226,226}
+\definecolor{alertgreen}{RGB}{220,252,231}
+\definecolor{rowgray}{RGB}{242,242,247}
+
+% ============ LISTINGS (Python) ============
+\lstdefinestyle{pythonstyle}{
+    backgroundcolor=\color{codeback},
+    commentstyle=\color{codegreen}\itshape,
+    keywordstyle=\color{codeblue}\bfseries,
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{orange!80!black},
+    basicstyle=\ttfamily\small,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=6pt,
+    showspaces=false,
+    showstringspaces=false,
+    tabsize=4,
+    frame=single,
+    framerule=0.5pt,
+    rulecolor=\color{gray!40},
+    language=Python,
+    morekeywords={self,True,False,None,import,from,as,with,yield,lambda,assert,pass,raise,del,global,nonlocal,def,class,return,if,else,elif,for,while,break,continue,and,or,not,in,is,try,except,finally}
+}
+\lstset{style=pythonstyle}
+
+% ============ GEOMETRY (BK standard) ============
+\geometry{
+    a4paper,
+    left=3.5cm,
+    right=2.0cm,
+    top=2.5cm,
+    bottom=3.0cm,
+}
+
+% ============ FONT SIZE & SPACING ============
+\renewcommand{\normalsize}{\fontsize{13pt}{15.6pt}\selectfont}
+\normalsize
+\setlength{\parindent}{1.27cm}
+\setlength{\parskip}{6pt}
+\linespread{1.35}
+
+% ============ CHAPTER / SECTION TITLES ============
+\titleformat{\chapter}[display]
+    {\centering\normalfont\fontsize{14}{17}\bfseries\MakeUppercase}
+    {CHƯƠNG \thechapter}
+    {4pt}
+    {}
+\titlespacing*{\chapter}{0pt}{-10pt}{20pt}
+
+\titleformat{\section}
+    {\normalfont\fontsize{13}{16}\bfseries}
+    {\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{12pt}{6pt}
+
+\titleformat{\subsection}
+    {\normalfont\fontsize{13}{16}\bfseries\itshape}
+    {\thesubsection}{0.5em}{}
+\titlespacing*{\subsection}{0pt}{10pt}{4pt}
+
+\titleformat{\subsubsection}
+    {\normalfont\fontsize{13}{16}\itshape}
+    {\thesubsubsection}{0.5em}{}
+\titlespacing*{\subsubsection}{0pt}{8pt}{3pt}
+
+% ============ COUNTERS ============
+\counterwithin{figure}{chapter}
+\counterwithin{table}{chapter}
+\counterwithin{lstlisting}{chapter}
+\MakePerPage{footnote}
+
+% ============ PAGE STYLE ============
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\itshape Trường ĐH Bách Khoa -- ĐHQG TP.HCM}
+\fancyhead[R]{\small\itshape Dự án STWI -- Hệ thống Điều phối Giao thông AI}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\setlength{\headheight}{16pt}
+
+\fancypagestyle{plain}{
+  \fancyhf{}
+  \fancyfoot[C]{\thepage}
+  \renewcommand{\headrulewidth}{0pt}
+}
+
+% ============ HYPERREF ============
+\hypersetup{
+    colorlinks=true,
+    linkcolor=bkblue,
+    citecolor=bkblue,
+    urlcolor=codeblue,
+    pdftitle={Bao cao Ky thuat Du an SmartTraffic What-If (STWI)},
+    pdfauthor={Nhom STWI},
+    bookmarksnumbered=true,
+}
+
+% ============ TCOLORBOX STYLES ============
+\tcbset{
+    notebox/.style={enhanced,colback=alertblue!40,colframe=codeblue!60,
+        fonttitle=\bfseries\small,title=Ghi chú,left=4pt,right=4pt,top=3pt,bottom=3pt},
+    warnbox/.style={enhanced,colback=alertyellow!60,colframe=orange!70!black,
+        fonttitle=\bfseries\small,title=Cảnh báo,left=4pt,right=4pt,top=3pt,bottom=3pt},
+    dangerbox/.style={enhanced,colback=alertred!50,colframe=red!65!black,
+        fonttitle=\bfseries\small,title=Quan trọng,left=4pt,right=4pt,top=3pt,bottom=3pt},
+    tipbox/.style={enhanced,colback=alertgreen!50,colframe=green!50!black,
+        fonttitle=\bfseries\small,title=Mẹo kỹ thuật,left=4pt,right=4pt,top=3pt,bottom=3pt},
+}
+
+% ============ ALGORITHM2E ============
+\SetAlgoLined
+\SetKwInOut{Input}{Đầu vào}
+\SetKwInOut{Output}{Đầu ra}
+\SetKwComment{Comment}{/* }{ */}
+\SetAlCapFnt{\small}
+\SetAlCapNameFnt{\small}
+
+% ============ PANDOC COMPAT ============
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\newcommand{\passthrough}[1]{#1}
 \makeatletter
-\def\maxwidth{\ifdim\Gin@nat@width>\textwidth\textwidth\else\Gin@nat@width\fi}
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
 \def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
 \makeatother
 \setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
 
-% Define colors
-\definecolor{bkblue}{RGB}{0,102,153}
-
-% Removed XeTeX font settings
-
-\lstset{
-    basicstyle=\ttfamily\small,
-    breaklines=true,
-    frame=single,
-    tabsize=2,
-    language=Verilog,
-    keywordstyle=\color{blue}\bfseries,
-    commentstyle=\color{green!60!black}
+% ============ TIKZ GLOBAL STYLES ============
+\tikzset{
+  sysbox/.style={rectangle, rounded corners=4pt, draw=#1!70, fill=#1!15,
+    text width=3.5cm, align=center, minimum height=1.2cm, font=\small\bfseries, text=#1!80!black},
+  arrow/.style={-{Stealth[length=6pt]}, thick},
+  dasharrow/.style={-{Stealth[length=6pt]}, thick, dashed},
+  groupbox/.style={rectangle, rounded corners=6pt, draw=#1!60!black, fill=#1!8,
+    dashed, line width=1.2pt},
+  decnode/.style={diamond, draw=accentorange!80, fill=alertyellow!50, aspect=2.5,
+    text width=2.8cm, align=center, font=\small\bfseries},
+  procnode/.style={rectangle, rounded corners=3pt, draw=codeblue!70, fill=alertblue!30,
+    text width=3.2cm, align=center, minimum height=0.9cm, font=\small},
+  startend/.style={ellipse, draw=bkblue!70, fill=bklightblue!60,
+    minimum width=2.2cm, minimum height=0.8cm, align=center, font=\small\bfseries},
 }
-
-\counterwithin{figure}{section}
-\counterwithin{table}{section}
-
-% Footnote settings - reset per page
-\usepackage{perpage}
-\MakePerPage{footnote}
-
-% Main geometry for portrait pages
-\geometry{
- a4paper,
- left=2.5cm,
- right=2.5cm,
- top=2cm,
- bottom=2cm,
-}
-
-% Set font size to 13pt for main content
-\renewcommand{\normalsize}{\fontsize{13pt}{15.6pt}\selectfont}
-\normalsize
-
-% Paragraph formatting per regulations
-\setlength{\parindent}{1cm}
-\setlength{\parskip}{6pt}
-\linespread{1.3}
-
-% Section formatting
-\titleformat{\section}
-  {\centering\normalfont\fontsize{14}{17}\bfseries\MakeUppercase}
-  {CHƯƠNG \thesection.\ }{0em}{}
-\titlespacing*{\section}{0pt}{12pt}{6pt}
-
-\titleformat{\subsection}
-  {\normalfont\fontsize{13}{16}\bfseries}
-  {\thesubsection.}{0.5em}{}
-
-\titleformat{\subsubsection}
-  {\normalfont\fontsize{13}{16}\itshape}
-  {\thesubsubsection.}{0.5em}{}
-
-% Page numbering
-\pagestyle{fancy}
-\fancyhf{}
-\fancyfoot[C]{\thepage}
-\renewcommand{\headrulewidth}{0pt}
 
 \begin{document}
 
+% ============================================================
+% BÌA (TITLE PAGE)
+% ============================================================
 \begin{titlepage}
-    \newgeometry{left=1.5cm, right=1.5cm, top=1cm, bottom=1cm}
-    
-    % Khung viền xanh kép
-    \begin{tikzpicture}[remember picture, overlay]
-        \draw[bkblue, line width=2pt] 
-            ([shift={(0.8cm,-0.8cm)}]current page.north west) 
-            rectangle 
-            ([shift={(-0.8cm,0.8cm)}]current page.south east);
-        \draw[bkblue, line width=0.5pt] 
-            ([shift={(1cm,-1cm)}]current page.north west) 
-            rectangle 
-            ([shift={(-1cm,1cm)}]current page.south east);
-    \end{tikzpicture}
-    
-    \centering
-    
-    \vspace*{0.5cm}
-    
-    {\fontsize{14}{17}\selectfont \textbf{TRƯỜNG ĐẠI HỌC BÁCH KHOA}}
-    
-    \vspace{0.2cm}
-    
-    {\fontsize{14}{17}\selectfont \textbf{ĐẠI HỌC QUỐC GIA -- THÀNH PHỐ HỒ CHÍ MINH}}
-    
-    \vspace{0.3cm}
-    
-    {\color{bkblue} \textbf{------}}
-    
-    \vspace{0.8cm}
-    
-    % \includegraphics[height=2.5cm]{images/logo_bk.png} % Nếu có
-    
-    \vspace{1cm}
-    
-    {\fontsize{14}{17}\selectfont \textbf{BÁO CÁO ĐẶC TẢ KỸ THUẬT DỰ ÁN}}
-    
-    \vspace{0.3cm}
-    
-    {\fontsize{14}{17}\selectfont \color{bkblue} \textbf{DỰ ÁN:}}
-    
-    \vspace{0.2cm}
-    
-    {\fontsize{18}{22}\selectfont \textbf{SMARTTRAFFIC WHAT-IF (STWI)}}
+\newgeometry{left=1.8cm,right=1.8cm,top=1.5cm,bottom=1.5cm}
 
-    \vspace{1.2cm}
-    
-    {\fontsize{13}{16}\selectfont \textbf{HỆ THỐNG ĐIỀU PHỐI GIAO THÔNG THÔNG MINH}}
-    
-    \vspace{1.5cm}
-    
-    \begin{center}
-    \renewcommand{\arraystretch}{1.4}
-    \fontsize{12}{15}\selectfont
-    \begin{tabular}{ll}
-        \textbf{Mã tài liệu:} & STWI-DOC-SYSTEM \\
-        \textbf{Phiên bản:} & 1.1 \\
-        \textbf{Trạng thái:} & Bản đặc tả kỹ thuật tổng thể \\
-        \textbf{Phân loại:} & Tài liệu kỹ thuật dự án \\
-    \end{tabular}
-    \end{center}
-    
-    \vfill
-    
-    {\fontsize{13}{16}\selectfont \textit{Thành phố Hồ Chí Minh -- \the\year}}
-    
-    \vspace{0.5cm}
-    
-    \restoregeometry
+\begin{tikzpicture}[remember picture,overlay]
+  \draw[bkblue,line width=2.8pt]
+    ([shift={(0.8cm,-0.8cm)}]current page.north west)
+    rectangle
+    ([shift={(-0.8cm,0.8cm)}]current page.south east);
+  \draw[bkblue,line width=0.6pt]
+    ([shift={(1.05cm,-1.05cm)}]current page.north west)
+    rectangle
+    ([shift={(-1.05cm,1.05cm)}]current page.south east);
+\end{tikzpicture}
+
+\centering
+
+\vspace*{0.4cm}
+{\fontsize{14}{17}\selectfont\bfseries ĐẠI HỌC QUỐC GIA THÀNH PHỐ HỒ CHÍ MINH}\\[0.2cm]
+{\fontsize{14}{17}\selectfont\bfseries TRƯỜNG ĐẠI HỌC BÁCH KHOA}\\[0.15cm]
+{\fontsize{13}{16}\selectfont\bfseries KHOA KHOA HỌC VÀ KỸ THUẬT MÁY TÍNH}
+
+\vspace{0.3cm}
+{\color{bkblue}\rule{0.55\textwidth}{1.8pt}}
+
+\vspace{0.8cm}
+
+{\fontsize{14}{17}\selectfont\bfseries ĐỒ ÁN MÔN HỌC}\\[0.15cm]
+{\fontsize{13}{16}\selectfont BÁO CÁO ĐẶC TẢ KỸ THUẬT TỔNG THỂ}
+
+\vspace{0.9cm}
+
+{\fontsize{19}{23}\selectfont\bfseries\color{bkblue}
+SMARTTRAFFIC WHAT-IF\\[0.2cm] (STWI)}
+
+\vspace{0.5cm}
+{\color{bkblue!60}\rule{0.45\textwidth}{0.8pt}}
+\vspace{0.4cm}
+
+{\fontsize{14}{17}\selectfont\bfseries
+HỆ THỐNG ĐIỀU PHỐI GIAO THÔNG THÔNG MINH\\[0.15cm]
+SỬ DỤNG TRÍ TUỆ NHÂN TẠO ĐA TÁC TỬ\\[0.15cm]
+VÀ CƠ CHẾ PHẢN THỰC TẾ CF-VLA}
+
+\vspace{1.1cm}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.6}
+\fontsize{12}{15}\selectfont
+\begin{tabular}{ll}
+  \textbf{Mã tài liệu:} & STWI-DOC-SYSTEM v2.0 \\
+  \textbf{Phiên bản:}   & 2.0 (Bản chính thức) \\
+  \textbf{Ngày xuất bản:} & \today \\
+  \textbf{Trạng thái:}  & Bản đặc tả kỹ thuật hoàn chỉnh \\
+  \textbf{Phân loại:}   & Tài liệu kỹ thuật dự án \\
+\end{tabular}
+\end{center}
+
+\vspace{0.8cm}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.5}
+\fontsize{12}{15}\selectfont
+\begin{tabular}{ll}
+  \textbf{Nhóm thực hiện:}       & Nhóm Dự án STWI \\
+  \textbf{Giảng viên hướng dẫn:} & TS. Nguyễn Văn A \\
+  \textbf{Học kỳ:}               & Học kỳ 3 -- Năm học 2025--2026 \\
+\end{tabular}
+\end{center}
+
+\vfill
+{\fontsize{13}{16}\selectfont\itshape Thành phố Hồ Chí Minh -- \the\year}
+\vspace{0.4cm}
+\restoregeometry
 \end{titlepage}
 
-% ============ TÓM TẮT TỪ VỰNG ============
+% ============================================================
+% TÓM TẮT
+% ============================================================
 \newpage
-\section*{DANH MỤC CÁC TỪ VIẾT TẮT}
-\addcontentsline{toc}{section}{DANH MỤC CÁC TỪ VIẾT TẮT}
+\chapter*{TÓM TẮT}
+\addcontentsline{toc}{chapter}{Tóm tắt}
+\input{chapters/ch00_tom_tat}
 
-\begin{tabular}{l p{12cm}}
-    \textbf{STWI} & SmartTraffic What-If (Hệ thống giả lập giao thông thông minh) \\
-    \textbf{SOP} & Standard Operating Procedure (Quy trình vận hành tiêu chuẩn) \\
-    \textbf{RAG} & Retrieval-Augmented Generation (Truy xuất tăng cường phát sinh) \\
-    \textbf{STGCN} & Spatio-Temporal Graph Convolutional Network (Mạng nơ-ron đồ thị không-thời gian) \\
-    \textbf{LSTM} & Long Short-Term Memory (Mạng bộ nhớ ngắn dài hạn) \\
-    \textbf{CF-VLA} & Counterfactual Vision-Language-Action (Mô hình Phản thực tế - Thị giác - Ngôn ngữ - Hành động) \\
-    \textbf{ADE} & Adversarial Diverse Deep Ensemble (Thuật toán học máy dự báo biên) \\
-    \textbf{GTĐB} & Giao thông đường bộ \\
-\end{tabular}
-
-% ============ MỤC LỤC ============
+% ============================================================
+% MỤC LỤC / DANH MỤC
+% ============================================================
 \newpage
 \tableofcontents
 
-% ============ NỘI DUNG ============
 \newpage
-\input{chapters/00_STWI_Summary_and_Guidelines.tex}
-\newpage
-\input{chapters/01_System_Architecture_Data_Pipeline.tex}
-\newpage
-\input{chapters/02_ML_and_Simulation_Specification.tex}
-\newpage
-\input{chapters/03_Knowledge_Base_and_RAG_Design.tex}
-\newpage
-\input{chapters/04_AI_Agent_Orchestrator_CF_VLA.tex}
+\listoffigures
+\addcontentsline{toc}{chapter}{Danh mục Hình vẽ}
 
-% ============ TÀI LIỆU THAM KHẢO ============
 \newpage
-\addcontentsline{toc}{section}{TÀI LIỆU THAM KHẢO}
+\listoftables
+\addcontentsline{toc}{chapter}{Danh mục Bảng biểu}
+
+% ============================================================
+% DANH MỤC TỪ VIẾT TẮT
+% ============================================================
+\newpage
+\chapter*{DANH MỤC CÁC TỪ VIẾT TẮT}
+\addcontentsline{toc}{chapter}{Danh mục Từ viết tắt}
+\input{chapters/ch00_abbreviations}
+
+% ============================================================
+% NỘI DUNG CHÍNH
+% ============================================================
+\newpage
+\input{chapters/ch01_gioi_thieu}
+
+\newpage
+\input{chapters/ch02_co_so_ly_thuyet}
+
+\newpage
+\input{chapters/ch03_kien_truc}
+
+\newpage
+\input{chapters/ch04_data_pipeline}
+
+\newpage
+\input{chapters/ch05_ml_simulation}
+
+\newpage
+\input{chapters/ch06_rag}
+
+\newpage
+\input{chapters/ch07_agent}
+
+\newpage
+\input{chapters/ch08_implementation}
+
+\newpage
+\input{chapters/ch09_evaluation}
+
+\newpage
+\input{chapters/ch10_rui_ro}
+
+% ============================================================
+% KẾT LUẬN
+% ============================================================
+\newpage
+\input{chapters/ch11_ket_luan}
+
+% ============================================================
+% TÀI LIỆU THAM KHẢO
+% ============================================================
+\newpage
+\addcontentsline{toc}{chapter}{Tài liệu Tham khảo}
 \begin{thebibliography}{99}
-    \bibitem{bushnell} \textbf{Michael L. Bushnell, Vishwani D. Agrawal}, \textit{Essentials of Electronic Testing for Digital, Memory and Mixed-Signal VLSI Circuits}, Springer, 2000. \textbf{Chương 7: Design for Testability}.
-    \bibitem{wang2006} \textbf{Laung-Terng Wang, Cheng-Wen Wu, Xiaoqing Wen}, \textit{VLSI Test Principles and Architectures: Design for Testability}, Morgan Kaufmann, 2006.
-    \bibitem{nthu} \textbf{NTHU DFT Lecture Slides} -- \textit{Full Scan vs Partial Scan comparison}, National Tsing Hua University, Department of CS.
-    \bibitem{umar} \textbf{Rana Umar Nadeem} -- \textit{Design for Testability: Scan Chain Architectures}, Technical Publication/Blog series on DFT.
-    \bibitem{synopsys_test} \textbf{Synopsys, Inc.} -- \textit{Test Compression Technology}, Whitepaper/Documentation on Adaptive Scanning.
-    \bibitem{synopsys_dft} \textbf{Synopsys, Inc.} -- \textit{DFT Compiler User Guide}, Official tool documentation for scan synthesis and insertion.
-    \bibitem{eichelberger} \textbf{E. B. Eichelberger} -- \textit{IBM LSSD Architecture}, LSSD standard for Level-Sensitive Scan Design.
-    \bibitem{abramovici} \textbf{Miron Abramovici, et al.} -- \textit{Digital System Test and Testable Design}, Nguồn trích xuất các sơ đồ khối và hình ảnh minh họa trong các slide mạch khả kiểm.
+
+\bibitem{yu2018stgcn}
+\textbf{B. Yu, H. Yin, Z. Zhu} (2018).
+\textit{Spatio-Temporal Graph Convolutional Networks: A Deep Learning Framework for Traffic Forecasting}.
+Proceedings of IJCAI 2018, pp.~3634--3640.
+
+\bibitem{hochreiter1997lstm}
+\textbf{S. Hochreiter, J. Schmidhuber} (1997).
+\textit{Long Short-Term Memory}.
+Neural Computation, 9(8), pp.~1735--1780.
+
+\bibitem{li2018diffusion}
+\textbf{Y. Li et al.} (2018).
+\textit{Diffusion Convolutional Recurrent Neural Network: Data-Driven Traffic Forecasting}.
+Proceedings of ICLR 2018.
+
+\bibitem{kipf2017gcn}
+\textbf{T. N. Kipf, M. Welling} (2017).
+\textit{Semi-Supervised Classification with Graph Convolutional Networks}.
+Proceedings of ICLR 2017.
+
+\bibitem{wen2023surrogate}
+\textbf{J. Wen et al.} (2023).
+\textit{Neural Surrogate Models for Urban Traffic Simulation: A Comparative Study}.
+Transportation Research Part C: Emerging Technologies, 150.
+
+\bibitem{lakshminarayanan2017ade}
+\textbf{B. Lakshminarayanan, A. Pritzel, C. Blundell} (2017).
+\textit{Simple and Scalable Predictive Uncertainty Estimation using Deep Ensembles}.
+Advances in NeurIPS 2017.
+
+\bibitem{lewis2020rag}
+\textbf{P. Lewis et al.} (2020).
+\textit{Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks}.
+Advances in NeurIPS 2020.
+
+\bibitem{chen2023bge}
+\textbf{J. Chen et al.} (2023).
+\textit{BGE M3-Embedding: Multi-Lingual, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation}.
+arXiv:2309.07597.
+
+\bibitem{guo2023xiyansql}
+\textbf{Y. Guo et al.} (2023).
+\textit{XiYan-SQL: A Multi-Generator Ensemble Framework for Text-to-SQL}.
+arXiv:2411.08599.
+
+\bibitem{wooldridge2009multiagent}
+\textbf{M. Wooldridge} (2009).
+\textit{An Introduction to MultiAgent Systems}.
+John Wiley \& Sons, 2nd edition.
+
+\bibitem{langchain2023}
+\textbf{H. Chase et al.} (2023).
+\textit{LangChain: Building Applications with LLMs through Composability}.
+GitHub Repository. \url{https://github.com/langchain-ai/langchain}.
+
+\bibitem{pearl2018why}
+\textbf{J. Pearl, D. Mackenzie} (2018).
+\textit{The Book of Why: The New Science of Cause and Effect}.
+Basic Books.
+
+\bibitem{bjoern2021counterfactual}
+\textbf{S. Beckers, J. Y. Halpern} (2021).
+\textit{Causal Sufficiency and Actual Causation}.
+Journal of Artificial Intelligence Research, 70, pp.~1--40.
+
+\bibitem{zhang2020bytetrack}
+\textbf{Y. Zhang et al.} (2022).
+\textit{ByteTrack: Multi-Object Tracking by Associating Every Detection Box}.
+Proceedings of ECCV 2022.
+
+\bibitem{jocher2023yolo}
+\textbf{G. Jocher et al.} (2023).
+\textit{Ultralytics YOLOv8}.
+GitHub Repository. \url{https://github.com/ultralytics/ultralytics}.
+
+\bibitem{luong2019traffic}
+\textbf{Q. T. Luong et al.} (2019).
+\textit{Traffic Congestion Analysis and Simulation for Ho Chi Minh City}.
+Journal of Transportation Engineering, 145(2).
+
+\bibitem{milvus2021}
+\textbf{J. Wang et al.} (2021).
+\textit{Milvus: A Purpose-Built Vector Data Management System}.
+Proceedings of SIGMOD 2021.
+
+\bibitem{vanrossum2009python}
+\textbf{G. Van Rossum, F. L. Drake} (2009).
+\textit{Python 3 Reference Manual}.
+CreateSpace, Scotts Valley, CA.
+
+\bibitem{paszke2019pytorch}
+\textbf{A. Paszke et al.} (2019).
+\textit{PyTorch: An Imperative Style, High-Performance Deep Learning Library}.
+Advances in NeurIPS 2019.
+
+\bibitem{gtvt2023law}
+\textbf{Bộ Giao thông Vận tải} (2023).
+\textit{Luật Giao thông đường bộ (sửa đổi)}.
+Nhà xuất bản Chính trị Quốc gia Sự thật.
+
 \end{thebibliography}
+
+% ============================================================
+% PHỤ LỤC
+% ============================================================
+\appendix
+
+\newpage
+\chapter{Đặc tả API REST}
+\input{chapters/appendix_api}
+
+\newpage
+\chapter{Cấu trúc Dữ liệu và Schema}
+\input{chapters/appendix_schema}
+
+\newpage
+\chapter{Bộ Câu hỏi Kiểm thử Hệ thống}
+\input{chapters/appendix_testcases}
 
 \end{document}

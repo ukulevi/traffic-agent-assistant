@@ -1,4 +1,4 @@
-name: Build LaTeX PDF - STWI Technical Report
+name: Build LaTeX PDF -- STWI Technical Report v2.0
 
 on:
   push:
@@ -12,46 +12,85 @@ jobs:
   build-pdf:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Diagnose
+      - name: Show Build Info
         run: |
-          echo "Triggered on $GITHUB_REF@${GITHUB_SHA}"
-          ls -la || true
+          echo "=========================================="
+          echo "  STWI Report Build v2.0"
+          echo "  Triggered on: $GITHUB_REF @ ${GITHUB_SHA:0:8}"
+          echo "  Date: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+          echo "=========================================="
+          ls -la
+          echo "--- Chapter files ---"
+          ls chapters/ 2>/dev/null || echo "(no chapters dir yet)"
+          echo "--- Docs files ---"
+          ls docs/*.md 2>/dev/null || echo "(no md files)"
 
-      - name: Set up Python
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       - name: Install Pandoc
         run: |
-          sudo apt-get update
+          sudo apt-get update -qq
           sudo apt-get install -y pandoc
+          pandoc --version
 
-      - name: Convert Markdown to LaTeX
-        run: python scripts/convert_docs.py
+      - name: Convert Markdown Docs to LaTeX (via Pandoc)
+        run: |
+          echo "Running convert_docs.py..."
+          python scripts/convert_docs.py
+          echo "Generated .tex files:"
+          ls chapters/*.tex 2>/dev/null || echo "(none generated)"
 
-      - name: Compile LaTeX (XeLaTeX)
+      - name: Compile LaTeX to PDF (XeLaTeX via latexmk)
         uses: xu-cheng/latex-action@v3
         with:
           root_file: main.tex
           latexmk_use_xelatex: true
           latexmk_shell_escape: true
+          extra_system_packages: "fonts-texgyre"
+          args: >-
+            -pdf
+            -xelatex
+            -interaction=nonstopmode
+            -halt-on-error
+            -file-line-error
 
-      - name: Publish PDF to project root
+      - name: Verify PDF was created
         run: |
-          cp main.pdf STWI_Technical_Report.pdf
-          ls -la
+          if [ -f main.pdf ]; then
+            echo "[OK] main.pdf generated successfully"
+            ls -lh main.pdf
+            # Get page count if pdfinfo is available
+            if command -v pdfinfo &>/dev/null; then
+              pdfinfo main.pdf | grep Pages || true
+            fi
+          else
+            echo "[ERROR] main.pdf NOT found!"
+            echo "--- LaTeX log (last 100 lines) ---"
+            tail -100 main.log || true
+            exit 1
+          fi
 
-      - name: Upload artifact (PDF)
+      - name: Rename PDF for Release
+        run: |
+          VERSION="v$(date -u +'%Y%m%d')-build${{ github.run_number }}"
+          cp main.pdf "STWI_Technical_Report_${VERSION}.pdf"
+          echo "REPORT_NAME=STWI_Technical_Report_${VERSION}" >> $GITHUB_ENV
+          echo "Renamed to: STWI_Technical_Report_${VERSION}.pdf"
+
+      - name: Upload PDF Artifact
         uses: actions/upload-artifact@v4
         with:
           name: stwi-technical-report-pdf
-          path: STWI_Technical_Report.pdf
+          path: "*.pdf"
+          retention-days: 30
 
-      - name: Upload logs (always)
+      - name: Upload LaTeX Logs (always, for debugging)
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -62,77 +101,95 @@ jobs:
             main.toc
             main.lof
             main.lot
+          retention-days: 7
 
   release:
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     needs: build-pdf
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
-      - name: Generate changelog from commit history
+
+      - name: Generate Release Notes from Commit History
+        id: release_notes
         run: |
           set -euo pipefail
-          
+
           LAST_TAG=""
-          if git describe --tags --abbrev=0 >/dev/null 2>&1; then
+          if git describe --tags --abbrev=0 2>/dev/null; then
             LAST_TAG=$(git describe --tags --abbrev=0)
-            echo "Found last tag: ${LAST_TAG}" >&2
-          else
-            echo "No tags found, will include all commits" >&2
           fi
-          
+
           {
-            echo "## Changelog ($(date -u +"%Y-%m-%d %H:%M:%S") UTC)"
+            echo "## Bao cao Ky thuat STWI v2.0 -- Build ${{ github.run_number }}"
             echo ""
-            
+            echo "**SmartTraffic What-If (STWI)** -- He thong dieu phoi giao thong thong minh"
+            echo "su dung AI Da tac tu, CF-VLA va RAG."
+            echo ""
+            echo "### Noi dung bao cao (PDF ~100 trang)"
+            echo ""
+            echo "| Chuong | Noi dung |"
+            echo "|--------|----------|"
+            echo "| Chuong 1 | Gioi thieu va Dong luc Nghien cuu |"
+            echo "| Chuong 2 | Co so Ly thuyet (GCN, LSTM, RAG, CF) |"
+            echo "| Chuong 3 | Kien truc He thong 4 Tang tong the |"
+            echo "| Chuong 4 | Tang 1: CCTV Pipeline + Tensor Builder |"
+            echo "| Chuong 5 | Tang 2: STGCN+LSTM + ADE Surrogate |"
+            echo "| Chuong 6 | Tang 3: Vector DB + XiYanSQL + RealGen |"
+            echo "| Chuong 7 | Tang 4: Multi-Agent + CF-VLA Engine |"
+            echo "| Chuong 8 | Ke hoach Trien khai 12 tuan (Gantt) |"
+            echo "| Chuong 9 | Phuong phap Danh gia va Kiem thu |"
+            echo "| Chuong 10 | Phan tich Rui ro (Risk Register 14 rui ro) |"
+            echo "| Phu luc A | Dac ta REST API day du |"
+            echo "| Phu luc B | Data Contract, Docker, Project Structure |"
+            echo "| Phu luc C | 30 kich ban kiem thu + Acceptance Criteria |"
+            echo ""
+            echo "### Cac Rang buoc Ky thuat Chinh (KPI)"
+            echo ""
+            echo "- TTP ADE Surrogate: P99 < 500ms"
+            echo "- E2E Latency: < 3 phut"
+            echo "- CF-VLA: Bat buoc 100%, khong duoc bypass"
+            echo "- No-Hallucination: 100% response co legal_grounding"
+            echo "- V/C Safety Threshold: <= 0.9 tai tat ca nut lan can"
+            echo ""
+            echo "### Commit Changelog"
+            echo ""
             if [ -n "$LAST_TAG" ]; then
-              COMMIT_RANGE="${LAST_TAG}..HEAD"
-              echo "Getting commits from ${LAST_TAG} to HEAD" >&2
-              
-              if git log "${COMMIT_RANGE}" --oneline 2>/dev/null | head -1 >/dev/null 2>&1; then
-                git log "${COMMIT_RANGE}" --no-merges --pretty=format:"*   **%s** (%h)"
-              else
-                echo "- No new commits since ${LAST_TAG}"
-              fi
+              git log "${LAST_TAG}..HEAD" --no-merges \
+                --pretty=format:"- **%s** (%h) -- %ad" \
+                --date=short 2>/dev/null || echo "- (khong co commit moi)"
             else
-              echo "### All Commits (no previous release found)"
-              echo ""
-              git log --no-merges --pretty=format:"*   **%s** (%h)"
+              git log --no-merges -20 \
+                --pretty=format:"- **%s** (%h) -- %ad" \
+                --date=short 2>/dev/null || echo "- (khong co commit)"
             fi
-            
+            echo ""
+            echo ""
+            echo "---"
+            echo "_Build: ${{ github.run_number }} | SHA: ${GITHUB_SHA:0:8} | $(date -u +'%Y-%m-%d %H:%M UTC')_"
           } > release_notes.md
-          
-          if [ ! -s release_notes.md ] || ! grep -q "^\*" release_notes.md; then
-            {
-              echo "## Changelog ($(date -u +"%Y-%m-%d %H:%M:%S") UTC)"
-              echo ""
-              echo "### Recent Changes"
-              echo ""
-              git log -n 50 --no-merges --pretty=format:"*   **%s** (%h)" 2>/dev/null || echo "- No commits found."
-            } > release_notes.md
-          fi
-          
-          echo "=== Changelog Preview (first 50 lines) ==="
-          head -50 release_notes.md
-          echo ""
-          echo "=== Total lines in changelog ==="
-          wc -l release_notes.md || echo "0"
-      
-      - name: Download artifact
+
+          echo "=== Release Notes Preview ==="
+          head -40 release_notes.md
+
+      - name: Download PDF Artifact
         uses: actions/download-artifact@v4
         with:
           name: stwi-technical-report-pdf
           path: dist
-      
-      - name: Create GitHub Release
+
+      - name: List downloaded files
+        run: ls -lh dist/
+
+      - name: Create GitHub Release with PDF
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: build-${{ github.run_number }}
-          name: Tài Liệu Kỹ Thuật STWI (Build ${{ github.run_number }})
+          tag_name: "build-${{ github.run_number }}"
+          name: "Bao cao Ky thuat STWI v2.0 (Build ${{ github.run_number }})"
           body_path: release_notes.md
-          files: dist/STWI_Technical_Report.pdf
-
+          files: dist/*.pdf
+          draft: false
+          prerelease: false
