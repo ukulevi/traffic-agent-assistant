@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 jobs:
   build-pdf:
@@ -45,11 +47,24 @@ jobs:
           cp main.pdf STWI_Technical_Report.pdf
           ls -la
 
+      - name: Prepare Web Deployment Folder
+        run: |
+          mkdir -p web_deploy
+          cp STWI_Technical_Report.pdf web_deploy/STWI_Technical_Report.pdf
+          cp index.html web_deploy/index.html
+          ls -la web_deploy
+
       - name: Upload artifact (PDF)
         uses: actions/upload-artifact@v4
         with:
           name: stwi-technical-report-pdf
           path: STWI_Technical_Report.pdf
+
+      - name: Upload Pages Artifact
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'web_deploy'
 
       - name: Upload logs (always)
         if: always()
@@ -135,3 +150,16 @@ jobs:
           name: Tài Liệu Kỹ Thuật STWI (Build ${{ github.run_number }})
           body_path: release_notes.md
           files: dist/STWI_Technical_Report.pdf
+
+  deploy-pages:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    needs: build-pdf
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
