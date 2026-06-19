@@ -52,7 +52,6 @@ jobs:
           root_file: main.tex
           latexmk_use_xelatex: true
           latexmk_shell_escape: true
-          extra_system_packages: "fonts-texgyre"
           args: >-
             -pdf
             -xelatex
