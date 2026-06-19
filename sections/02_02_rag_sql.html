@@ -1,0 +1,41 @@
+<div class="slide slide-container" style="justify-content:flex-start;padding-top:60px;">
+    <h2 style="font-size:2.4rem;font-weight:800;color:#10b981;margin-bottom:30px;text-align:center;width:100%;">
+        <i class="fa-solid fa-book-open-reader"></i> RAG & XiYanSQL — Tri Thức & Truy Vấn
+    </h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:30px;width:90%;margin:0 auto;">
+        <div>
+            <h3 style="color:#10b981;font-size:1.2rem;margin-bottom:14px;">📚 Retrieval-Augmented Generation (RAG)</h3>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <div style="background:rgba(16,185,129,0.06);border-left:4px solid #10b981;padding:12px 16px;border-radius:0 8px 8px 0;">
+                    <b style="font-size:0.95rem;">Vector DB (FAISS/Weaviate)</b>
+                    <p style="font-size:0.9rem;color:#475569;margin:4px 0 0 0;">Lưu SOP, luật GT, nghị định — BGE-M3 embedding</p>
+                </div>
+                <div style="background:rgba(16,185,129,0.06);border-left:4px solid #10b981;padding:12px 16px;border-radius:0 8px 8px 0;">
+                    <b style="font-size:0.95rem;">Top-3 Retrieval</b>
+                    <p style="font-size:0.9rem;color:#475569;margin:4px 0 0 0;">Cosine similarity ≥ 0.7, trả về chunk + metadata pháp lý</p>
+                </div>
+                <div style="background:rgba(16,185,129,0.06);border-left:4px solid #10b981;padding:12px 16px;border-radius:0 8px 8px 0;">
+                    <b style="font-size:0.95rem;">Legal Grounding</b>
+                    <p style="font-size:0.9rem;color:#475569;margin:4px 0 0 0;">100% response phải có field <code>legal_grounding</code> hợp lệ</p>
+                </div>
+            </div>
+        </div>
+        <div>
+            <h3 style="color:#0ea5e9;font-size:1.2rem;margin-bottom:14px;">🛢 XiYanSQL — Text-to-SQL</h3>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <div style="background:rgba(14,165,233,0.06);border-left:4px solid #0ea5e9;padding:12px 16px;border-radius:0 8px 8px 0;">
+                    <b style="font-size:0.95rem;">Schema-Aware Parsing</b>
+                    <p style="font-size:0.9rem;color:#475569;margin:4px 0 0 0;">Natural language → SQL với context schema đầy đủ</p>
+                </div>
+                <div style="background:rgba(14,165,233,0.06);border-left:4px solid #0ea5e9;padding:12px 16px;border-radius:0 8px 8px 0;">
+                    <b style="font-size:0.95rem;">DuckDB Execution</b>
+                    <p style="font-size:0.9rem;color:#475569;margin:4px 0 0 0;">In-memory, kiểm tra syntax + schema trước khi chạy</p>
+                </div>
+                <div style="background:rgba(14,165,233,0.06);border-left:4px solid #0ea5e9;padding:12px 16px;border-radius:0 8px 8px 0;">
+                    <b style="font-size:0.95rem;">Self-Correct ≤ 3 lần</b>
+                    <p style="font-size:0.9rem;color:#475569;margin:4px 0 0 0;">LLM tự sửa SQL nếu syntax lỗi, SQL Acc ≥ 90%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

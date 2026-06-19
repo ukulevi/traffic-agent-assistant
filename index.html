@@ -3,431 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>STWI — Tài Liệu Đặc Tả Kỹ Thuật Hệ Thống</title>
-    
-    <!-- Google Fonts -->
+    <title>STWI — SmartTraffic What-If — Báo Cáo Kỹ Thuật v2.0</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
-    
-    <!-- FontAwesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <style>
-        :root {
-            --bg-color: #0b0f19;
-            --card-bg: #111827;
-            --card-hover-bg: #1f2937;
-            --primary-color: #006699; /* BK Blue */
-            --accent-color: #38bdf8;  /* Sky Blue */
-            --text-main: #f3f4f6;     /* Slate 100 */
-            --text-muted: #9ca3af;    /* Slate 400 */
-            --border-color: #374151;  /* Slate 700 */
-            --gradient-main: linear-gradient(135deg, #006699 0%, #1e3a8a 100%);
-            --transition-speed: 0.3s;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            line-height: 1.6;
-            overflow-x: hidden;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 2rem;
-        }
-
-        /* Header / Hero Section */
-        header {
-            position: relative;
-            padding: 6rem 0 4rem 0;
-            background: radial-gradient(circle at top right, rgba(0, 102, 153, 0.15), transparent 60%);
-            border-bottom: 1px solid var(--border-color);
-            text-align: center;
-        }
-
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            background-color: rgba(56, 189, 248, 0.1);
-            color: var(--accent-color);
-            border: 1px solid rgba(56, 189, 248, 0.2);
-            padding: 0.5rem 1rem;
-            border-radius: 9999px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            margin-bottom: 1.5rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        h1 {
-            font-size: 3rem;
-            font-weight: 800;
-            line-height: 1.2;
-            margin-bottom: 1rem;
-            background: linear-gradient(to right, #ffffff, #93c5fd);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .subtitle {
-            font-size: 1.25rem;
-            color: var(--text-muted);
-            max-width: 700px;
-            margin: 0 auto 2.5rem auto;
-            font-weight: 300;
-        }
-
-        /* Buttons */
-        .btn-group {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.85rem 2rem;
-            font-size: 1rem;
-            font-weight: 600;
-            border-radius: 8px;
-            text-decoration: none;
-            cursor: pointer;
-            transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .btn-primary {
-            background: var(--gradient-main);
-            color: #ffffff;
-            box-shadow: 0 4px 14px 0 rgba(0, 102, 153, 0.4);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px 0 rgba(0, 102, 153, 0.6);
-        }
-
-        .btn-secondary {
-            background-color: transparent;
-            color: var(--text-main);
-            border: 1px solid var(--border-color);
-        }
-
-        .btn-secondary:hover {
-            background-color: rgba(255, 255, 255, 0.05);
-            border-color: var(--text-muted);
-            transform: translateY(-2px);
-        }
-
-        /* Main Content Grid */
-        main {
-            padding: 5rem 0;
-        }
-
-        .section-title {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 3rem;
-            text-align: center;
-            position: relative;
-        }
-
-        .section-title::after {
-            content: '';
-            display: block;
-            width: 50px;
-            height: 4px;
-            background-color: var(--accent-color);
-            margin: 0.75rem auto 0 auto;
-            border-radius: 2px;
-        }
-
-        .docs-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 2rem;
-            margin-bottom: 4rem;
-        }
-
-        .doc-card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 2rem;
-            transition: all var(--transition-speed) ease;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .doc-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 4px;
-            background: var(--gradient-main);
-            opacity: 0;
-            transition: opacity var(--transition-speed) ease;
-        }
-
-        .doc-card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(56, 189, 248, 0.4);
-            background-color: var(--card-hover-bg);
-        }
-
-        .doc-card:hover::before {
-            opacity: 1;
-        }
-
-        .doc-num {
-            font-family: 'Fira Code', monospace;
-            font-size: 0.9rem;
-            color: var(--accent-color);
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-
-        .doc-title {
-            font-size: 1.3rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            color: #ffffff;
-        }
-
-        .doc-desc {
-            color: var(--text-muted);
-            font-size: 0.95rem;
-            flex-grow: 1;
-            margin-bottom: 1.5rem;
-            font-weight: 300;
-        }
-
-        .doc-meta {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            padding-top: 1rem;
-        }
-
-        .doc-meta span {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.25rem;
-        }
-
-        /* Technical specs summary */
-        .tech-specs {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 3rem;
-            margin-top: 5rem;
-        }
-
-        .specs-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 2.5rem;
-        }
-
-        .spec-item {
-            text-align: center;
-        }
-
-        .spec-icon {
-            font-size: 2.5rem;
-            color: var(--accent-color);
-            margin-bottom: 1rem;
-        }
-
-        .spec-val {
-            font-size: 1.8rem;
-            font-weight: 800;
-            color: #ffffff;
-            margin-bottom: 0.25rem;
-        }
-
-        .spec-lbl {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-
-        /* Footer */
-        footer {
-            border-top: 1px solid var(--border-color);
-            padding: 3rem 0;
-            background-color: rgba(10, 15, 25, 0.5);
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-
-        footer p {
-            margin-bottom: 0.5rem;
-        }
-
-        footer .git-link {
-            color: var(--accent-color);
-            text-decoration: none;
-            transition: color var(--transition-speed) ease;
-        }
-
-        footer .git-link:hover {
-            color: #ffffff;
-        }
-
-        /* Responsive Breakpoints */
-        @media (max-width: 768px) {
-            h1 {
-                font-size: 2.25rem;
-            }
-            .subtitle {
-                font-size: 1.1rem;
-            }
-            .tech-specs {
-                padding: 2rem;
-            }
-        }
-    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Urbanist:wght@400;700;800&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/slides.css">
+    <link rel="stylesheet" href="css/presentation-tools.css">
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true
+            },
+            startup: { typeset: false }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
-
-    <header>
-        <div class="container">
-            <div class="badge">
-                <i class="fa-solid fa-traffic-light"></i> SmartTraffic What-If (STWI)
-            </div>
-            <h1>Báo Cáo Đặc Tả Kỹ Thuật</h1>
-            <p class="subtitle">Tài liệu mô tả chi tiết kiến trúc luồng dữ liệu, phân hệ giả lập số liệu học máy, cơ sở tri thức đô thị (RAG) và lõi tác tử điều phối thông minh.</p>
-            
-            <div class="btn-group">
-                <a href="STWI_Technical_Report.pdf" class="btn btn-primary" download>
-                    <i class="fa-solid fa-file-pdf"></i> Tải Tài Liệu PDF (Full)
-                </a>
-                <a href="https://github.com/ukulevi/traffic-agent-assistant" class="btn btn-secondary" target="_blank">
-                    <i class="fa-brands fa-github"></i> Xem mã nguồn Repo
-                </a>
-            </div>
+    <div id="loading" style="position:fixed;inset:0;background:#0b0f19;color:white;display:flex;align-items:center;justify-content:center;z-index:9999;">
+        <div style="text-align:center;">
+            <i class="fa-solid fa-spinner fa-spin" style="font-size:3rem;margin-bottom:20px;color:#38bdf8;"></i>
+            <h2 style="font-family:'Be Vietnam Pro',sans-serif;">Đang tải bài thuyết trình STWI...</h2>
+            <p style="color:#888;">Vui lòng chờ trong giây lát...</p>
         </div>
-    </header>
+    </div>
 
-    <main class="container">
-        <h2 class="section-title">Nội Dung Đặc Tả Hệ Thống</h2>
-        
-        <div class="docs-grid">
-            <!-- Card 00 -->
-            <div class="doc-card">
-                <div class="doc-num">PHẦN 00</div>
-                <h3 class="doc-title">Tổng Hợp & Quy Chuẩn Dự Án</h3>
-                <p class="doc-desc">Kim chỉ nam tóm tắt toàn bộ bức tranh kiến trúc, sơ đồ luồng dữ liệu 4 tầng khép kín và các tiêu chuẩn code bắt buộc dành cho đội ngũ vận hành.</p>
-                <div class="doc-meta">
-                    <span><i class="fa-regular fa-file-lines"></i> 208 dòng</span>
-                    <span><i class="fa-solid fa-tag"></i> Phiên bản 1.1</span>
-                </div>
-            </div>
+    <main id="slides_wrapper"></main>
 
-            <!-- Card 01 -->
-            <div class="doc-card">
-                <div class="doc-num">PHẦN 01</div>
-                <h3 class="doc-title">Kiến Trúc & Dòng Dữ Liệu</h3>
-                <p class="doc-desc">Đặc tả Tầng 1 thu thập dữ liệu đa nguồn gồm phân tích camera (YOLO + ByteTrack), cảm biến môi trường và đóng gói dữ liệu thành cấu trúc 3D Tensor.</p>
-                <div class="doc-meta">
-                    <span><i class="fa-regular fa-file-lines"></i> 178 dòng</span>
-                    <span><i class="fa-solid fa-tag"></i> Phiên bản 1.1</span>
-                </div>
-            </div>
-
-            <!-- Card 02 -->
-            <div class="doc-card">
-                <div class="doc-num">PHẦN 02</div>
-                <h3 class="doc-title">Dự Báo Số Liệu & Giả Lập</h3>
-                <p class="doc-desc">Chi tiết kiến trúc lai mạng đồ thị không-thời gian STGCN + LSTM học dòng chảy giao thông và Surrogate Model (mô hình thay thế ADE) giả lập cực nhanh.</p>
-                <div class="doc-meta">
-                    <span><i class="fa-regular fa-file-lines"></i> 150 dòng</span>
-                    <span><i class="fa-solid fa-tag"></i> Phiên bản 1.1</span>
-                </div>
-            </div>
-
-            <!-- Card 03 -->
-            <div class="doc-card">
-                <div class="doc-num">PHẦN 03</div>
-                <h3 class="doc-title">Cơ Sở Tri Thức & RAG</h3>
-                <p class="doc-desc">Hệ thống truy xuất quy trình SOP, luật giao thông qua Vector DB. Tích hợp chuyển đổi ngôn ngữ tự nhiên XiYanSQL và bộ tái tạo kịch bản biên RealGen.</p>
-                <div class="doc-meta">
-                    <span><i class="fa-regular fa-file-lines"></i> 135 dòng</span>
-                    <span><i class="fa-solid fa-tag"></i> Phiên bản 1.1</span>
-                </div>
-            </div>
-
-            <!-- Card 04 -->
-            <div class="doc-card">
-                <div class="doc-num">PHẦN 04</div>
-                <h3 class="doc-title">Tác Tử Điều Phối (CF-VLA)</h3>
-                <p class="doc-desc">Xây dựng kiến trúc Multi-Agent phối hợp tác vụ số liệu & luật pháp. Lõi phản xạ phản thực tế CF-VLA giúp tự đánh giá và sửa lỗi đề xuất trước khi hiển thị.</p>
-                <div class="doc-meta">
-                    <span><i class="fa-regular fa-file-lines"></i> 165 dòng</span>
-                    <span><i class="fa-solid fa-tag"></i> Phiên bản 1.1</span>
-                </div>
-            </div>
+    <div id="audio-hover-area" style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:10000;display:none;">
+        <div id="audio-container" style="display:flex;align-items:center;gap:10px;background:rgba(0,0,0,0.7);padding:5px 15px;border-radius:30px;">
+            <audio id="slide-audio" controls style="height:35px;outline:none;"></audio>
         </div>
+    </div>
 
-        <div class="tech-specs">
-            <h3 class="doc-title" style="text-align: center; margin-bottom: 2.5rem; font-size: 1.6rem;">Thông Số Công Nghệ & Chỉ Tiêu Phân Hệ</h3>
-            <div class="specs-grid">
-                <div class="spec-item">
-                    <div class="spec-icon"><i class="fa-solid fa-gauge-high"></i></div>
-                    <div class="spec-val">&lt; 500ms</div>
-                    <div class="spec-lbl">Độ trễ Surrogate Model (ADE)</div>
-                </div>
-                <div class="spec-item">
-                    <div class="spec-icon"><i class="fa-solid fa-network-wired"></i></div>
-                    <div class="spec-val">1,000</div>
-                    <div class="spec-lbl">Camera luồng dữ liệu CCTV</div>
-                </div>
-                <div class="spec-item">
-                    <div class="spec-icon"><i class="fa-solid fa-cubes"></i></div>
-                    <div class="spec-val">[B, 12, 14]</div>
-                    <div class="spec-lbl">Kích thước 3D Input Tensor</div>
-                </div>
-                <div class="spec-item">
-                    <div class="spec-icon"><i class="fa-solid fa-bolt"></i></div>
-                    <div class="spec-val">&lt; 3 phút</div>
-                    <div class="spec-lbl">Thời gian đề xuất hành động</div>
-                </div>
-            </div>
-        </div>
-    </main>
+    <div id="controls">
+        <button class="btn" onclick="prevSlide()"><i class="fa-solid fa-chevron-left"></i></button>
+        <button class="btn" onclick="togglePresentation()"><i class="fa-solid fa-play"></i></button>
+        <button class="btn" onclick="toggleAudioMode()" id="btn-toggle-audio" title="Bật/Tắt Thuyết Minh"><i class="fa-solid fa-volume-xmark"></i></button>
+        <button class="btn" onclick="nextSlide()"><i class="fa-solid fa-chevron-right"></i></button>
+    </div>
 
-    <footer>
-        <div class="container">
-            <p>© 2026 SmartTraffic What-If (STWI) Project.</p>
-            <p>Biên dịch tự động bằng GitHub Actions & XeLaTeX từ tài liệu Markdown.</p>
-            <p>Mã nguồn dự án trên <a href="https://github.com/ukulevi/traffic-agent-assistant" class="git-link" target="_blank"><i class="fa-brands fa-github"></i> Github</a>.</p>
-        </div>
-    </footer>
+    <div id="counter">1 / --</div>
 
+    <script src="js/presentation.js"></script>
+    <script src="js/presentation-tools.js"></script>
 </body>
 </html>

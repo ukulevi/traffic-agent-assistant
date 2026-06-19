@@ -1,0 +1,655 @@
+/* ============================================
+   PRESENTATION TOOLS - Professional Features
+   ============================================ */
+
+/* --- Laser Pointer --- */
+.laser-dot {
+    position: fixed;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #ff0000;
+    box-shadow: 0 0 8px 4px rgba(255, 0, 0, 0.6), 0 0 20px 8px rgba(255, 0, 0, 0.3);
+    pointer-events: none;
+    z-index: 10000;
+    transform: translate(-50%, -50%);
+    transition: opacity 0.15s;
+    display: none;
+}
+
+body.laser-mode .laser-dot {
+    display: block;
+}
+
+body.laser-mode {
+    cursor: none !important;
+}
+
+body.laser-mode * {
+    cursor: none !important;
+}
+
+/* --- Drawing Canvas --- */
+#drawing-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 500;
+    pointer-events: none;
+    display: none;
+}
+
+body.drawing-mode #drawing-canvas {
+    display: block;
+    pointer-events: auto;
+    cursor: crosshair;
+}
+
+/* --- Drawing Toolbar --- */
+#drawing-toolbar {
+    position: fixed;
+    bottom: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 600;
+    display: none;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 16px;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+body.drawing-mode #drawing-toolbar {
+    display: flex;
+}
+
+#drawing-toolbar .tool-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+#drawing-toolbar .tool-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+#drawing-toolbar .tool-btn.active {
+    background: var(--grad-modern);
+    color: white;
+    box-shadow: 0 0 12px rgba(0, 92, 230, 0.4);
+}
+
+#drawing-toolbar .color-btn {
+    width: 28px;
+    height: 28px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+    padding: 0;
+}
+
+#drawing-toolbar .color-btn:hover {
+    transform: scale(1.2);
+}
+
+#drawing-toolbar .color-btn.active {
+    border-color: white;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+    transform: scale(1.15);
+}
+
+#drawing-toolbar .separator {
+    width: 1px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.15);
+    margin: 0 4px;
+}
+
+#drawing-toolbar .size-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    padding: 0;
+}
+
+#drawing-toolbar .size-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+#drawing-toolbar .size-btn.active {
+    background: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 0 6px rgba(255, 255, 255, 0.2);
+}
+
+#drawing-toolbar .size-dot {
+    border-radius: 50%;
+    background: #e2e8f0;
+}
+
+/* Close draw button (red) */
+#drawing-toolbar .close-draw-btn {
+    background: rgba(239, 68, 68, 0.25);
+    color: #fca5a5;
+}
+
+#drawing-toolbar .close-draw-btn:hover {
+    background: rgba(239, 68, 68, 0.5);
+    color: #fff;
+    transform: scale(1.1);
+}
+
+/* --- Highlight Text Mode --- */
+body.drawing-mode.highlight-text-mode #drawing-canvas {
+    pointer-events: none !important;
+    cursor: default !important;
+    display: block;
+}
+
+body.drawing-mode.highlight-text-mode .slide-container {
+    cursor: text !important;
+    user-select: text !important;
+    -webkit-user-select: text !important;
+}
+
+body.drawing-mode.highlight-text-mode .slide-container * {
+    cursor: text !important;
+    user-select: text !important;
+    -webkit-user-select: text !important;
+}
+
+/* Text highlight marks */
+mark.text-highlight {
+    background: var(--hl-color, #f59e0b);
+    background-color: color-mix(in srgb, var(--hl-color, #f59e0b) 35%, transparent);
+    color: inherit;
+    padding: 1px 2px;
+    border-radius: 3px;
+    text-decoration: none;
+    mix-blend-mode: normal;
+}
+
+/* --- Context Menu --- */
+#context-menu {
+    position: fixed;
+    z-index: 9000;
+    display: none;
+    min-width: 240px;
+    padding: 6px 0;
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    font-family: var(--font-main);
+    overflow: hidden;
+}
+
+#context-menu.visible {
+    display: block;
+    animation: ctxFadeIn 0.15s ease-out;
+}
+
+@keyframes ctxFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+#context-menu .ctx-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    color: #e2e8f0;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.15s;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+}
+
+#context-menu .ctx-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+#context-menu .ctx-item i {
+    width: 20px;
+    text-align: center;
+    font-size: 0.85rem;
+    opacity: 0.7;
+}
+
+#context-menu .ctx-item .shortcut {
+    margin-left: auto;
+    font-size: 0.75rem;
+    opacity: 0.4;
+    font-family: 'Azeret Mono', monospace;
+}
+
+#context-menu .ctx-separator {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 4px 0;
+}
+
+/* --- Slide Navigator (Windows Tab style) --- */
+#slide-jump-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9500;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px;
+    overflow-y: auto;
+}
+
+#slide-jump-overlay.visible {
+    display: flex;
+    animation: ctxFadeIn 0.2s ease-out;
+}
+
+#slide-jump-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    width: 100%;
+    max-width: 1100px;
+}
+
+#slide-jump-header h3 {
+    color: #e2e8f0;
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+#slide-jump-input {
+    flex: 1;
+    max-width: 200px;
+    padding: 8px 14px;
+    font-size: 1rem;
+    text-align: center;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.08);
+    color: white;
+    font-family: 'Azeret Mono', monospace;
+    outline: none;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+#slide-jump-input:focus {
+    border-color: #005ce6;
+    box-shadow: 0 0 12px rgba(0, 92, 230, 0.3);
+}
+
+#slide-jump-input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+#slide-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+    width: 100%;
+    max-width: 1100px;
+    padding-bottom: 30px;
+}
+
+.slide-thumb {
+    position: relative;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+    aspect-ratio: 16 / 10;
+}
+
+.slide-thumb:hover {
+    border-color: #005ce6;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0, 92, 230, 0.3);
+}
+
+.slide-thumb.current {
+    border-color: #005ce6;
+    box-shadow: 0 0 0 2px rgba(0, 92, 230, 0.3);
+}
+
+.slide-thumb .thumb-preview {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+    position: relative;
+}
+
+.slide-thumb .thumb-preview .slide {
+    transform-origin: top left;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1440px;
+    min-height: 900px;
+    zoom: unset !important;
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.slide-thumb .thumb-number {
+    position: absolute;
+    bottom: 4px;
+    right: 6px;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Azeret Mono', monospace;
+    font-weight: 600;
+}
+
+/* --- Chapter Navigation Panel (card grid) --- */
+#chapter-nav-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9500;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+#chapter-nav-overlay.visible {
+    display: flex;
+    animation: ctxFadeIn 0.2s ease-out;
+}
+
+#chapter-nav-panel {
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 28px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    max-width: 700px;
+    width: 90vw;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+#chapter-nav-panel h3 {
+    color: #e2e8f0;
+    margin: 0 0 20px 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+#chapter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 12px;
+}
+
+#chapter-grid .chapter-card {
+    display: flex;
+    flex-direction: column;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 2px solid transparent;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+#chapter-grid .chapter-card:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+#chapter-grid .chapter-card.current {
+    border-color: #005ce6;
+    box-shadow: 0 0 0 2px rgba(0, 92, 230, 0.2);
+}
+
+#chapter-grid .chapter-card .card-header {
+    padding: 10px 14px;
+    font-weight: 700;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+#chapter-grid .chapter-card .card-title {
+    padding: 10px 14px 14px;
+    color: #e2e8f0;
+    font-size: 0.9rem;
+    line-height: 1.3;
+}
+
+/* --- Blackout Overlay --- */
+#blackout-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 8000;
+    background: #000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+#blackout-overlay.visible {
+    display: flex;
+    animation: blackoutIn 0.4s ease-out;
+}
+
+@keyframes blackoutIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+#blackout-overlay .blackout-text {
+    color: rgba(255, 255, 255, 0.15);
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+}
+
+/* --- Presentation Toolbar (bottom bar) --- */
+#pres-toolbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 200;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.6), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+body.presentation-mode #pres-toolbar {
+    display: flex;
+}
+
+#pres-toolbar:hover {
+    opacity: 1;
+}
+
+#pres-toolbar .toolbar-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    position: relative;
+}
+
+#pres-toolbar .toolbar-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    color: white;
+    transform: translateY(-2px);
+}
+
+#pres-toolbar .toolbar-btn.active {
+    background: rgba(0, 92, 230, 0.5);
+    color: white;
+}
+
+#pres-toolbar .toolbar-btn .tooltip {
+    position: absolute;
+    bottom: 48px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 10px;
+    background: rgba(15, 23, 42, 0.9);
+    color: #e2e8f0;
+    font-size: 0.7rem;
+    border-radius: 6px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+}
+
+#pres-toolbar .toolbar-btn:hover .tooltip {
+    opacity: 1;
+}
+
+#pres-toolbar .tb-separator {
+    width: 1px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 0 4px;
+}
+
+/* --- Mode indicators --- */
+#mode-indicator {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 700;
+    padding: 6px 18px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    display: none;
+}
+
+body.presentation-mode #mode-indicator {
+    display: block;
+}
+
+#mode-indicator.show {
+    opacity: 1;
+    animation: indicatorPulse 2s ease-out forwards;
+}
+
+@keyframes indicatorPulse {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-10px);
+    }
+
+    15% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+
+    85% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+#mode-indicator.laser-ind {
+    background: rgba(255, 0, 0, 0.2);
+    color: #ff6666;
+    border: 1px solid rgba(255, 0, 0, 0.3);
+}
+
+#mode-indicator.draw-ind {
+    background: rgba(0, 92, 230, 0.2);
+    color: #66b3ff;
+    border: 1px solid rgba(0, 92, 230, 0.3);
+}
+
+#mode-indicator.blackout-ind {
+    background: rgba(255, 255, 255, 0.1);
+    color: #aaa;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}

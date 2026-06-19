@@ -1,0 +1,56 @@
+<div class="slide slide-container" style="justify-content:flex-start;padding-top:50px;">
+    <h2 style="font-size:2.4rem;font-weight:800;color:#f43f5e;margin-bottom:28px;text-align:center;width:100%;">
+        <i class="fa-solid fa-triangle-exclamation"></i> Risk Register — 14 Rủi Ro Chính
+    </h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;width:90%;margin:0 auto 16px auto;">
+        <div style="background:rgba(244,63,94,0.06);border:1px solid rgba(244,63,94,0.2);border-radius:10px;padding:14px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                <b style="color:#f43f5e;font-size:0.9rem;">R01 — Camera offline hàng loạt</b>
+                <span style="font-family:'Azeret Mono',monospace;font-size:0.75rem;background:#fecdd3;color:#be123c;padding:2px 8px;border-radius:10px;">HIGH</span>
+            </div>
+            <div style="font-size:0.82rem;color:#475569;">Mitigation: redundant stream + fallback synthetic data</div>
+        </div>
+        <div style="background:rgba(249,115,22,0.06);border:1px solid rgba(249,115,22,0.2);border-radius:10px;padding:14px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                <b style="color:#f97316;font-size:0.9rem;">R02 — ADE P99 vượt 500ms</b>
+                <span style="font-family:'Azeret Mono',monospace;font-size:0.75rem;background:#fed7aa;color:#c2410c;padding:2px 8px;border-radius:10px;">HIGH</span>
+            </div>
+            <div style="font-size:0.82rem;color:#475569;">Mitigation: model distillation + GPU auto-scaling</div>
+        </div>
+        <div style="background:rgba(244,63,94,0.06);border:1px solid rgba(244,63,94,0.2);border-radius:10px;padding:14px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                <b style="color:#f43f5e;font-size:0.9rem;">R03 — Hallucination không có legal_grounding</b>
+                <span style="font-family:'Azeret Mono',monospace;font-size:0.75rem;background:#fecdd3;color:#be123c;padding:2px 8px;border-radius:10px;">HIGH</span>
+            </div>
+            <div style="font-size:0.82rem;color:#475569;">Mitigation: RAG mandatory gate, không bypass</div>
+        </div>
+        <div style="background:rgba(234,179,8,0.06);border:1px solid rgba(234,179,8,0.2);border-radius:10px;padding:14px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                <b style="color:#ca8a04;font-size:0.9rem;">R04 — V/C > 0.9 tại nút lân cận</b>
+                <span style="font-family:'Azeret Mono',monospace;font-size:0.75rem;background:#fef08a;color:#713f12;padding:2px 8px;border-radius:10px;">MED</span>
+            </div>
+            <div style="font-size:0.82rem;color:#475569;">Mitigation: CF-VLA vòng lặp ≤ 3, safety gate cứng</div>
+        </div>
+        <div style="background:rgba(234,179,8,0.06);border:1px solid rgba(234,179,8,0.2);border-radius:10px;padding:14px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                <b style="color:#ca8a04;font-size:0.9rem;">R05 — SQL injection qua XiYanSQL</b>
+                <span style="font-family:'Azeret Mono',monospace;font-size:0.75rem;background:#fef08a;color:#713f12;padding:2px 8px;border-radius:10px;">MED</span>
+            </div>
+            <div style="font-size:0.82rem;color:#475569;">Mitigation: read-only DuckDB + whitelist allowed tables</div>
+        </div>
+        <div style="background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:14px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                <b style="color:#3b82f6;font-size:0.9rem;">R06 — STGCN drift khi thời tiết cực đoan</b>
+                <span style="font-family:'Azeret Mono',monospace;font-size:0.75rem;background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:10px;">LOW</span>
+            </div>
+            <div style="font-size:0.82rem;color:#475569;">Mitigation: RealGen augmentation + monthly retrain</div>
+        </div>
+    </div>
+    <div style="background:white;border-radius:12px;padding:14px 24px;width:90%;border:1px solid #e2e8f0;box-shadow:0 2px 8px rgba(0,0,0,0.06);display:flex;gap:24px;justify-content:center;text-align:center;">
+        <div><span style="display:inline-block;width:10px;height:10px;background:#f43f5e;border-radius:2px;margin-right:6px;"></span><b>HIGH:</b> 3 rủi ro</div>
+        <div><span style="display:inline-block;width:10px;height:10px;background:#f97316;border-radius:2px;margin-right:6px;"></span><b>HIGH:</b> 4 rủi ro</div>
+        <div><span style="display:inline-block;width:10px;height:10px;background:#eab308;border-radius:2px;margin-right:6px;"></span><b>MED:</b> 5 rủi ro</div>
+        <div><span style="display:inline-block;width:10px;height:10px;background:#3b82f6;border-radius:2px;margin-right:6px;"></span><b>LOW:</b> 2 rủi ro</div>
+        <div style="border-left:1px solid #e2e8f0;padding-left:24px;"><b style="color:#006699;">14 rủi ro</b> · Đầy đủ trong Phụ lục C</div>
+    </div>
+</div>

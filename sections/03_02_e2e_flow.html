@@ -1,0 +1,61 @@
+<div class="slide slide-container" style="justify-content:flex-start;padding-top:55px;">
+    <h2 style="font-size:2.4rem;font-weight:800;color:#006699;margin-bottom:30px;text-align:center;width:100%;">
+        <i class="fa-solid fa-arrow-right-arrow-left"></i> Luồng E2E — Từ Câu Hỏi Đến Báo Cáo
+    </h2>
+    <div style="display:flex;gap:0;width:92%;margin:0 auto;align-items:stretch;">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="background:#006699;color:white;border-radius:12px;padding:14px 18px;text-align:center;width:100%;box-sizing:border-box;">
+                <div style="font-size:1.3rem;">👤</div>
+                <div style="font-size:0.85rem;font-weight:700;margin-top:4px;">Operator</div>
+                <div style="font-size:0.75rem;opacity:0.8;">What-if Query</div>
+            </div>
+        </div>
+        <div style="display:flex;align-items:center;padding:0 8px;color:#94a3b8;font-size:1.4rem;">→</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;">
+            <div style="background:#8b5cf6;color:white;border-radius:12px;padding:14px 18px;text-align:center;width:100%;box-sizing:border-box;">
+                <div style="font-size:1.3rem;">🧩</div>
+                <div style="font-size:0.85rem;font-weight:700;margin-top:4px;">Orchestrator</div>
+                <div style="font-size:0.75rem;opacity:0.8;">Task Planning</div>
+            </div>
+        </div>
+        <div style="display:flex;align-items:center;padding:0 8px;color:#94a3b8;font-size:1.4rem;">→</div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+            <div style="background:#3b82f6;color:white;border-radius:10px;padding:10px 14px;text-align:center;font-size:0.82rem;font-weight:600;">🧠 Sim Agent<br><span style="opacity:0.8;font-size:0.7rem;">ADE Surrogate</span></div>
+            <div style="background:#10b981;color:white;border-radius:10px;padding:10px 14px;text-align:center;font-size:0.82rem;font-weight:600;">📚 Legal Agent<br><span style="opacity:0.8;font-size:0.7rem;">RAG + XiYanSQL</span></div>
+        </div>
+        <div style="display:flex;align-items:center;padding:0 8px;color:#94a3b8;font-size:1.4rem;">→</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;">
+            <div style="background:#f97316;color:white;border-radius:12px;padding:14px 18px;text-align:center;width:100%;box-sizing:border-box;">
+                <div style="font-size:1.3rem;">🔄</div>
+                <div style="font-size:0.85rem;font-weight:700;margin-top:4px;">CF-VLA Engine</div>
+                <div style="font-size:0.75rem;opacity:0.8;">Validate ≤ 3x</div>
+            </div>
+        </div>
+        <div style="display:flex;align-items:center;padding:0 8px;color:#94a3b8;font-size:1.4rem;">→</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;">
+            <div style="background:#10b981;color:white;border-radius:12px;padding:14px 18px;text-align:center;width:100%;box-sizing:border-box;">
+                <div style="font-size:1.3rem;">📄</div>
+                <div style="font-size:0.85rem;font-weight:700;margin-top:4px;">Báo Cáo</div>
+                <div style="font-size:0.75rem;opacity:0.8;">+ Legal Citation</div>
+            </div>
+        </div>
+    </div>
+    <div style="margin-top:30px;display:grid;grid-template-columns:repeat(4,1fr);gap:16px;width:92%;">
+        <div style="background:white;border-radius:10px;padding:14px;border:1px solid #e2e8f0;text-align:center;">
+            <div style="font-weight:700;color:#3b82f6;font-size:1.1rem;">Bước 1</div>
+            <div style="font-size:0.9rem;color:#475569;margin-top:4px;">Parse What-if → Task Graph</div>
+        </div>
+        <div style="background:white;border-radius:10px;padding:14px;border:1px solid #e2e8f0;text-align:center;">
+            <div style="font-weight:700;color:#3b82f6;font-size:1.1rem;">Bước 2</div>
+            <div style="font-size:0.9rem;color:#475569;margin-top:4px;">ADE Sim (Tensor → Prediction)</div>
+        </div>
+        <div style="background:white;border-radius:10px;padding:14px;border:1px solid #e2e8f0;text-align:center;">
+            <div style="font-weight:700;color:#3b82f6;font-size:1.1rem;">Bước 3</div>
+            <div style="font-size:0.9rem;color:#475569;margin-top:4px;">CF-VLA: Generate → Validate</div>
+        </div>
+        <div style="background:white;border-radius:10px;padding:14px;border:1px solid #e2e8f0;text-align:center;">
+            <div style="font-weight:700;color:#10b981;font-size:1.1rem;">✓ &lt; 3 phút</div>
+            <div style="font-size:0.9rem;color:#475569;margin-top:4px;">Report với legal_grounding</div>
+        </div>
+    </div>
+</div>

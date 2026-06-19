@@ -1,0 +1,61 @@
+<div class="slide slide-container" style="justify-content:flex-start;padding-top:55px;">
+    <h2 style="font-size:2.4rem;font-weight:800;color:#10b981;margin-bottom:30px;text-align:center;width:100%;">
+        <i class="fa-solid fa-table"></i> XiYanSQL — Text-to-SQL & RealGen
+    </h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;width:90%;margin:0 auto;">
+        <div>
+            <h3 style="color:#0ea5e9;font-size:1.15rem;margin-bottom:14px;">XiYanSQL Pipeline</h3>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+                <div style="display:flex;gap:12px;align-items:center;">
+                    <div style="min-width:32px;height:32px;border-radius:8px;background:#0ea5e9;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;">1</div>
+                    <div style="flex:1;background:rgba(14,165,233,0.07);border-radius:8px;padding:10px 14px;font-size:0.95rem;"><b>Schema Context</b> — inject full table schema vào prompt</div>
+                </div>
+                <div style="display:flex;gap:12px;align-items:center;">
+                    <div style="min-width:32px;height:32px;border-radius:8px;background:#0ea5e9;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;">2</div>
+                    <div style="flex:1;background:rgba(14,165,233,0.07);border-radius:8px;padding:10px 14px;font-size:0.95rem;"><b>SQL Generation</b> — LLM sinh SELECT/JOIN/GROUP BY</div>
+                </div>
+                <div style="display:flex;gap:12px;align-items:center;">
+                    <div style="min-width:32px;height:32px;border-radius:8px;background:#0ea5e9;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;">3</div>
+                    <div style="flex:1;background:rgba(14,165,233,0.07);border-radius:8px;padding:10px 14px;font-size:0.95rem;"><b>SQL Validator</b> — syntax + schema check trước execution</div>
+                </div>
+                <div style="display:flex;gap:12px;align-items:center;">
+                    <div style="min-width:32px;height:32px;border-radius:8px;background:#0ea5e9;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;">4</div>
+                    <div style="flex:1;background:rgba(14,165,233,0.07);border-radius:8px;padding:10px 14px;font-size:0.95rem;"><b>DuckDB Execute</b> — in-memory, không xuống prod DB</div>
+                </div>
+                <div style="display:flex;gap:12px;align-items:center;">
+                    <div style="min-width:32px;height:32px;border-radius:8px;background:#f97316;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;">↺</div>
+                    <div style="flex:1;background:rgba(249,115,22,0.07);border-radius:8px;padding:10px 14px;font-size:0.95rem;"><b>Self-Correct ≤ 3 lần</b> nếu lỗi syntax/schema</div>
+                </div>
+            </div>
+        </div>
+        <div>
+            <h3 style="color:#8b5cf6;font-size:1.15rem;margin-bottom:14px;">RealGen — Sinh Kịch Bản Biên</h3>
+            <div style="background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.2);border-radius:14px;padding:18px;margin-bottom:16px;">
+                <p style="font-size:0.95rem;color:#334155;line-height:1.7;">
+                    <b>Mục đích:</b> Tự động sinh edge cases cho kiểm thử ADE<br>
+                    <b>Input:</b> Historical extremes + seasonal patterns<br>
+                    <b>Output:</b> Synthetic scenarios (mưa + lễ + sự cố)
+                </p>
+            </div>
+            <h3 style="color:#0ea5e9;font-size:1.15rem;margin-bottom:12px;">KPI Tầng 3</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <div style="background:white;border-radius:10px;padding:14px;border-top:3px solid #10b981;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,0.06);">
+                    <div style="font-size:1.3rem;font-weight:800;color:#10b981;">Recall@3</div>
+                    <div style="font-size:1rem;font-weight:700;">≥ 85%</div>
+                </div>
+                <div style="background:white;border-radius:10px;padding:14px;border-top:3px solid #0ea5e9;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,0.06);">
+                    <div style="font-size:1.3rem;font-weight:800;color:#0ea5e9;">SQL Acc</div>
+                    <div style="font-size:1rem;font-weight:700;">≥ 90%</div>
+                </div>
+                <div style="background:white;border-radius:10px;padding:14px;border-top:3px solid #8b5cf6;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,0.06);">
+                    <div style="font-size:1.3rem;font-weight:800;color:#8b5cf6;">Legal</div>
+                    <div style="font-size:1rem;font-weight:700;">100%</div>
+                </div>
+                <div style="background:white;border-radius:10px;padding:14px;border-top:3px solid #f97316;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,0.06);">
+                    <div style="font-size:1.3rem;font-weight:800;color:#f97316;">Latency</div>
+                    <div style="font-size:1rem;font-weight:700;">&lt; 200ms</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
