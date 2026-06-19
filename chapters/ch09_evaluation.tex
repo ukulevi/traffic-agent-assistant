@@ -8,16 +8,16 @@ Hệ thống STWI được đánh giá theo chiến lược \textbf{phân tầng
 \centering
 \begin{tikzpicture}[scale=0.88]
   % Evaluation pyramid
-  \foreach \lvl/\label/\col/\w in {
+  \foreach \lvl/\lbl/\col/\pw in {
     0/Đánh giá E2E/accentorange/8,
     1/Đánh giá Tầng 4 (Agent + CF-VLA)/tier4col/7.2,
     2/Đánh giá Tầng 3 (RAG Recall\,\&\,SQL Acc.)/tier3col/6.4,
-    3/Đánh giá Tầng 2 (RMSE, TTP P99)/tier2col/5.6,
+    3/Đánh giá Tầng 2 (RMSE\, TTP P99)/tier2col/5.6,
     4/Đánh giá Tầng 1 (Data Quality)/tier1col/4.8
   }{
-    \node[rectangle, draw=\col!70, fill=\col!15, minimum width=\w cm, minimum height=0.7cm,
+    \node[rectangle, draw=\col!70, fill=\col!15, minimum width=\pw cm, minimum height=0.7cm,
       font=\small, text=\col!80!black] at (0, \lvl*0.9)
-      {\label};
+      {\lbl};
   }
   % Arrow
   \draw[-{Stealth[length=8pt]}, thick, bkblue!60]

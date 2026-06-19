@@ -245,11 +245,14 @@ Do các features có thang đo rất khác nhau (nhiệt độ 15--42$^\circ$C v
     {\texttt{[B, 12, 14]}};
 
   % Annotation arrows
-  \node[right=0.3cm of {(\dx+\ox, \dy/2+\oy/2)}, font=\tiny, text=codegray, text width=2.5cm, align=left]
+  \node[font=\tiny, text=codegray, text width=2.5cm, align=left]
+    at (\dx+\ox+0.8, \dy/2+\oy/2)
     {$B = 32$ hoặc $64$\\tùy VRAM GPU};
-  \node[below=0.2cm of {(\dx/2,-0.5)}, font=\tiny, text=codegray, text width=5cm, align=center]
+  \node[font=\tiny, text=codegray, text width=5cm, align=center]
+    at (\dx/2, -0.7)
     {14 features: 3 GT + 5 KT + 3 KK + 3 PT};
-  \node[left=0.3cm of {(-0.4,\dy/2)}, font=\tiny, text=codegray, text width=2.2cm, align=right]
+  \node[font=\tiny, text=codegray, text width=2.2cm, align=right]
+    at (-0.4-1.0, \dy/2)
     {12 bước $\times$ 5 phút\\$= 60$ phút lịch sử};
 \end{tikzpicture}
 \caption{Cấu trúc 3D Tensor đầu vào của Tầng 2}
