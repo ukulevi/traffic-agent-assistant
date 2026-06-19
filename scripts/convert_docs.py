@@ -88,16 +88,47 @@ def convert_md_file(md_path, chapters_dir, images_dir):
     # 4. Clean up relative markdown links (convert [text](./path.md) to **text**)
     content = re.sub(r'\[([^\]]+)\]\(\./[^)]+\.md\)', r'**\1**', content)
     
+    # 4.5 Clean up subscripts for chemical and air quality formulas to LaTeX math mode
+    content = content.replace('CO₂', 'CO$_2$')
+    content = content.replace('CO2', 'CO$_2$')
+    content = content.replace('PM₂.₅', 'PM$_{2.5}$')
+    content = content.replace('PM2.5', 'PM$_{2.5}$')
+    content = content.replace('PM₁₀', 'PM$_{10}$')
+    content = content.replace('PM10', 'PM$_{10}$')
+    content = content.replace('NOx', 'NO$_x$')
+    
     # Write to a temporary file
     temp_md_path = os.path.join(chapters_dir, f"temp_{base_name}.md")
     with open(temp_md_path, 'w', encoding='utf-8') as f:
         f.write(content)
         
     # 5. Call pandoc to convert to LaTeX .tex
-    cmd = ['pandoc', temp_md_path, '--listings', '-f', 'markdown', '-t', 'latex', '-o', tex_path]
+    pandoc_cmd = 'pandoc'
+    if os.name == 'nt':
+        # If pandoc is not in path, try to find it in local AppData
+        local_appdata = os.environ.get('LOCALAPPDATA', '')
+        if local_appdata:
+            local_pandoc = os.path.join(local_appdata, 'Pandoc', 'pandoc.exe')
+            if os.path.exists(local_pandoc):
+                pandoc_cmd = local_pandoc
+                
+    cmd = [pandoc_cmd, temp_md_path, '--listings', '-f', 'markdown', '-t', 'latex', '-o', tex_path]
     try:
         subprocess.run(cmd, check=True)
         print(f"Successfully compiled {filename} -> {tex_path}")
+        
+        # 6. Post-process the generated .tex file to replace \passthrough{\lstinline!...!} with \texttt{...}
+        if os.path.exists(tex_path):
+            with open(tex_path, 'r', encoding='utf-8') as tf:
+                tex_content = tf.read()
+            
+            # Replace \passthrough{\lstinline!...!} with \texttt{...} using regex supporting any delimiter
+            tex_content = re.sub(r'\\passthrough\{\\lstinline(.)(.*?)\1\}', r'\\texttt{\2}', tex_content)
+            
+            with open(tex_path, 'w', encoding='utf-8') as tf:
+                tf.write(tex_content)
+            print(f"Post-processed: {tex_path}")
+            
     except FileNotFoundError:
         print(f"Warning: Pandoc is not installed. Skipped converting {filename} to .tex.")
     except subprocess.CalledProcessError as e:

@@ -1,0 +1,25 @@
+# LaTeX build outputs
+*.pdf
+*.log
+*.aux
+*.toc
+*.lof
+*.lot
+*.fls
+*.fdb_latexmk
+*.xdv
+*.out
+*.synctex.gz
+
+# Generated chapters and web deploy folder
+chapters/
+web_deploy/
+
+# Generated mermaid images
+docs/images/mermaid_*.png
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
