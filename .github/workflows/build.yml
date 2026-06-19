@@ -7,6 +7,12 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   build-pdf:
@@ -214,3 +220,43 @@ jobs:
           files: dist/*.pdf
           draft: false
           prerelease: false
+
+  pages:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: build-pdf
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download PDF Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: stwi-technical-report-pdf
+          path: dist
+
+      - name: Prepare Pages content
+        run: |
+          mkdir -p _site
+          cp index.html _site/
+          PDF_FILE=$(ls dist/*.pdf 2>/dev/null | head -1)
+          if [ -n "$PDF_FILE" ]; then
+            cp "$PDF_FILE" _site/STWI_Technical_Report.pdf
+            echo "PDF included: $PDF_FILE"
+          else
+            echo "WARNING: No PDF found in artifact"
+          fi
+          [ -d docs/images ] && cp -r docs/images _site/ || true
+          ls -lh _site/
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
