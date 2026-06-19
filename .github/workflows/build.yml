@@ -59,21 +59,27 @@ jobs:
             -halt-on-error
             -file-line-error
 
-      - name: Show LaTeX Errors on Failure
+      - name: Save LaTeX Errors to File and Commit
         if: failure()
         run: |
-          echo "=== LaTeX FATAL ERRORS (lines with !) ==="
-          grep -n "^!" main.log 2>/dev/null | head -30 || echo "(no ! lines found)"
-          echo ""
-          echo "=== LaTeX Error lines ==="
-          grep -n "Error\|error\|undefined\|Undefined\|Missing\|Emergency stop" main.log 2>/dev/null | head -40 || echo "(no error lines)"
-          echo ""
-          echo "=== First 80 lines of log ==="
-          head -80 main.log 2>/dev/null || echo "(main.log not found)"
-          echo ""
-          echo "=== Last 150 lines of log ==="
-          tail -150 main.log 2>/dev/null || echo "(main.log not found)"
-          echo "=== End of Log ==="
+          {
+            echo "# LaTeX Build Error Log (Run ${{ github.run_number }})"
+            echo "SHA: ${GITHUB_SHA:0:8} | $(date -u)"
+            echo ""
+            echo "## Fatal Errors (lines with !)"
+            grep -n "^!" main.log 2>/dev/null | head -50 || echo "(no ! lines)"
+            echo ""
+            echo "## Error keywords"
+            grep -n "Error\|Undefined\|undefined\|Missing\|Emergency stop\|Fatal" main.log 2>/dev/null | head -60 || echo "(none)"
+            echo ""
+            echo "## Last 200 lines of main.log"
+            tail -200 main.log 2>/dev/null || echo "(main.log not found)"
+          } > latex_errors.md
+          git config user.email "ci@github.com"
+          git config user.name "GitHub CI"
+          git add latex_errors.md
+          git diff --cached --quiet || git commit -m "ci: add latex error log for run ${{ github.run_number }}" --no-verify
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:main || echo "push failed"
 
       - name: Verify PDF was created
         run: |
