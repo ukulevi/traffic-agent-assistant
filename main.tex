@@ -165,7 +165,13 @@
 % ============ COUNTERS ============
 \counterwithin{figure}{chapter}
 \counterwithin{table}{chapter}
-\counterwithin{lstlisting}{chapter}
+% listings v1.11b defines lstlisting counter inside \AtBeginDocument,
+% so we must defer our \counterwithin call likewise.
+\makeatletter
+\AtBeginDocument{%
+  \@ifundefined{c@lstlisting}{}{\counterwithin{lstlisting}{chapter}}%
+}
+\makeatother
 \MakePerPage{footnote}
 
 % ============ PAGE STYLE ============
