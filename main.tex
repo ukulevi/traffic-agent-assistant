@@ -76,9 +76,15 @@
 }
 
 % ============ FONTS ============
-\setmainfont[Ligatures=TeX]{TeX Gyre Termes}
-\setmonofont[Scale=0.85]{TeX Gyre Cursor}
-\setsansfont[Ligatures=TeX]{TeX Gyre Heros}
+\IfFontExistsTF{TeX Gyre Termes}
+  {\setmainfont[Ligatures=TeX]{TeX Gyre Termes}}
+  {\setmainfont[Ligatures=TeX]{Latin Modern Roman}}
+\IfFontExistsTF{TeX Gyre Cursor}
+  {\setmonofont[Scale=0.85]{TeX Gyre Cursor}}
+  {\setmonofont[Scale=0.85]{Latin Modern Mono}}
+\IfFontExistsTF{TeX Gyre Heros}
+  {\setsansfont[Ligatures=TeX]{TeX Gyre Heros}}
+  {\setsansfont[Ligatures=TeX]{Latin Modern Sans}}
 
 % ============ COLORS ============
 \definecolor{bkblue}{RGB}{0,82,165}
@@ -289,7 +295,7 @@ SMARTTRAFFIC WHAT-IF\\[0.2cm] (STWI)}
 {\fontsize{14}{17}\selectfont\bfseries
 HỆ THỐNG ĐIỀU PHỐI GIAO THÔNG THÔNG MINH\\[0.15cm]
 SỬ DỤNG TRÍ TUỆ NHÂN TẠO ĐA TÁC TỬ\\[0.15cm]
-VÀ CƠ CHẾ PHẢN THỰC TẾ CF-VLA}
+VÀ COUNTERFACTUAL SAFETY LOOP LẤY CẢM HỨNG TỪ CF-VLA}
 
 \vspace{1.1cm}
 

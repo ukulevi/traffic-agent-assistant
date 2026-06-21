@@ -1,67 +1,24 @@
-<div class="slide slide-container" style="justify-content:flex-start;padding-top:50px;">
-    <h2 style="font-size:2.4rem;font-weight:800;color:#006699;margin-bottom:28px;text-align:center;width:100%;">
-        <i class="fa-solid fa-chart-gantt"></i> Kế Hoạch 12 Tuần (T6 – T9/2026)
+<div class="slide slide-container" style="justify-content:flex-start;padding-top:42px;">
+    <h2 style="font-size:2.25rem;font-weight:800;color:#006699;margin-bottom:20px;text-align:center;width:100%;">
+        <i class="fa-solid fa-chart-gantt"></i> Kế Hoạch MVP 13 Tuần
     </h2>
-    <div style="width:90%;margin:0 auto;display:flex;flex-direction:column;gap:10px;">
-        <!-- Header -->
-        <div style="display:grid;grid-template-columns:220px 1fr 1fr 1fr 1fr;gap:4px;font-weight:700;font-size:0.85rem;color:#64748b;text-align:center;">
-            <div></div>
-            <div>Tháng 6</div><div>Tháng 7</div><div>Tháng 8</div><div>Tháng 9</div>
+    <div style="width:94%;margin:0 auto;display:flex;flex-direction:column;gap:7px;">
+        <div style="display:grid;grid-template-columns:250px repeat(13,1fr);gap:2px;font-size:0.68rem;color:#64748b;text-align:center;">
+            <div style="text-align:left;font-weight:700;">Workstream</div>
+            <div>T1</div><div>T2</div><div>T3</div><div>T4</div><div>T5</div><div>T6</div><div>T7</div><div>T8</div><div>T9</div><div>T10</div><div>T11</div><div>T12</div><div>T13</div>
         </div>
-        <!-- Phase 0 -->
-        <div style="display:grid;grid-template-columns:220px 1fr 1fr 1fr 1fr;gap:4px;align-items:center;">
-            <div style="font-size:0.9rem;font-weight:700;color:#006699;">Phase 0: Bootstrap</div>
-            <div style="background:#006699;border-radius:6px;height:28px;display:flex;align-items:center;justify-content:center;color:white;font-size:0.75rem;">Monorepo + CI/CD</div>
-            <div></div><div></div><div></div>
-        </div>
-        <!-- Phase 1 -->
-        <div style="display:grid;grid-template-columns:220px 1fr 1fr 1fr 1fr;gap:4px;align-items:center;">
-            <div style="font-size:0.9rem;font-weight:700;color:#f97316;">Phase 1: Data Pipeline</div>
-            <div style="background:#f97316;border-radius:6px;height:28px;display:flex;align-items:center;justify-content:center;color:white;font-size:0.75rem;">CCTV + Sensor</div>
-            <div style="background:#fb923c;border-radius:6px;height:28px;display:flex;align-items:center;justify-content:center;color:white;font-size:0.75rem;">Tensor Builder</div>
-            <div></div><div></div>
-        </div>
-        <!-- Phase 2 -->
-        <div style="display:grid;grid-template-columns:220px 1fr 1fr 1fr 1fr;gap:4px;align-items:center;">
-            <div style="font-size:0.9rem;font-weight:700;color:#3b82f6;">Phase 2: ML Models</div>
-            <div></div>
-            <div style="background:#3b82f6;border-radius:6px;height:28px;display:flex;align-items:center;justify-content:center;color:white;font-size:0.75rem;">STGCN+LSTM</div>
-            <div style="background:#60a5fa;border-radius:6px;height:28px;display:flex;align-items:center;justify-content:center;color:white;font-size:0.75rem;">ADE Surrogate</div>
-            <div></div>
-        </div>
-        <!-- Phase 3 -->
-        <div style="display:grid;grid-template-columns:220px 1fr 1fr 1fr 1fr;gap:4px;align-items:center;">
-            <div style="font-size:0.9rem;font-weight:700;color:#10b981;">Phase 3: RAG + SQL</div>
-            <div></div><div></div>
-            <div style="background:#10b981;border-radius:6px;height:28px;display:flex;align-items:center;justify-content:center;color:white;font-size:0.75rem;">Vector DB + XiYan</div>
-            <div></div>
-        </div>
-        <!-- Phase 4 -->
-        <div style="display:grid;grid-template-columns:220px 1fr 1fr 1fr 1fr;gap:4px;align-items:center;">
-            <div style="font-size:0.9rem;font-weight:700;color:#8b5cf6;">Phase 4: Multi-Agent</div>
-            <div></div><div></div>
-            <div style="background:#8b5cf6;border-radius:6px;height:28px;display:flex;align-items:center;justify-content:center;color:white;font-size:0.75rem;">CF-VLA + Agent</div>
-            <div style="background:#a78bfa;border-radius:6px;height:28px;display:flex;align-items:center;justify-content:center;color:white;font-size:0.75rem;">E2E Integration</div>
-        </div>
-        <!-- Phase 5 -->
-        <div style="display:grid;grid-template-columns:220px 1fr 1fr 1fr 1fr;gap:4px;align-items:center;">
-            <div style="font-size:0.9rem;font-weight:700;color:#f43f5e;">Phase 5: Test & Deploy</div>
-            <div></div><div></div><div></div>
-            <div style="background:#f43f5e;border-radius:6px;height:28px;display:flex;align-items:center;justify-content:center;color:white;font-size:0.75rem;">UAT + Production</div>
-        </div>
+        <div class="gantt-row"><b>Contracts · CI · Infra</b><span style="grid-column:2 / 3;background:#006699;">T1</span></div>
+        <div class="gantt-row"><b>Data/CCTV · Privacy</b><span style="grid-column:3 / 6;background:#f97316;">T2–4</span></div>
+        <div class="gantt-row"><b>Baselines · GCN–LSTM</b><span style="grid-column:4 / 9;background:#3b82f6;">T3–7</span></div>
+        <div class="gantt-row"><b>SUMO Dataset · Surrogate · Calibration</b><span style="grid-column:5 / 11;background:#6366f1;">T4–9</span></div>
+        <div class="gantt-row"><b>Legal Corpus · Retrieval · Typed Query</b><span style="grid-column:6 / 12;background:#10b981;">T5–10</span></div>
+        <div class="gantt-row"><b>LangGraph · Jobs · API/SSE · Dashboard</b><span style="grid-column:9 / 14;background:#8b5cf6;">T8–12</span></div>
+        <div class="gantt-row"><b>E2E · Security · Benchmark · Demo</b><span style="grid-column:13 / 15;background:#f43f5e;">T12–13</span></div>
     </div>
-    <div style="display:flex;gap:16px;margin-top:20px;width:90%;">
-        <div style="flex:1;background:white;border-radius:10px;padding:12px;border-top:3px solid #f97316;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,0.06);">
-            <div style="font-weight:700;color:#f97316;">M1 — T7/2026</div><div style="font-size:0.8rem;color:#64748b;">Tensor Pipeline OK</div>
-        </div>
-        <div style="flex:1;background:white;border-radius:10px;padding:12px;border-top:3px solid #3b82f6;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,0.06);">
-            <div style="font-weight:700;color:#3b82f6;">M2 — T8/2026</div><div style="font-size:0.8rem;color:#64748b;">ADE P99 &lt; 500ms</div>
-        </div>
-        <div style="flex:1;background:white;border-radius:10px;padding:12px;border-top:3px solid #10b981;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,0.06);">
-            <div style="font-weight:700;color:#10b981;">M3 — T8/2026</div><div style="font-size:0.8rem;color:#64748b;">RAG Recall@3 ≥ 85%</div>
-        </div>
-        <div style="flex:1;background:white;border-radius:10px;padding:12px;border-top:3px solid #8b5cf6;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,0.06);">
-            <div style="font-weight:700;color:#8b5cf6;">M4 — T9/2026</div><div style="font-size:0.8rem;color:#64748b;">E2E &lt; 3 phút</div>
-        </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px;width:94%;">
+        <div class="info-card"><b>Demo thật</b><br><span>20 node · ≤20 luồng ghi sẵn</span></div>
+        <div class="info-card"><b>Scale test</b><br><span>1.000 aggregate producers tổng hợp</span></div>
+        <div class="info-card"><b>Safety</b><br><span>Fail-closed · human approval</span></div>
+        <div class="info-card"><b>Acceptance</b><br><span>P99 surrogate &lt;500ms · E2E P95 ≤30s</span></div>
     </div>
 </div>

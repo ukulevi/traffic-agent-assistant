@@ -1,25 +1,19 @@
-Báo cáo này trình bày đặc tả kỹ thuật toàn diện cho hệ thống \textbf{SmartTraffic What-If (STWI)} --- một nền tảng điều phối giao thông đô thị thông minh thế hệ mới được phát triển tại Trường Đại học Bách Khoa, Đại học Quốc gia TP.HCM.
-
-Hệ thống STWI được thiết kế nhằm giải quyết bài toán cốt lõi trong quản lý giao thông đô thị: \textit{khả năng dự báo và phản ứng theo thời gian thực với các kịch bản sự cố bất ngờ}. Thay vì chỉ giám sát tình trạng giao thông hiện tại, STWI cho phép người điều hành đặt các câu hỏi ``What-if'' (Điều gì xảy ra nếu...) bằng ngôn ngữ tự nhiên và nhận được báo cáo phân tích chi tiết, đề xuất phương án điều phối có căn cứ pháp lý, trong thời gian dưới 3 phút.
+Báo cáo trình bày đặc tả kỹ thuật cho \textbf{SmartTraffic What-If (STWI)}, một MVP 13 tuần hỗ trợ người vận hành đánh giá kịch bản giao thông giả định. Hệ thống cung cấp bằng chứng và khuyến nghị; không tự điều khiển đèn tín hiệu hay thiết bị hiện trường.
 
 \bigskip
-\textbf{Kiến trúc hệ thống} được tổ chức thành 4 tầng (Tiers) tương tác khép kín:
+\textbf{Phạm vi MVP} gồm mạng chức năng 20 node và tối đa 20 luồng camera ghi sẵn/RTSP. Khả năng tiếp nhận quy mô 1.000 camera được kiểm thử bằng producer dữ liệu tổng hợp đã aggregate, không phải 1.000 luồng video inference đồng thời. Video thô được xử lý tại biên và không được lưu mặc định.
 
+\bigskip
+Kiến trúc gồm bốn tầng:
 \begin{itemize}[leftmargin=1.5cm, itemsep=4pt]
-  \item \textbf{Tầng 1 --- Thu thập \& Chuẩn hóa Dữ liệu:} Xử lý luồng dữ liệu đa phương thức từ 1.000 camera CCTV (dùng YOLOv8 + ByteTrack) và mạng lưới cảm biến môi trường (CO, NO$_x$, PM$_{2.5}$, v.v.), chuẩn hóa qua MinMaxScaler thành Tensor 3D có shape \texttt{[Batch, 12, 14]}.
-
-  \item \textbf{Tầng 2 --- Dự báo \& Giả lập:} Mô hình học sâu lai STGCN + Stacked LSTM nắm bắt đặc trưng Không gian--Thời gian của dòng xe. Mô hình thay thế ADE (Adversarial Diverse Deep Ensemble) cho phép suy luận kịch bản trong thời gian $<500$ms.
-
-  \item \textbf{Tầng 3 --- Tri thức Đô thị (RAG):} Vector Database lưu trữ SOP và Luật GTĐB được nhúng bằng BGE-m3. Module XiYanSQL dịch câu hỏi tự nhiên sang SQL để truy vấn chính xác số liệu cấu trúc. RealGen tái tạo các kịch bản cận biên (Corner Cases) để tăng độ chính xác.
-
-  \item \textbf{Tầng 4 --- Tác tử Điều phối (Multi-Agent):} Khung đa tác tử xây dựng trên LangChain/CrewAI với Orchestrator điều phối 3 tác tử con. Cơ chế CF-VLA (Counterfactual--Vision--Language--Action) thực hiện phản biện phản thực tế bắt buộc trước khi xuất bất kỳ đề xuất nào, đảm bảo V/C ratio tại tất cả nút lân cận $\leq 0{,}9$.
+  \item \textbf{Tầng 1 --- Dữ liệu:} YOLOv8 + ByteTrack, MQTT và tensor có node axis $\mathbf{X}\in\mathbb{R}^{B\times12\times N\times16}$, missing mask cùng shape và adjacency $\mathbf{A}\in\mathbb{R}^{N\times N}$.
+  \item \textbf{Tầng 2 --- Dự báo và mô phỏng:} GCN--LSTM sinh baseline 30 phút $\mathbf{Y}\in\mathbb{R}^{B\times6\times N\times2}$; surrogate ensemble học từ các lần chạy SUMO offline để đánh giá \textit{IncidentVector}.
+  \item \textbf{Tầng 3 --- Tri thức:} Qdrant lưu luật/SOP theo điều khoản và hiệu lực. LLM sinh \textit{SimulationQuery} có kiểu; server dựng SQL tham số hóa trên TimescaleDB bằng read-only role.
+  \item \textbf{Tầng 4 --- Điều phối:} LangGraph, Celery, Redis và API job bất đồng bộ. Counterfactual Safety Loop lấy cảm hứng từ CF-VLA nhưng áp dụng chính sách fail-closed và luôn yêu cầu operator phê duyệt.
 \end{itemize}
 
 \bigskip
-\textbf{Các kết quả kỳ vọng:} Hệ thống đạt thời gian phản hồi end-to-end dưới 3 phút, thời gian suy luận lõi AI ($P_{99}$) dưới 500ms, 100\% đề xuất có trích dẫn pháp lý (Zero Hallucination Policy), và tự động hiệu chỉnh phương án khi phát hiện nguy cơ tắc nghẽn tầng (Cascade Congestion).
+Các mục tiêu nghiệm thu là surrogate $P_{99}<500$ms trên máy 8 CPU cores, 32GB RAM và GPU 12--16GB; E2E $P_{95}\leq30$s và hard deadline/$P_{99}\leq180$s. Khi OOD, uncertainty cao, thiếu citation hoặc vòng an toàn không hội tụ, hệ thống trả \texttt{needs\_review} và không phát hành hành động có thể thi hành.
 
 \bigskip
-\textbf{Cấu trúc báo cáo:} Tài liệu gồm 10 chương, bao phủ từ cơ sở lý thuyết (Chương 2), đặc tả kỹ thuật chi tiết từng tầng (Chương 3--7), kế hoạch triển khai theo giai đoạn (Chương 8), phương pháp đánh giá (Chương 9) và phân tích rủi ro (Chương 10), kèm theo phụ lục đặc tả API và schema dữ liệu.
-
-\bigskip
-\noindent\textbf{Từ khóa:} Điều phối giao thông thông minh, STGCN, LSTM, Neural Surrogate Model, RAG, Multi-Agent AI, Counterfactual Reasoning, What-if Analysis, CF-VLA.
+\noindent\textbf{Từ khóa:} Điều phối giao thông thông minh, GCN--LSTM, Neural Surrogate, SUMO, RAG, Typed Query, Counterfactual Safety Loop, What-if Analysis.

@@ -1,6 +1,6 @@
 <div class="slide slide-container" style="justify-content:flex-start;padding-top:60px;">
     <h2 style="font-size:2.4rem;font-weight:800;color:#8b5cf6;margin-bottom:30px;text-align:center;width:100%;">
-        <i class="fa-solid fa-code-branch"></i> CF-VLA — Phân Tích Phản Thực Tế
+        <i class="fa-solid fa-code-branch"></i> Counterfactual Safety Loop — Phân Tích Phản Thực Tế
     </h2>
     <div style="display:grid;grid-template-columns:1fr 1.2fr;gap:30px;width:90%;margin:0 auto;align-items:start;">
         <div>
@@ -8,13 +8,13 @@
             <ul style="font-size:1.1rem;line-height:1.9;color:#334155;list-style:none;padding:0;">
                 <li>❓ <b>Câu hỏi What-if:</b> "Nếu mở thêm làn xe, V/C giảm bao nhiêu?"</li>
                 <li>🔄 CF tạo ra phương án A' từ A: $\mathbf{a}' = f_{CF}(\mathbf{s}, \mathbf{a}, q)$</li>
-                <li>🧪 Chạy ADE Surrogate với phương án mới</li>
+                <li>🧪 Chạy Surrogate Ensemble với phương án mới</li>
                 <li>📊 So sánh kết quả: $\Delta_{V/C}, \Delta_{TTP}, \Delta_{emission}$</li>
-                <li>✅ Phê duyệt nếu V/C ≤ 0.9 + legal_grounding OK</li>
+                <li>✅ Chỉ tạo candidate khi policy + citations hợp lệ; operator phê duyệt</li>
             </ul>
         </div>
         <div>
-            <h3 style="color:#8b5cf6;font-size:1.2rem;margin-bottom:16px;">Vòng Lặp CF-VLA (≤ 3 lần)</h3>
+            <h3 style="color:#8b5cf6;font-size:1.2rem;margin-bottom:16px;">Vòng Lặp Counterfactual Safety Loop (≤ 3 lần)</h3>
             <div style="display:flex;flex-direction:column;gap:12px;">
                 <div style="display:flex;gap:12px;align-items:center;">
                     <div style="min-width:36px;height:36px;border-radius:50%;background:#8b5cf6;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;">1</div>
@@ -22,15 +22,15 @@
                 </div>
                 <div style="display:flex;gap:12px;align-items:center;">
                     <div style="min-width:36px;height:36px;border-radius:50%;background:#8b5cf6;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;">2</div>
-                    <div style="font-size:1rem;color:#334155;background:rgba(139,92,246,0.06);border-radius:8px;padding:10px 14px;flex:1;"><b>Simulate:</b> ADE chạy mô phỏng nhanh với phương án đó</div>
+                    <div style="font-size:1rem;color:#334155;background:rgba(139,92,246,0.06);border-radius:8px;padding:10px 14px;flex:1;"><b>Simulate:</b> surrogate ensemble chạy mô phỏng nhanh với phương án đó</div>
                 </div>
                 <div style="display:flex;gap:12px;align-items:center;">
                     <div style="min-width:36px;height:36px;border-radius:50%;background:#8b5cf6;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;">3</div>
-                    <div style="font-size:1rem;color:#334155;background:rgba(139,92,246,0.06);border-radius:8px;padding:10px 14px;flex:1;"><b>Validate:</b> RAG kiểm tra pháp lý + CF-VLA đánh giá an toàn</div>
+                    <div style="font-size:1rem;color:#334155;background:rgba(139,92,246,0.06);border-radius:8px;padding:10px 14px;flex:1;"><b>Validate:</b> RAG kiểm tra pháp lý + Counterfactual Safety Loop đánh giá an toàn</div>
                 </div>
                 <div style="display:flex;gap:12px;align-items:center;">
                     <div style="min-width:36px;height:36px;border-radius:50%;background:#10b981;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;">✓</div>
-                    <div style="font-size:1rem;color:#334155;background:rgba(16,185,129,0.08);border-radius:8px;padding:10px 14px;flex:1;border:1px solid rgba(16,185,129,0.3);"><b>Approve:</b> Báo cáo với đầy đủ reasoning + legal citation</div>
+                    <div style="font-size:1rem;color:#334155;background:rgba(16,185,129,0.08);border-radius:8px;padding:10px 14px;flex:1;border:1px solid rgba(16,185,129,0.3);"><b>Human review:</b> Báo cáo có citations; operator quyết định</div>
                 </div>
             </div>
         </div>

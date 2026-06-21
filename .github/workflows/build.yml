@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build-pdf:
@@ -33,18 +33,10 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Pandoc
+      - name: Validate canonical contract and documentation
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y pandoc
-          pandoc --version
-
-      - name: Convert Markdown Docs to LaTeX (via Pandoc)
-        run: |
-          echo "Running convert_docs.py..."
-          python scripts/convert_docs.py
-          echo "Generated .tex files:"
-          ls chapters/*.tex 2>/dev/null || echo "(none generated)"
+          python scripts/validate_docs.py
+          python -m unittest tests.test_project_contract
 
       - name: Compile LaTeX to PDF (XeLaTeX via latexmk)
         uses: xu-cheng/latex-action@v3
@@ -59,7 +51,7 @@ jobs:
             -halt-on-error
             -file-line-error
 
-      - name: Save LaTeX Errors to File and Commit
+      - name: Capture LaTeX Errors
         if: failure()
         run: |
           {
@@ -75,11 +67,6 @@ jobs:
             echo "## Last 200 lines of main.log"
             tail -200 main.log 2>/dev/null || echo "(main.log not found)"
           } > latex_errors.md
-          git config user.email "ci@github.com"
-          git config user.name "GitHub CI"
-          git add latex_errors.md
-          git diff --cached --quiet || git commit -m "ci: add latex error log for run ${{ github.run_number }}" --no-verify
-          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:main || echo "push failed"
 
       - name: Verify PDF was created
         run: |
@@ -122,12 +109,15 @@ jobs:
             main.toc
             main.lof
             main.lot
+            latex_errors.md
           retention-days: 7
 
   release:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     needs: build-pdf
+    permissions:
+      contents: write
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -148,9 +138,9 @@ jobs:
             echo "## Bao cao Ky thuat STWI v2.0 -- Build ${{ github.run_number }}"
             echo ""
             echo "**SmartTraffic What-If (STWI)** -- He thong dieu phoi giao thong thong minh"
-            echo "su dung AI Da tac tu, CF-VLA va RAG."
+            echo "su dung AI Da tac tu, Counterfactual Safety Loop va RAG."
             echo ""
-            echo "### Noi dung bao cao (PDF ~100 trang)"
+            echo "### Noi dung bao cao"
             echo ""
             echo "| Chuong | Noi dung |"
             echo "|--------|----------|"
@@ -158,10 +148,10 @@ jobs:
             echo "| Chuong 2 | Co so Ly thuyet (GCN, LSTM, RAG, CF) |"
             echo "| Chuong 3 | Kien truc He thong 4 Tang tong the |"
             echo "| Chuong 4 | Tang 1: CCTV Pipeline + Tensor Builder |"
-            echo "| Chuong 5 | Tang 2: STGCN+LSTM + ADE Surrogate |"
-            echo "| Chuong 6 | Tang 3: Vector DB + XiYanSQL + RealGen |"
-            echo "| Chuong 7 | Tang 4: Multi-Agent + CF-VLA Engine |"
-            echo "| Chuong 8 | Ke hoach Trien khai 12 tuan (Gantt) |"
+            echo "| Chuong 5 | Tang 2: GCN–LSTM + Surrogate Ensemble |"
+            echo "| Chuong 6 | Tang 3: Vector DB + Typed Query Service + Case Retrieval |"
+            echo "| Chuong 7 | Tang 4: Multi-Agent + Counterfactual Safety Loop |"
+            echo "| Chuong 8 | Ke hoach Trien khai MVP 13 tuan |"
             echo "| Chuong 9 | Phuong phap Danh gia va Kiem thu |"
             echo "| Chuong 10 | Phan tich Rui ro (Risk Register 14 rui ro) |"
             echo "| Phu luc A | Dac ta REST API day du |"
@@ -170,11 +160,12 @@ jobs:
             echo ""
             echo "### Cac Rang buoc Ky thuat Chinh (KPI)"
             echo ""
-            echo "- TTP ADE Surrogate: P99 < 500ms"
-            echo "- E2E Latency: < 3 phut"
-            echo "- CF-VLA: Bat buoc 100%, khong duoc bypass"
-            echo "- No-Hallucination: 100% response co legal_grounding"
-            echo "- V/C Safety Threshold: <= 0.9 tai tat ca nut lan can"
+            echo "- TTP Surrogate Ensemble: P99 < 500ms"
+            echo "- E2E Latency: P95 <= 30s; P99/hard deadline <= 180s"
+            echo "- Safety failures: fail closed + operator review"
+            echo "- Legal evidence: structured citations + effective-date validation"
+            echo "- V/C 0.9: default configurable policy, not a legal threshold"
+            echo "- Scope: 20-node demo; 1,000 synthetic aggregate producers"
             echo ""
             echo "### Commit Changelog"
             echo ""
@@ -214,4 +205,3 @@ jobs:
           files: dist/*.pdf
           draft: false
           prerelease: false
-

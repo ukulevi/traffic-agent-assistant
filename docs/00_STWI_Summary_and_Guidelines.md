@@ -4,204 +4,153 @@
 |---|---|
 | **Dự án** | SmartTraffic What-If (STWI) |
 | **Mã tài liệu** | STWI-DOC-00 |
-| **Phiên bản** | 1.1 |
+| **Phiên bản** | 1.4 |
 | **Ngày tạo** | 15/06/2026 |
-| **Cập nhật lần cuối** | 15/06/2026 |
+| **Cập nhật lần cuối** | 21/06/2026 |
 | **Trạng thái** | 📝 Đang soạn thảo (Draft) |
-| **Phân loại** | Tài liệu nội bộ — Báo cáo tiến độ |
+| **Phân loại** | Tài liệu nội bộ — Nguồn sự thật kiến trúc |
 
-> [!NOTE]
-> Đây là tài liệu "Kim chỉ nam" tóm tắt bức tranh toàn cảnh về kiến trúc, luồng xử lý và các quy chuẩn phát triển (Rules) bắt buộc tuân theo cho toàn bộ đội ngũ lập trình và vận hành dự án STWI.
+> [!IMPORTANT]
+> Tài liệu này và [`project_contract.json`](../project_contract.json) là nguồn sự thật của MVP. Báo cáo LaTeX, slides và release notes phải tuân theo các hợp đồng tại đây.
 
----
+## 1. Mục tiêu và phạm vi MVP
 
-## Mục lục
+STWI là hệ thống **hỗ trợ ra quyết định**, chuyển câu hỏi What-if của người vận hành thành dự báo định lượng, căn cứ pháp lý và một phương án để con người xem xét. MVP không tự điều khiển đèn tín hiệu hoặc thiết bị hiện trường.
 
-- [1. Tổng hợp Kiến trúc Hệ thống](#1-tổng-hợp-kiến-trúc-hệ-thống)
-- [2. Quy trình Luồng Xử lý (Workflow Pipeline)](#2-quy-trình-luồng-xử-lý-workflow-pipeline)
-- [3. Các Quy chuẩn Kỹ thuật Bắt buộc](#3-các-quy-chuẩn-kỹ-thuật-bắt-buộc)
-- [4. Tài liệu Tham khảo](#4-tài-liệu-tham-khảo)
-- [Phụ lục: Lịch sử Phiên bản](#phụ-lục-lịch-sử-phiên-bản)
+| Hạng mục | Phạm vi 13 tuần |
+|---|---|
+| Mạng chức năng | 20 node, tối đa 20 luồng camera ghi sẵn/RTSP |
+| Kiểm thử quy mô | 1.000 producer tổng hợp gửi bản ghi đã trích xuất; không xử lý thật 1.000 video stream |
+| Dữ liệu hình ảnh | Xử lý tại biên; không lưu hoặc phát hành video thô |
+| Đầu ra | Khuyến nghị cho operator; luôn cần phê duyệt thủ công |
+| Hiệu năng | Surrogate P99 < 500 ms; E2E P95 ≤ 30 giây; hard deadline/P99 ≤ 180 giây |
 
----
-
-## 1. Tổng hợp Kiến trúc Hệ thống
-
-Hệ thống STWI được cấu trúc thành **4 phân tầng (Tiers)** tương tác chặt chẽ tạo thành một chu trình khép kín, chuyển hóa từ Dữ liệu thô (Raw Data) -> Dự báo số liệu (Prediction) -> Tri thức pháp lý (Legal Knowledge) -> Hành động điều phối (Action).
-
-### Sơ đồ Kiến trúc Tổng quan
+## 2. Kiến trúc bốn tầng
 
 ```mermaid
-graph TB
-    subgraph T1 [Tầng 1 - Thu Thập & Chuẩn Hóa Dữ Liệu]
-        A1["📹 CCTV x 1000\nYOLO + ByteTrack"]
-        A2["🌡️ Cảm biến Môi trường\nCO, NOx, PM2.5"]
-        A3["☁️ Trạm Khí tượng\nNhiệt, Ẩm, Gió"]
-        A4["⚙️ Data Normalization\nMinMaxScaler -> 3D Tensor"]
+flowchart TB
+    subgraph T1["Tầng 1 — Thu thập và chuẩn hóa"]
+        CAM["Camera demo ≤ 20\nYOLOv8 + ByteTrack"]
+        SENSOR["Cảm biến MQTT"]
+        BUILD["Đồng bộ node/time\nX[B,12,N,16] + M[B,12,N,16]"]
+        CAM --> BUILD
+        SENSOR --> BUILD
     end
-
-    subgraph T2 [Tầng 2 - Dự Báo & Giả Lập]
-        B1["🧠 STGCN + Stacked LSTM\nSpatial-Temporal Learning"]
-        B2["⚡ Surrogate Model ADE\nInference < 500ms"]
+    subgraph T2["Tầng 2 — Dự báo và mô phỏng"]
+        BASE["GCN–LSTM\nBaseline Y[B,6,N,2]"]
+        SUR["Surrogate ensemble\nHuấn luyện từ SUMO offline"]
+        OOD["Uncertainty + OOD gate"]
+        BASE --> SUR --> OOD
     end
-
-    subgraph T3 [Tầng 3 - Tri Thức Đô Thị]
-        C1["📚 Vector Database\nSOP + Luật GTĐB"]
-        C2["🔍 XiYanSQL\nText-to-SQL"]
-        C3["🔄 RealGen\nCorner Case Retrieval"]
+    subgraph T3["Tầng 3 — Tri thức và truy vấn"]
+        QD["Qdrant\nLuật + SOP + case lịch sử"]
+        QUERY["SimulationQuery có kiểu\nSQL tham số hóa / TimescaleDB"]
+        CITE["Citation validator\nHiệu lực + điều/khoản"]
+        QD --> CITE
+        QUERY --> CITE
     end
-
-    subgraph T4 [Tầng 4 - Tác Tử Điều Phối]
-        D1["🤖 Orchestrator\nLangChain / CrewAI"]
-        D2["🧪 Simulation Agent"]
-        D3["⚖️ Legal Agent"]
-        D4["📊 Evaluation Agent"]
-        D5["🔁 CF-VLA\nCounterfactual Reflection"]
+    subgraph T4["Tầng 4 — Điều phối"]
+        API["FastAPI + Celery + Redis\nAsync jobs + SSE"]
+        GRAPH["LangGraph workflow"]
+        CSL["Counterfactual Safety Loop\nFail closed"]
+        REVIEW["Operator review\nKhông tự actuate"]
+        API --> GRAPH --> CSL --> REVIEW
     end
-
-    A1 --> A4
-    A2 --> A4
-    A3 --> A4
-    A4 --> B1
-    B1 --> B2
-    B2 --> D2
-    C1 --> C2
-    C2 --> D3
-    C3 --> D2
-    D1 --> D2
-    D1 --> D3
-    D1 --> D4
-    D4 --> D5
-    D5 --> E["📺 Dashboard / Operator"]
-    D5 --> D4
-
-    style A4 fill:#1e3a5f,stroke:#4a9eff,color:#fff
-    style B2 fill:#1e3a5f,stroke:#4a9eff,color:#fff
-    style D5 fill:#5c2d00,stroke:#ff9500,color:#fff
-    style E fill:#1a4d1a,stroke:#4ade80,color:#fff
+    BUILD --> BASE
+    BUILD --> SUR
+    OOD --> GRAPH
+    CITE --> GRAPH
 ```
 
-### Mô tả từng Tầng
+| Tầng | Trách nhiệm | Tài liệu chi tiết |
+|---|---|---|
+| 1 | Chuyển dữ liệu camera/cảm biến thành tensor theo node, thời gian và missing mask | [STWI-DOC-01](./01_System_Architecture_Data_Pipeline.md) |
+| 2 | Dự báo baseline bằng GCN–LSTM; mô phỏng kịch bản bằng surrogate ensemble | [STWI-DOC-02](./02_ML_and_Simulation_Specification.md) |
+| 3 | Truy xuất luật/SOP có phiên bản và truy vấn số liệu qua schema có kiểu | [STWI-DOC-03](./03_Knowledge_Base_and_RAG_Design.md) |
+| 4 | Chạy workflow bất đồng bộ, phản biện an toàn và chuyển operator duyệt | [STWI-DOC-04](./04_AI_Agent_Orchestrator_CF_VLA.md) |
 
-| Tầng | Tên gọi | Mô tả ngắn gọn | Tài liệu chi tiết |
-|------|---------|-----------------|---------------------|
-| **1** | Thu Thập & Chuẩn Hóa Dữ Liệu | Thu thập từ Camera CCTV (YOLO, ByteTrack) và Cảm biến. Chuẩn hóa thành `3D Tensor` chứa lịch sử 60 phút. | [📄 01_System_Architecture](./01_System_Architecture_Data_Pipeline.md) |
-| **2** | Dự Báo & Giả Lập | Kiến trúc lai `STGCN + Stacked LSTM` cho đặc trưng Không gian-Thời gian. Surrogate Model `ADE` giả lập kịch bản với tốc độ < 500ms. | [📄 02_ML_and_Simulation](./02_ML_and_Simulation_Specification.md) |
-| **3** | Tri Thức Đô Thị (RAG) | Vector Database lưu trữ SOP & Luật GTĐB. `XiYanSQL` chuyển text -> SQL truy vấn số liệu. `RealGen` tái tạo kịch bản biên. | [📄 03_Knowledge_Base_RAG](./03_Knowledge_Base_and_RAG_Design.md) |
-| **4** | Tác Tử Điều Phối | Khung `Multi-Agent` với 3 tác tử con. Lõi suy luận `CF-VLA` tự phản biện trước khi hành động. | [📄 04_AI_Agent_CF-VLA](./04_AI_Agent_Orchestrator_CF_VLA.md) |
-
----
-
-## 2. Quy trình Luồng Xử lý (Workflow Pipeline)
-
-Quy trình End-to-End từ khi Người điều hành (Operator) nhập một kịch bản "What-if" cho đến khi xuất báo cáo hành động:
-
-### Sơ đồ Luồng Xử lý
+## 3. Luồng xử lý E2E
 
 ```mermaid
 sequenceDiagram
-    actor OP as 👤 Operator
-    participant ORC as 🤖 Orchestrator
-    participant SIM as 🧪 Simulation Agent
-    participant T2 as ⚡ Tầng 2 (ADE)
-    participant LEG as ⚖️ Legal Agent
-    participant T3 as 📚 Tầng 3 (RAG)
-    participant EVA as 📊 Evaluation Agent
-    participant DB as 📺 Dashboard
-
-    OP->>ORC: Kịch bản What-if
-    Note over OP,ORC: "Nếu đóng ngã tư A do tai nạn,<br/>dòng xe chuyển sang đường B thì sao?"
-
-    Note over ORC,T2: Bước 1-2: Phân rã & Mô phỏng
-    ORC->>SIM: Giao nhiệm vụ mô phỏng
-    ORC->>LEG: Giao nhiệm vụ tra cứu pháp lý
-    SIM->>T2: Nạp Tensor 3D + Vector sự cố
-    T2-->>SIM: Ma trận lưu lượng dự báo (< 500ms)
-
-    Note over LEG,T3: Bước 3: Truy xuất Tri thức
-    LEG->>T3: XiYanSQL -> Truy vấn In-memory DB
-    T3-->>LEG: Số liệu + SOP liên quan
-
-    Note over EVA,T2: Bước 4: Suy luận CF-VLA
-    EVA->>EVA: Đề xuất phương án sơ bộ
-    EVA->>T2: Counterfactual Reflection<br/>(Kiểm tra Cascade Congestion tại nút C)
-    T2-->>EVA: V/C ratio nút C
-    alt V/C <= 0.9 (An toàn)
-        EVA->>DB: ✅ Xuất phương án lên Dashboard
-    else V/C > 0.9 (Không an toàn)
-        EVA->>EVA: 🔁 Hiệu chỉnh phương án
-        EVA->>T2: Mô phỏng lại với phương án mới
+    actor OP as Operator
+    participant API as Job API
+    participant LG as LangGraph Worker
+    participant SIM as GCN–LSTM + Surrogate
+    participant KB as Qdrant + Query Service
+    participant CSL as Safety Loop
+    OP->>API: POST /api/v1/what-if-jobs
+    API-->>OP: 202 + job_id + events_url
+    API->>LG: Celery job
+    LG->>SIM: Baseline + IncidentVector
+    SIM-->>LG: SimulationResult + uncertainty
+    LG->>KB: SOP/luật + SimulationQuery
+    KB-->>LG: metrics + citations[]
+    LG->>CSL: Candidate action
+    loop Tối đa 3 vòng
+        CSL->>SIM: Counterfactual simulation
+        SIM-->>CSL: Safety metrics
     end
-
-    DB-->>OP: Báo cáo + Đề xuất hành động
+    alt An toàn, đủ căn cứ
+        CSL-->>API: succeeded + recommended_action
+    else Không hội tụ, OOD hoặc thiếu căn cứ
+        CSL-->>API: needs_review + candidate_action
+    end
+    API-->>OP: SSE progress + kết quả
 ```
 
-### Mô tả chi tiết từng Bước
+## 4. Hợp đồng bất biến
 
-| Bước | Tên gọi | Mô tả |
-|------|---------|-------|
-| **1** | Tiếp nhận & Phân rã | Operator nhập kịch bản. Orchestrator phân tích và giao việc cho Simulation Agent & Legal Agent. |
-| **2** | Xử lý Số liệu | Simulation Agent kích hoạt Tầng 2. Nạp dữ liệu hiện tại (Tensor 3D) + Vector sự cố. Surrogate Model dự báo và đẩy kết quả vào In-memory DB. |
-| **3** | Truy xuất Tri thức | Legal Agent dùng `XiYanSQL` truy vấn số liệu từ In-memory DB. Đồng thời search Vector DB lấy SOP quy định xử lý sự cố. |
-| **4** | Suy luận CF-VLA | Evaluation Agent đề xuất phương án -> Kích hoạt phản biện Counterfactual -> Kiểm tra Cascade Congestion tại các nút lân cận. |
-| **5** | Xuất Báo cáo | Nếu V/C <= 0.9: xuất phương án lên Dashboard. Nếu V/C > 0.9: vòng lặp quay lại Bước 4 để hiệu chỉnh. |
+### 4.1. Dữ liệu
 
----
+| Hợp đồng | Giá trị |
+|---|---|
+| Input | `X[B,12,N,16]` — batch × 12 bước × node × 16 features |
+| Missing mask | `M[B,12,N,16]`, 1 nếu quan sát thật, 0 nếu thiếu/imputed |
+| Graph | `A[N,N]` với node order cố định theo `node_registry` |
+| Baseline output | `Y[B,6,N,2]`: `traffic_volume_5m`, `avg_speed_kmh` |
+| V/C | Tính xác định từ lưu lượng dự báo và capacity có phiên bản của node |
+| Scaling | Chỉ fit/scale feature liên tục trên training split; không scale cyclical/ratio |
 
-## 3. Các Quy chuẩn Kỹ thuật Bắt buộc
+### 4.2. An toàn và pháp lý
 
-> [!CAUTION]
-> Toàn bộ code và thiết kế hệ thống **PHẢI** tuân thủ nghiêm ngặt các quy chuẩn dưới đây. Vi phạm bất kỳ quy chuẩn nào đều yêu cầu review lại bởi Hội đồng Kiến trúc.
+1. **Counterfactual Safety Loop** lấy cảm hứng từ CF-VLA nhưng không được mô tả như mô hình VLA end-to-end.
+2. Ngưỡng V/C mặc định `0.9` là policy cấu hình, không phải quy định pháp luật.
+3. Không hội tụ, OOD, uncertainty cao hoặc thiếu citation hợp lệ đều phải **fail closed**.
+4. `succeeded` mới được có `recommended_action`; `needs_review` chỉ có `candidate_action`.
+5. Mọi citation phải chỉ rõ văn bản, điều/khoản, URL nguồn, thời gian hiệu lực và trạng thái thay thế.
+6. Operator phải phê duyệt; MVP không gửi lệnh điều khiển ra thiết bị hiện trường.
 
-### 3.1. Quy chuẩn Độ trễ (Latency Limits)
+### 4.3. Quan sát và bảo mật
 
-| Chỉ số | Ngưỡng bắt buộc | Ghi chú |
-|--------|------------------|---------|
-| Tổng thời gian phản hồi End-to-End | **< 3 phút** | Từ khi nhận câu lệnh What-if -> Xuất báo cáo |
-| Thời gian suy luận lõi AI (TTP) | **< 500ms** | Tầng 2 — Surrogate Model inference, đo tại P99 |
+- Mọi job có `job_id`, `trace_id`, model/data version và audit trail.
+- SQL chỉ được tạo từ `SimulationQuery` đã validate, tham số hóa và chạy bằng read-only role.
+- Văn bản truy xuất được xem là dữ liệu không tin cậy; prompt injection không được phép thay đổi policy hệ thống.
+- Chỉ lưu aggregate camera; không lưu video thô trong MVP.
 
-### 3.2. Quy chuẩn Dữ liệu (Data Integrity)
+## 5. Nguồn pháp lý tối thiểu
 
-| Quy tắc | Chi tiết |
-|---------|----------|
-| Chuẩn hóa | Toàn bộ pipeline tiền xử lý phải qua `MinMaxScaler` đưa features về dải `(0, 1)` |
-| Input Tensor Shape | Bắt buộc: `[Batch Size, 12, 14]` — 12 Time Steps x 14 Features |
-| Thay đổi cấu trúc | Mọi thay đổi shape Tensor phải thông qua Hội đồng Kiến trúc phê duyệt |
+- [Luật Đường bộ số 35/2024/QH15](https://vanban.chinhphu.vn/?pageid=27160&docid=211193), hiệu lực 01/01/2025.
+- [Luật Trật tự, an toàn giao thông đường bộ số 36/2024/QH15](https://vanban.chinhphu.vn/?pageid=27160&docid=211194&classid=1&typegroupid=3), hiệu lực 01/01/2025.
+- SOP được cơ quan vận hành phê duyệt và các nghị định/thông tư còn hiệu lực có liên quan.
 
-### 3.3. Quy chuẩn An toàn Điều phối (CF-VLA Enforcements)
+## 6. Tài liệu tham khảo
 
-> [!WARNING]
-> **KHÔNG BAO GIỜ** được bypass (bỏ qua) luồng tự phản biện Counterfactual. Đây là lớp an toàn cuối cùng trước khi đưa ra đề xuất cho Operator.
+| Tài liệu | Vai trò |
+|---|---|
+| [`project_contract.json`](../project_contract.json) | Hợp đồng máy đọc được cho validator và CI |
+| [STWI-DOC-01](./01_System_Architecture_Data_Pipeline.md) | Data pipeline |
+| [STWI-DOC-02](./02_ML_and_Simulation_Specification.md) | ML và surrogate |
+| [STWI-DOC-03](./03_Knowledge_Base_and_RAG_Design.md) | RAG, legal corpus và query |
+| [STWI-DOC-04](./04_AI_Agent_Orchestrator_CF_VLA.md) | Orchestrator và safety loop |
+| [STWI-DOC-05](./05_Implementation_Plan.md) | Kế hoạch 13 tuần |
 
-- Phương án đầu ra (Final Action) chỉ được chấp thuận nếu tỷ lệ **V/C (Volume / Capacity)** tại **tất cả** các nút lân cận sau khi phân luồng nhỏ hơn **`0.9`** (ngưỡng an toàn).
-- Nếu vượt ngưỡng, hệ thống phải tự động kích hoạt vòng lặp hiệu chỉnh.
-
-### 3.4. Quy chuẩn Tri thức (No-Hallucination Policy)
-
-> [!IMPORTANT]
-> Mọi đề xuất của Agent phải có căn cứ pháp lý. Tuyệt đối không chấp nhận "sáng tạo" thiếu kiểm chứng.
-
-- Các đề xuất phân luồng/can thiệp giao thông **phải đi kèm Trích dẫn căn cứ pháp lý** (Legal Grounding) — Ví dụ: *Dựa trên khoản X Điều Y, hoặc theo SOP số Z*.
-- Agent **không được phép** tự bịa (hallucinate) quyền hạn điều phối nếu chưa tham chiếu qua Tầng 3 (RAG).
-- Mọi phương án "sáng tạo" ngoài SOP phải được dán nhãn: **`[⚠️ CẢNH BÁO — CHƯA KIỂM CHỨNG]`**
-
----
-
-## 4. Tài liệu Tham khảo
-
-| # | Tài liệu | Đường dẫn |
-|---|----------|-----------|
-| 1 | Kiến trúc Hệ thống & Data Pipeline | [01_System_Architecture_Data_Pipeline.md](./01_System_Architecture_Data_Pipeline.md) |
-| 2 | Đặc tả Mô hình ML & Mô phỏng | [02_ML_and_Simulation_Specification.md](./02_ML_and_Simulation_Specification.md) |
-| 3 | Thiết kế Cơ sở Tri thức & RAG | [03_Knowledge_Base_and_RAG_Design.md](./03_Knowledge_Base_and_RAG_Design.md) |
-| 4 | Đặc tả Tác tử AI & CF-VLA | [04_AI_Agent_Orchestrator_CF_VLA.md](./04_AI_Agent_Orchestrator_CF_VLA.md) |
-| 5 | Bản Idea Plan gốc (Blueprint) | [gemini-code-1781508694335.md](./gemini-code-1781508694335.md) |
-
----
-
-## Phụ lục: Lịch sử Phiên bản
+## Phụ lục: Lịch sử phiên bản
 
 | Phiên bản | Ngày | Tác giả | Mô tả thay đổi |
-|-----------|------|---------|-----------------|
+|---|---|---|---|
 | 1.0 | 15/06/2026 | Nhóm STWI | Soạn thảo ban đầu |
-| 1.1 | 15/06/2026 | Nhóm STWI | Chuẩn hóa format doanh nghiệp, sửa lỗi Mermaid render, bỏ rect blocks trong sequence diagram |
+| 1.1 | 15/06/2026 | Nhóm STWI | Chuẩn hóa format và Mermaid |
+| 1.2 | 20/06/2026 | Nhóm STWI | Cụ thể hóa stack và fallback |
+| 1.3 | 20/06/2026 | Nhóm STWI | Mở rộng 16 features và đơn giản hóa Text-to-SQL |
+| 1.4 | 21/06/2026 | Nhóm STWI | Chốt MVP 13 tuần, tensor 4D có node axis, GCN–LSTM, async API, citation có cấu trúc và Counterfactual Safety Loop fail-closed |

@@ -1,322 +1,122 @@
-\chapter{Tầng 4: Tác tử AI Đa tác tử và Luồng Suy luận CF-VLA}
+\chapter{Tầng 4: LangGraph và Counterfactual Safety Loop}
 
-\section{Tổng quan Tầng Điều phối}
+\section{Vai trò}
 
-Tầng 4 là ``\textbf{bộ não}'' của hệ thống STWI --- chuyển hóa kết quả từ ba tầng dưới thành đề xuất hành động cụ thể, có căn cứ pháp lý và đã được kiểm tra an toàn. Tầng này xây dựng trên nền tảng LangChain/CrewAI và triển khai ba cơ chế quan trọng:
+Tầng 4 là workflow hỗ trợ quyết định, không phải actuator. LangGraph điều phối các node có tool allowlist; Celery chạy job nền và Redis lưu hàng đợi/progress. Mọi kết quả đều cần operator phê duyệt.
 
-\begin{itemize}[itemsep=3pt]
-  \item \textbf{Task Decomposition:} Phân rã câu hỏi What-if thành các subtask song song.
-  \item \textbf{Multi-Agent Coordination:} Điều phối 3 tác tử con hoạt động đồng thời.
-  \item \textbf{CF-VLA Safety Loop:} Phản biện phản thực tế bắt buộc trước khi xuất đề xuất.
-\end{itemize}
+Counterfactual Safety Loop (CSL) lấy cảm hứng từ CF-VLA nhưng STWI không phải mô hình Vision--Language--Action end-to-end. Hệ thống áp dụng ý tưởng tự phản biện lên dữ liệu, mô phỏng và căn cứ pháp lý.
 
-\section{Kiến trúc Đa tác tử}
+\section{State Machine}
 
-\begin{figure}[H]
-\centering
-\begin{tikzpicture}[node distance=0.6cm and 0.9cm, scale=0.88, transform shape]
-
-  % Operator
-  \node[startend, text width=2.5cm] (op) at (0, 5.5) {Operator\\(Người điều hành)};
-  \draw[arrow] (op) -- ++(0,-1.0) node[midway,right,font=\tiny,align=right]{What-if\\Query};
-
-  % Orchestrator box
-  \node[groupbox=tier1col, minimum width=12cm, minimum height=2.5cm] (orc_box) at (0,4.0) {};
-  \node[anchor=north, font=\small\bfseries\color{tier1col!80!black}] at (orc_box.north)
-    [yshift=-6pt] {Orchestrator (LangChain / CrewAI)};
-  \node[procnode, text width=3.5cm] (parse) at (-3.5,4.0)
-    {Task Parser\\Phân tích câu hỏi\\Trích xuất entities};
-  \node[procnode, text width=3.5cm] (plan) at (0.5,4.0)
-    {Task Planner\\Lên kế hoạch\\Phân công agent};
-  \node[procnode, text width=2.8cm] (merge) at (4.0,4.0)
-    {Result Merger\\Hợp nhất\\kết quả};
-  \draw[arrow] (parse) -- (plan);
-  \draw[arrow] (plan) -- (merge);
-
-  % Three agents
-  \node[groupbox=tier2col, minimum width=3.2cm, minimum height=2.6cm] (sim_box) at (-4.5,1.5) {};
-  \node[anchor=north, font=\small\bfseries\color{tier2col!80!black}] at (sim_box.north)
-    [yshift=-4pt] {Simulation Agent};
-  \node[procnode, text width=2.6cm, minimum height=0.8cm] at (-4.5,1.5)
-    {Tool: ADE API\\POST /internal\\  /simulate};
-
-  \node[groupbox=tier3col, minimum width=3.2cm, minimum height=2.6cm] (leg_box) at (0.0,1.5) {};
-  \node[anchor=north, font=\small\bfseries\color{tier3col!80!black}] at (leg_box.north)
-    [yshift=-4pt] {Legal Agent};
-  \node[procnode, text width=2.6cm, minimum height=0.8cm] at (0.0,1.5)
-    {Tool: Vector DB\\+ XiYanSQL};
-
-  \node[groupbox=tier4col, minimum width=3.2cm, minimum height=2.6cm] (eva_box) at (4.5,1.5) {};
-  \node[anchor=north, font=\small\bfseries\color{tier4col!80!black}] at (eva_box.north)
-    [yshift=-4pt] {Evaluation Agent};
-  \node[procnode, text width=2.6cm, minimum height=0.8cm] at (4.5,1.5)
-    {Tổng hợp\\+ Đề xuất\\sơ bộ};
-
-  % Arrows from orchestrator to agents
-  \draw[arrow, tier2col!70] (plan.south) -- ++(-3.5,-0.8);
-  \draw[arrow, tier3col!70] (plan.south) -- ++(0,-0.8);
-  \draw[arrow, tier4col!70] (plan.south) -- ++(3.5,-0.8);
-
-  % Arrows from agents to merger
-  \draw[arrow] (-4.5,0.2) |- (merge.west);
-  \draw[arrow] (0.0,0.2) -- ++(0,-0.5) -| (merge.south);
-  \draw[arrow] (4.5,0.2) |- (merge.east);
-
-  % CF-VLA Engine
-  \node[sysbox=tier4col, text width=4cm, minimum height=1.3cm,
-    fill=alertred!20, draw=accentorange!80] (cfvla) at (0,-1.0)
-    {CF-VLA Engine\\Counterfactual Reflection\\V/C Safety Check};
-
-  \node[startend, text width=3cm, fill=alertgreen!60, draw=green!50!black] (dash)
-    at (0,-2.8) {Dashboard\\Báo cáo cuối};
-
-  \draw[arrow] (merge) -- ++(0,-1.2) -| (cfvla.north);
-  \draw[arrow] (cfvla) -- (dash);
-
-\end{tikzpicture}
-\caption{Kiến trúc hệ thống Multi-Agent của STWI}
-\label{fig:multiagent_arch}
-\end{figure}
-
-\subsection{Đặc tả Chi tiết Từng Tác tử}
+\begin{enumerate}[leftmargin=1.5cm]
+  \item Parse scenario và tạo \textit{IncidentVector}.
+  \item Chạy baseline forecast và surrogate.
+  \item Nếu OOD/uncertainty cao, trả \texttt{needs\_review}.
+  \item Truy xuất Qdrant và chạy typed \textit{SimulationQuery}.
+  \item Citation validator xác nhận hiệu lực và provision.
+  \item Sinh candidate và chạy CSL tối đa ba vòng.
+  \item Chỉ khi mọi policy pass mới trả \texttt{succeeded}.
+\end{enumerate}
 
 \begin{table}[H]
 \centering
-\caption{Đặc tả chi tiết các tác tử trong hệ thống STWI}
-\label{tab:agent_spec}
-\renewcommand{\arraystretch}{1.5}
-\begin{tabular}{p{2.8cm} p{3cm} p{3.5cm} p{3cm}}
+\caption{Quy tắc fail-closed}
+\begin{tabular}{p{6cm} p{7cm}}
 \toprule
-\textbf{Tác tử} & \textbf{Input} & \textbf{Output} & \textbf{Tools} \\
+\textbf{Điều kiện} & \textbf{Kết quả} \\
 \midrule
-Orchestrator & What-if query (NL) & Task plan, final report & Task planning, result merging \\
-\rowcolor{rowgray}
-Simulation Agent & Incident vector $\mathbf{c}$ & Forecast matrix $\hat{\mathbf{Y}}$ & \texttt{POST /internal/simulate} \\
-Legal Agent & Query, scenario context & SOP text, legal citations & Vector DB search, XiYanSQL \\
-\rowcolor{rowgray}
-Evaluation Agent & Sim results, legal refs & Proposed action (JSON) & Reasoning, comparison \\
-CF-VLA Engine & Proposed action & Final action (verified) & ADE API (2nd call) \\
+Policy pass, đủ citation & \texttt{succeeded} + \texttt{recommended\_action} \\
+Không hội tụ sau 3 vòng & \texttt{needs\_review} + candidate không executable \\
+OOD hoặc uncertainty cao & \texttt{needs\_review} \\
+Thiếu căn cứ còn hiệu lực & \texttt{needs\_review} hoặc \texttt{failed} \\
+Vượt 180 giây & \texttt{expired} \\
+Tool lỗi không phục hồi & \texttt{failed} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\section{Luồng Suy luận CF-VLA}
+Ngưỡng V/C mặc định 0,9 là policy cấu hình có version, không phải quy định pháp luật.
 
-CF-VLA là cơ chế an toàn cốt lõi. Luồng gồm 3 bước rõ ràng:
+\section{API Job Bất đồng bộ}
 
-\begin{figure}[H]
-\centering
-\begin{tikzpicture}[node distance=0.5cm and 0.8cm, scale=0.86, transform shape]
+\subsection{Tạo Job}
 
-  % Step 1: Generation
-  \node[groupbox=tier3col, minimum width=5cm, minimum height=4.5cm] (gen_box) at (-5.5,0) {};
-  \node[anchor=north, font=\small\bfseries\color{tier3col}] at (gen_box.north)
-    [yshift=-6pt] {Bước 1: Generation};
-
-  \node[procnode, text width=4.2cm] (step1a) at (-5.5,0.8)
-    {Gọi Simulation Agent\\ADE Inference lần 1};
-  \node[procnode, text width=4.2cm] (step1b) at (-5.5,-0.3)
-    {Gọi Legal Agent\\Lấy SOP \& Luật GT};
-  \node[procnode, text width=4.2cm] (step1c) at (-5.5,-1.4)
-    {Evaluation Agent\\Sinh đề xuất sơ bộ $a_0$};
-  \draw[arrow] (step1a) -- (step1b);
-  \draw[arrow] (step1b) -- (step1c);
-
-  % Step 2: Counterfactual Reflection
-  \node[groupbox=accentorange, minimum width=5.5cm, minimum height=5.5cm] (cf_box) at (0.5,0) {};
-  \node[anchor=north, font=\small\bfseries\color{accentorange}] at (cf_box.north)
-    [yshift=-6pt] {Bước 2: CF Reflection};
-
-  \node[procnode, text width=4.6cm] (cf1) at (0.5,1.2)
-    {Self-Reflection Prompt:\\``Hành động $a_0$ có gây\\Cascade tại nút lân cận?''};
-  \node[procnode, text width=4.6cm, fill=alertyellow!60] (cf2) at (0.5,0.0)
-    {ADE Inference lần 2:\\Ép surge tải tại nút C\\(ước tính +40\% volume)};
-  \node[decnode, text width=3.5cm] (check) at (0.5,-1.5)
-    {V/C tất cả\\nút lân cận\\$\leq 0{,}9$?};
-
-  \draw[arrow] (cf1) -- (cf2);
-  \draw[arrow] (cf2) -- (check);
-
-  % Step 3: Correction / Final
-  \node[groupbox=tier3col, minimum width=4.5cm, minimum height=3cm] (ok_box) at (6.5,1.2) {};
-  \node[anchor=north, font=\small\bfseries\color{tier3col}] at (ok_box.north)
-    [yshift=-6pt] {Bước 3a: Final Action};
-  \node[startend, text width=3.8cm, fill=alertgreen!60, draw=green!50!black] (ok)
-    at (6.5,1.0) {Phê duyệt $a_0$\\Xuất Dashboard\\$\sim$20--30s tổng};
-
-  \node[groupbox=tier4col, minimum width=4.5cm, minimum height=3.5cm] (cor_box) at (6.5,-2.0) {};
-  \node[anchor=north, font=\small\bfseries\color{tier4col}] at (cor_box.north)
-    [yshift=-6pt] {Bước 3b: Correction};
-  \node[procnode, text width=3.8cm] (cor) at (6.5,-2.2)
-    {Hiệu chỉnh $a_0 \to a_1$:\\Giảm tỉ lệ phân luồng,\\tăng thời lượng đèn xanh};
-
-  % Arrows between steps
-  \draw[arrow, line width=1.2pt] (step1c.east) -- ++(0.4,0) |- (cf1.west);
-  \draw[arrow, line width=1.2pt, tier3col] (check.east) -- ++(0.3,0)
-    node[above,font=\small\bfseries]{Có} |- (ok.west);
-  \draw[arrow, line width=1.2pt, accentorange] (check.east) -- ++(0.3,0)
-    node[below,font=\small\bfseries]{Không} |- (cor.west);
-
-  % Correction loop
-  \draw[dasharrow, accentorange!80, line width=1pt]
-    (cor.north) -- ++(0,0.5) -- ++(-6.5,0)
-    node[midway,above,font=\tiny\itshape]{Vòng lặp ($\leq 3$ lần)} |- (cf1.west);
-
-  % Iteration counter
-  \node[below=0.2cm of cor, font=\tiny, text=codegray]
-    {Tối đa 3 vòng lặp để tránh diverge};
-
-\end{tikzpicture}
-\caption{Luồng suy luận CF-VLA chi tiết}
-\label{fig:cfvla_flow}
-\end{figure}
-
-\subsection{Pseudo-code CF-VLA Engine}
-
-\begin{algorithm}[H]
-\caption{CF-VLA Counterfactual Safety Loop}
-\label{alg:cfvla}
-\Input{Đề xuất sơ bộ $a_0$, danh sách nút lân cận $\mathcal{N}(v)$, ADE model $f_\theta$}
-\Output{Đề xuất an toàn $a^*$ hoặc cảnh báo}
-\BlankLine
-$\text{max\_iter} \leftarrow 3$\;
-$a \leftarrow a_0$\;
-\BlankLine
-\For{$k \leftarrow 1$ \KwTo $\text{max\_iter}$}{
-  \tcc{Bước 2: Counterfactual Reflection}
-  \ForEach{nút $v_j \in \mathcal{N}(v)$}{
-    $\mathbf{c}_{\text{surge}} \leftarrow \text{ApplySurge}(a, v_j, \text{surge\_factor}=1.4)$\;
-    $\hat{\mathbf{Y}}_j \leftarrow f_\theta(\mathbf{X}_{\text{current}}, \mathbf{c}_{\text{surge}})$\;
-    $\text{vc}_j \leftarrow \text{ComputeVC}(\hat{\mathbf{Y}}_j, \text{capacity}[v_j])$\;
-  }
-  \BlankLine
-  \eIf{$\max_{v_j \in \mathcal{N}(v)} \text{vc}_j \leq 0.9$}{
-    $a^* \leftarrow a$\;
-    \textbf{return} $a^*$, status=``SAFE''\;
-  }{
-    \tcc{Bước 3b: Hiệu chỉnh phương án}
-    $v_{\text{worst}} \leftarrow \arg\max_{v_j} \text{vc}_j$\;
-    $a \leftarrow \text{CorrectAction}(a, v_{\text{worst}}, \text{vc}[v_{\text{worst}}])$\;
-    \Comment{Ví dụ: giảm 20\% phân luồng sang đường bị quá tải}
-  }
-}
-\tcc{Het so lan lap, van khong dat nguong an toan}
-\textbf{return} $a$, status=``[CANH BAO - CHUA KIEM CHUNG]''\;
-\end{algorithm}
-
-\section{Đặc tả API REST}
-
-\subsection{Endpoint Chính}
-
-\begin{lstlisting}[caption={Request và Response cho API What-if},label={lst:api_spec}]
-# === REQUEST ===
-POST /api/v1/agent/what-if
-Content-Type: application/json
-
+\begin{lstlisting}[caption={Tạo What-if job},label={lst:create_job}]
+POST /api/v1/what-if-jobs
 {
-  "scenario": "Tai nan o nga tu Nguyen Hue - Le Loi, neu toi
-               chuyen huong dong xe sang duong Dong Khoi thi sao?",
-  "operator_id": "OP-001",
-  "constraints": {
-    "max_computation_time_ms": 180000,  # 3 phut
-    "priority": "high",
-    "cf_vla_enabled": true             # Bat buoc, khong duoc false
-  }
+  "scenario": "Tai nan tai node A; danh gia phan luong sang B",
+  "scenario_time": "2026-06-21T08:00:00+07:00",
+  "constraints": {"deadline_ms": 180000, "priority": "high"}
 }
 
-# === RESPONSE (200 OK) ===
+HTTP/1.1 202 Accepted
 {
-  "status": "success",
-  "scenario_id": "SCN-20260619-001",
+  "job_id": "wf_01J...",
+  "status": "queued",
+  "status_url": "/api/v1/what-if-jobs/wf_01J...",
+  "events_url": "/api/v1/what-if-jobs/wf_01J.../events",
+  "trace_id": "tr_01J..."
+}
+\end{lstlisting}
+
+\subsection{Trạng thái và SSE}
+
+\texttt{GET /api/v1/what-if-jobs/\{job\_id\}} trả snapshot. Endpoint
+\texttt{GET /api/v1/what-if-jobs/\{job\_id\}/events} phát SSE gồm stage, iteration, progress, message và timestamp.
+
+Status enum là \texttt{queued}, \texttt{running}, \texttt{succeeded}, \texttt{needs\_review}, \texttt{failed}, \texttt{expired}. SSE reconnect không được tạo execution mới.
+
+\subsection{Kết quả}
+
+\begin{lstlisting}[caption={Kết quả an toàn},label={lst:success_result}]
+{
+  "status": "succeeded",
   "recommended_action": {
-    "primary": "Phan luong 60% xe sang duong Dong Khoi...",
-    "secondary": "Tang 20s den xanh tai nga tu Dong Khoi - Nguyen Du",
-    "signal_timing": {"node_C": "+20s", "node_D": "+10s"}
+    "summary": "Phan luong toi da 40% sang B",
+    "requires_operator_approval": true
   },
-  "simulation_metrics": {
-    "affected_nodes": ["NGT_042", "NGT_043", "NGT_044"],
-    "node_vc_ratios": {
-      "NGT_042": 0.65,
-      "NGT_043": 0.78,
-      "NGT_044": 0.85
-    },
-    "clearance_time_mins": 14,
-    "max_vc_after": 0.85
-  },
-  "legal_grounding": {
-    "sop_ref": "SOP-GTVT-HCM-14: Quy trinh xu ly tai nan nut giao...",
-    "law_ref": "Luat GTDB Dieu 45 Khoan 2: Phan luong tam thoi...",
-    "source_chunks": ["chunk_id_221", "chunk_id_445"]
-  },
-  "cf_vla_reflection": {
+  "citations": [{
+    "document_id": "sop-14",
+    "provision": "Muc 3.2",
+    "source_url": "https://internal.example/sop-14",
+    "effective_from": "2026-01-01",
+    "content_hash": "sha256:..."
+  }],
+  "safety_evaluation": {
+    "policy_version": "csl-1.0",
     "iterations": 2,
-    "initial_proposal": "Phan luong 100% sang Dong Khoi",
-    "initial_rejected": true,
-    "rejection_reason": "V/C ratio tai NGT_044 = 0.97 > 0.9 (CASCADE RISK)",
-    "corrections_applied": ["Giam phan luong xuong 60%",
-                             "Tang den xanh ngo tu C"]
+    "converged": true
   },
-  "latency_ms": 1847,
-  "timestamp": "2026-06-19T10:30:15Z"
+  "trace_id": "tr_01J...",
+  "latency_ms": 21400
 }
 \end{lstlisting}
 
-\subsection{WebSocket cho Real-time Progress}
-
-\begin{lstlisting}[caption={WebSocket stream sự kiện tiến trình},label={lst:websocket}]
-# Client nhan stream tien trinh qua WebSocket
-ws://stwi-api/ws/scenario/{scenario_id}
-
-# Message 1: Agent started
-{"event": "agent_started", "agent": "simulation",
- "ts": "2026-06-19T10:30:00Z"}
-
-# Message 2: ADE inference done
-{"event": "simulation_done", "ttp_ms": 245,
- "nodes_computed": 1000, "ts": "2026-06-19T10:30:01Z"}
-
-# Message 3: CF-VLA check started
-{"event": "cfvla_started", "iteration": 1,
- "checking_nodes": ["NGT_044", "NGT_045"]}
-
-# Message 4: Correction needed
-{"event": "cfvla_correction", "iteration": 1,
- "reason": "NGT_044 vc=0.97 > 0.9"}
-
-# Message 5: Final result ready
-{"event": "completed", "status": "safe",
- "iterations": 2, "latency_ms": 1847}
+\begin{lstlisting}[caption={Kết quả cần review},label={lst:review_result}]
+{
+  "status": "needs_review",
+  "candidate_action": {
+    "summary": "Phuong an thu nghiem: phan luong 20% sang B",
+    "executable": false,
+    "requires_operator_approval": true
+  },
+  "warnings": [{
+    "code": "SAFETY_NOT_CONVERGED",
+    "message": "Max V/C con 0.93 sau 3 vong"
+  }],
+  "citations": [],
+  "trace_id": "tr_01J..."
+}
 \end{lstlisting}
 
-\section{Cơ chế Phối hợp ReAct + Chain-of-Thought}
+\section{Observability và Nghiệm thu}
 
-Mỗi tác tử trong STWI hoạt động theo kiến trúc ReAct (Reason + Act) với Chain-of-Thought (CoT) được tích hợp trong system prompt. Ví dụ quá trình suy luận của Evaluation Agent:
+Mỗi transition ghi trace span, input/model/policy/corpus version, citations, số vòng lặp và operator decision. Retry chỉ dành cho tool idempotent và phải tôn trọng deadline chung.
 
-\begin{table}[H]
-\centering
-\caption{Ví dụ chuỗi ReAct của Evaluation Agent}
-\label{tab:react_example}
-\renewcommand{\arraystretch}{1.5}
-\begin{tabular}{>{\bfseries\centering}p{1.5cm} p{10.5cm}}
-\toprule
-\textbf{Bước} & \textbf{Nội dung} \\
-\midrule
-Thought 1 & ``Simulation Agent báo V/C đường Đồng Khởi hiện tại là 0.72 và đường A có tai nạn.'' \\
-\rowcolor{rowgray}
-Thought 2 & ``Legal Agent tìm thấy SOP-14 cho phép cấm đường tạm thời với điều kiện V/C $< 0{,}8$..'' \\
-Action 1 & Gọi XiYanSQL: ``Tốc độ trung bình đường Đồng Khởi hiện tại?'' \\
-\rowcolor{rowgray}
-Obs 1 & SQL kết quả: avg\_velocity = 28.5 km/h (ngưỡng bình thường $\geq 25$ km/h) \\
-Thought 3 & ``Đường Đồng Khởi còn đủ năng lực nhận thêm lưu lượng từ đường A.'' \\
-\rowcolor{rowgray}
-Action 2 & Tạo đề xuất sơ bộ $a_0$: phân luồng 70\% xe từ A sang Đồng Khởi \\
-Obs 2 & CF-VLA: V/C nút cuối Đồng Khởi = 0.93 $>$ 0.9 [KHÔNG AN TOÀN] \\
-\rowcolor{rowgray}
-Thought 4 & ``Cần giảm tỉ lệ phân luồng. Thử 50\% kết hợp tăng đèn xanh.'' \\
-Action 3 & Tạo đề xuất $a_1$: phân luồng 50\% + tăng 15s đèn xanh nút cuối \\
-\rowcolor{rowgray}
-Obs 3 & CF-VLA: V/C nút cuối = 0.82 $\leq$ 0.9 [AN TOÀN] \\
-Final & Xuất $a_1$ kèm SOP-14 và trích dẫn Luật GTĐB Điều 45 \\
-\bottomrule
-\end{tabular}
-\end{table}
+\begin{itemize}
+  \item Surrogate $P_{99}<500$ms trên benchmark profile.
+  \item E2E $P_{95}\leq30$s; hard deadline/$P_{99}\leq180$s.
+  \item \texttt{recommended\_action} chỉ xuất hiện ở \texttt{succeeded}.
+  \item Mọi OOD, citation failure, policy failure và timeout đều có test fail-closed.
+  \item Không có endpoint điều khiển thiết bị hiện trường.
+\end{itemize}

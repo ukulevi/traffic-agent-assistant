@@ -173,3 +173,39 @@ body.presentation-mode #counter { color: #1e293b; }
   .btn { width: 40px !important; height: 40px !important; font-size: 1rem; }
   #counter { font-size: 0.9rem; bottom: 15px; left: 10px; }
 }
+.info-card {
+  background: #fff;
+  border-left: 4px solid #0ea5e9;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.07);
+  color: #334155;
+  padding: 12px 14px;
+}
+
+.metric-card {
+  background: #fff;
+  border-top: 3px solid #8b5cf6;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+  color: #334155;
+  padding: 12px;
+  text-align: center;
+}
+
+.gantt-row {
+  display: grid;
+  grid-template-columns: 250px repeat(13, 1fr);
+  gap: 2px;
+  align-items: center;
+  min-height: 34px;
+  font-size: 0.78rem;
+  color: #334155;
+}
+
+.gantt-row span {
+  color: #fff;
+  border-radius: 6px;
+  padding: 7px 4px;
+  text-align: center;
+  font-weight: 700;
+}

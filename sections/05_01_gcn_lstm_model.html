@@ -1,6 +1,6 @@
 <div class="slide slide-container" style="justify-content:flex-start;padding-top:55px;">
     <h2 style="font-size:2.4rem;font-weight:800;color:#3b82f6;margin-bottom:30px;text-align:center;width:100%;">
-        <i class="fa-solid fa-project-diagram"></i> Mô Hình STGCN+LSTM
+        <i class="fa-solid fa-project-diagram"></i> Mô Hình GCN–LSTM
     </h2>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;width:90%;margin:0 auto;">
         <div>
@@ -8,22 +8,22 @@
             <div style="display:flex;flex-direction:column;gap:8px;">
                 <div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:12px;">
                     <span style="font-size:1.3rem;">📥</span>
-                    <div><b style="font-size:0.95rem;">Input Layer</b><br><span style="font-size:0.85rem;color:#475569;">Tensor [B, N, T, F] = [B, 50, 12, 14]</span></div>
+                    <div><b style="font-size:0.95rem;">Input Layer</b><br><span style="font-size:0.85rem;color:#475569;">X[B,12,N,16] + M[B,12,N,16] + A[N,N]</span></div>
                 </div>
                 <div style="text-align:center;color:#94a3b8;">↓</div>
                 <div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:12px;">
                     <span style="font-size:1.3rem;">🗺</span>
-                    <div><b style="font-size:0.95rem;">GCN Encoder × 3 layers</b><br><span style="font-size:0.85rem;color:#475569;">Chebyshev K=3 · BatchNorm · ReLU</span></div>
+                    <div><b style="font-size:0.95rem;">GCN Encoder theo từng timestep</b><br><span style="font-size:0.85rem;color:#475569;">Graph convolution · shared node order</span></div>
                 </div>
                 <div style="text-align:center;color:#94a3b8;">↓</div>
                 <div style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:12px;">
                     <span style="font-size:1.3rem;">⏱</span>
-                    <div><b style="font-size:0.95rem;">LSTM Decoder × 2 layers</b><br><span style="font-size:0.85rem;color:#475569;">hidden_size=256 · dropout=0.1</span></div>
+                    <div><b style="font-size:0.95rem;">LSTM Temporal Decoder</b><br><span style="font-size:0.85rem;color:#475569;">Hyperparameters được chọn trên validation split</span></div>
                 </div>
                 <div style="text-align:center;color:#94a3b8;">↓</div>
                 <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:12px;">
                     <span style="font-size:1.3rem;">📤</span>
-                    <div><b style="font-size:0.95rem;">Output: [B, N, T'=6, 3]</b><br><span style="font-size:0.85rem;color:#475569;">volume · velocity · V/C cho 30 phút tới</span></div>
+                    <div><b style="font-size:0.95rem;">Output: Y[B,6,N,2]</b><br><span style="font-size:0.85rem;color:#475569;">traffic_volume_5m · avg_speed_kmh; V/C tính từ capacity</span></div>
                 </div>
             </div>
         </div>
@@ -42,18 +42,18 @@
                 </div>
                 <div style="background:white;border-radius:12px;padding:16px;border-top:4px solid #10b981;box-shadow:0 2px 8px rgba(0,0,0,0.07);text-align:center;">
                     <div style="font-size:1.6rem;font-weight:800;color:#10b981;">N</div>
-                    <div style="font-size:1.1rem;font-weight:700;color:#1e293b;">50 nút</div>
-                    <div style="font-size:0.8rem;color:#64748b;">nút giao</div>
+                    <div style="font-size:1.1rem;font-weight:700;color:#1e293b;">20 node</div>
+                    <div style="font-size:0.8rem;color:#64748b;">mạng demo</div>
                 </div>
                 <div style="background:white;border-radius:12px;padding:16px;border-top:4px solid #f97316;box-shadow:0 2px 8px rgba(0,0,0,0.07);text-align:center;">
                     <div style="font-size:1.6rem;font-weight:800;color:#f97316;">GPU</div>
-                    <div style="font-size:1.1rem;font-weight:700;color:#1e293b;">&lt; 50ms</div>
-                    <div style="font-size:0.8rem;color:#64748b;">inference A100</div>
+                    <div style="font-size:1.1rem;font-weight:700;color:#1e293b;">12–16 GB</div>
+                    <div style="font-size:0.8rem;color:#64748b;">GPU VRAM profile</div>
                 </div>
             </div>
             <div style="background:rgba(0,102,153,0.06);border:1px solid rgba(0,102,153,0.15);border-radius:12px;padding:16px;margin-top:12px;font-size:0.95rem;color:#334155;">
                 <b>Training:</b> Adam optimizer · lr=1e-3 · weight_decay=1e-4<br>
-                <b>Data:</b> 80/10/10 train/val/test split, 2023-2025
+                <b>Data:</b> chronological split · scaler fit trên train · kiểm tra leakage
             </div>
         </div>
     </div>

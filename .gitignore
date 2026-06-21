@@ -24,3 +24,7 @@ docs/images/mermaid_*.png
 Thumbs.db
 .vscode/
 .idea/
+
+# Python cache
+__pycache__/
+*.py[cod]

@@ -1,0 +1,32 @@
+<div class="slide slide-container" style="justify-content:flex-start;padding-top:55px;">
+  <h2 style="font-size:2.25rem;font-weight:800;color:#10b981;margin-bottom:28px;text-align:center;width:100%;">
+    <i class="fa-solid fa-table"></i> SimulationQuery & Case Evidence
+  </h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;width:90%;margin:0 auto;">
+    <div>
+      <h3 style="color:#0ea5e9;font-size:1.15rem;margin-bottom:14px;">Constrained Query Pipeline</h3>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="info-card"><b>1. Natural language → QuerySpec</b><br><span style="color:#64748b;">Pydantic enum cho metrics, node, horizon và aggregation</span></div>
+        <div class="info-card"><b>2. Validate scope</b><br><span style="color:#64748b;">job/tenant, row limit, statement timeout</span></div>
+        <div class="info-card"><b>3. Parameterized SQL</b><br><span style="color:#64748b;">TimescaleDB read-only; không thực thi SQL từ LLM</span></div>
+        <div class="info-card"><b>4. Audit</b><br><span style="color:#64748b;">QuerySpec + template hash + latency + row count</span></div>
+      </div>
+    </div>
+    <div>
+      <h3 style="color:#8b5cf6;font-size:1.15rem;margin-bottom:14px;">Case Retrieval khi OOD</h3>
+      <div style="background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.2);border-radius:14px;padding:18px;">
+        <p style="font-size:0.95rem;color:#334155;line-height:1.65;margin:0;">
+          Case lịch sử chỉ cung cấp <b>evidence</b> online hoặc bổ sung dữ liệu huấn luyện offline.
+          Không blend row truy xuất vào input surrogate. Similarity thấp, case chưa xác nhận hoặc uncertainty cao
+          đều chuyển <code>needs_review</code>.
+        </p>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;">
+        <div class="metric-card"><b>Query</b><br>Không raw SQL</div>
+        <div class="metric-card"><b>Database</b><br>Read-only role</div>
+        <div class="metric-card"><b>Evidence</b><br>Operator validated</div>
+        <div class="metric-card"><b>Failure</b><br>Fail closed</div>
+      </div>
+    </div>
+  </div>
+</div>

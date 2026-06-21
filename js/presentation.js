@@ -5,9 +5,9 @@ const slidesList = [
     'sections/01_01_gioi_thieu.html',
     'sections/01_02_muc_tieu.html',
     'sections/02_00_chapter.html',
-    'sections/02_01_stgcn_lstm.html',
+    'sections/02_01_gcn_lstm.html',
     'sections/02_02_rag_sql.html',
-    'sections/02_03_cfvla_theory.html',
+    'sections/02_03_counterfactual_safety.html',
     'sections/03_00_chapter.html',
     'sections/03_01_kien_truc_4tang.html',
     'sections/03_02_e2e_flow.html',
@@ -15,14 +15,14 @@ const slidesList = [
     'sections/04_01_cctv_pipeline.html',
     'sections/04_02_tensor.html',
     'sections/05_00_chapter.html',
-    'sections/05_01_stgcn_model.html',
-    'sections/05_02_ade_surrogate.html',
+    'sections/05_01_gcn_lstm_model.html',
+    'sections/05_02_surrogate_ensemble.html',
     'sections/06_00_chapter.html',
     'sections/06_01_vectordb.html',
-    'sections/06_02_xiyansql.html',
+    'sections/06_02_constrained_query.html',
     'sections/07_00_chapter.html',
     'sections/07_01_multiagent.html',
-    'sections/07_02_cfvla_engine.html',
+    'sections/07_02_safety_loop.html',
     'sections/08_00_chapter.html',
     'sections/08_01_gantt.html',
     'sections/09_00_chapter.html',
@@ -79,7 +79,7 @@ window.addEventListener('resize', () => {
 
 async function loadSlides() {
     try {
-        const promises = slidesList.map(url => fetch(url).then(res => {
+        const promises = slidesList.map(url => fetch(url + '?v=20260621b').then(res => {
             if (!res.ok) throw new Error(`Could not load ${url}`);
             return res.text().then(html => ({ url, html }));
         }));

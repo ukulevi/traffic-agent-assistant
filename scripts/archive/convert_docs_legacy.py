@@ -1,3 +1,10 @@
+"""Legacy Markdown-to-LaTeX experiment.
+
+The production report is maintained in chapters/ and built directly from
+main.tex. This script is archived because its generated filenames were never
+included by main.tex and it depended on a network Mermaid renderer.
+"""
+
 import os
 import re
 import base64

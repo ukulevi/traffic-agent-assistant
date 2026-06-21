@@ -1,172 +1,137 @@
 # 🚦 STWI — Tài liệu Đặc tả Kỹ thuật (Phần 2)
 
-## Đặc tả Mô hình Học Máy & Mô phỏng
+## Đặc tả Mô hình Học máy & Mô phỏng
 
 | Thuộc tính | Giá trị |
 |---|---|
 | **Dự án** | SmartTraffic What-If (STWI) |
 | **Mã tài liệu** | STWI-DOC-02 |
-| **Phiên bản** | 1.1 |
+| **Phiên bản** | 1.4 |
 | **Ngày tạo** | 15/06/2026 |
-| **Cập nhật lần cuối** | 15/06/2026 |
+| **Cập nhật lần cuối** | 21/06/2026 |
 | **Trạng thái** | 📝 Đang soạn thảo (Draft) |
 | **Phân loại** | Tài liệu nội bộ — Đặc tả kỹ thuật |
 
 > [!NOTE]
-> Tài liệu này đặc tả **Tầng 2 — Lõi AI Dự báo Giao thông**, bao gồm kiến trúc mô hình STGCN + LSTM và Neural Surrogate Model (ADE), được tối ưu hóa để trả về kết quả cho các truy vấn What-if trong thời gian < 500ms.
+> Tầng 2 gồm hai bài toán khác nhau: GCN–LSTM dự báo baseline không can thiệp và surrogate ensemble dự báo tác động của kịch bản What-if.
 
----
+## 1. GCN–LSTM baseline forecaster
 
-## Mục lục
-
-- [1. Kiến trúc Mô hình Lõi: STGCN + Stacked LSTM](#1-kiến-trúc-mô-hình-lõi-stgcn--stacked-lstm)
-  - [1.1. Đồ thị Giao thông](#11-khái-niệm-đồ-thị-giao-thông)
-  - [1.2. Lớp GCN](#12-lớp-gcn-graph-convolutional-network)
-  - [1.3. Lớp Stacked LSTM](#13-lớp-stacked-lstm)
-- [2. Mô hình Thay thế (Neural Surrogate Model)](#2-mô-hình-thay-thế-neural-surrogate-model)
-- [3. Pipeline Đánh giá](#3-pipeline-đánh-giá-evaluation-metrics)
-- [Phụ lục](#phụ-lục)
-
----
-
-## 1. Kiến trúc Mô hình Lõi: STGCN + Stacked LSTM
-
-Mô hình học sâu chịu trách nhiệm học sự phụ thuộc **Không gian – Thời gian (Spatio-Temporal)** từ dữ liệu lịch sử giao thông.
-
-### Sơ đồ Kiến trúc Mô hình
+Tên GCN–LSTM phản ánh đúng kiến trúc: graph convolution mã hóa quan hệ không gian tại từng timestep, sau đó LSTM học phụ thuộc thời gian. Đây không được gọi là “STGCN + LSTM”, vì STGCN vốn đã là một kiến trúc spatio-temporal riêng.
 
 ```mermaid
 flowchart LR
-    T["3D Tensor\n[B, 12, 14]"] --> G["Đồ thị Giao thông\nG = (V, E, W)"]
-    G --> GCN["GCN Layers\n(Graph Convolution)"]
-    GCN -->|"Spatial Features"| LSTM["Stacked LSTM\n(2-3 hidden layers)"]
-    LSTM -->|"Temporal Features"| PRED["Tensor Dự báo\n6 bước x 30 phút"]
-
-    style T fill:#1e3a5f,stroke:#4a9eff,color:#fff
-    style GCN fill:#3b1f6e,stroke:#a78bfa,color:#fff
-    style LSTM fill:#3b1f6e,stroke:#a78bfa,color:#fff
-    style PRED fill:#1a4d1a,stroke:#4ade80,color:#fff
+    X["X[B,12,N,16]\nM[B,12,N,16]"] --> GCN["GCN theo từng timestep\nA[N,N]"]
+    GCN --> LSTM["LSTM theo từng node"]
+    LSTM --> Y["Y[B,6,N,2]\nvolume + speed"]
+    Y --> VC["V/C = flow rate / capacity"]
 ```
 
-### 1.1. Khái niệm Đồ thị Giao thông
+| Thành phần | Hợp đồng |
+|---|---|
+| Input | `X[B,12,N,16]`, `M[B,12,N,16]`, `A[N,N]` |
+| GCN | Mã hóa spatial dependency; mask được dùng khi pooling/loss |
+| LSTM | 2 lớp là cấu hình khởi đầu, chọn hyperparameter bằng validation |
+| Output | `Y[B,6,N,2]` cho 6 horizon × 5 phút |
+| Target 1 | `traffic_volume_5m` |
+| Target 2 | `avg_speed_kmh` |
+| V/C | Tính từ volume dự báo và capacity của node; không coi là target độc lập |
 
-Mạng lưới đường phố được mô hình hóa thành **đồ thị có hướng** G = (V, E, W):
+Mạng đường thật có hướng, nhưng GCN MVP sử dụng adjacency trọng số được symmetrize từ travel time/kết nối. Directed routing graph vẫn được giữ riêng cho mô phỏng và giải thích tuyến.
 
-| Thành phần | Mô tả |
-|------------|-------|
-| **Đỉnh (V - Vertices)** | Tập hợp các nút giao thông hoặc đoạn đường gắn camera |
-| **Cạnh (E - Edges)** | Các đoạn đường kết nối giữa hai nút |
-| **Trọng số (W - Weights)** | Ma trận trọng số tương quan khoảng cách và giới hạn tốc độ |
+## 2. Dữ liệu, split và baseline
 
-### 1.2. Lớp GCN (Graph Convolutional Network)
+### 2.1. Split chống leakage
 
-Đảm nhận trích xuất **đặc trưng không gian** — mô hình hóa cách ùn tắc lan truyền qua mạng lưới giao thông.
+- Train/validation/test được chia theo thời gian, không random từng row.
+- Scaler chỉ fit trên train.
+- Tất cả horizon của cùng một cửa sổ nằm trong cùng split.
+- Báo cáo riêng kết quả normal-day, incident và high-missingness.
+- Nếu đánh giá khả năng chuyển vùng, giữ một nhóm node làm geographic holdout.
 
-> [!TIP]
-> **Bài toán giải quyết:** Sự ùn tắc ở nút giao A không chỉ ảnh hưởng trực tiếp tới A, mà sẽ lan sang nút B (sau 5 phút) và nút C (sau 10 phút) tùy vào ma trận kề A.
+### 2.2. Baseline bắt buộc
 
-**Công thức cập nhật đặc trưng:**
+| Baseline | Mô tả |
+|---|---|
+| Persistence | Dùng giá trị timestep gần nhất cho 6 horizon |
+| Historical average | Trung bình cùng giờ/ngày trong training set |
+| Seasonal linear | Linear/ridge với lag và cyclical features |
 
-```
-H^(l+1) = σ( D̃^(-1/2) * Ã * D̃^(-1/2) * H^(l) * W^(l) )
-```
+Mục tiêu thiết kế là cải thiện ít nhất 20% RMSE so với baseline tốt nhất. Đây là target nghiệm thu; nếu không đạt, MVP phải công bố kết quả baseline thay vì tuyên bố mô hình tốt hơn.
 
-Trong đó:
-- `Ã = A + I_N` — Ma trận kề có bổ sung self-loop (kết nối với chính nó)
-- `D̃` — Ma trận bậc (Degree Matrix) của `Ã`
-- `H^(l)` — Ma trận đặc trưng tại lớp `l`
-- `W^(l)` — Ma trận trọng số học được
-- `σ` — Hàm kích hoạt (ví dụ: ReLU)
+## 3. Surrogate ensemble cho What-if
 
-### 1.3. Lớp Stacked LSTM (Long Short-Term Memory)
+### 3.1. Vai trò và dữ liệu huấn luyện
 
-Đảm nhận trích xuất **đặc trưng thời gian** từ chuỗi đầu ra của GCN — mô hình hóa tính chu kỳ của dòng xe.
-
-| Thông số | Giá trị | Ghi chú |
-|----------|---------|---------|
-| **Cấu trúc** | Stacked LSTM | 2–3 hidden layers |
-| **Đầu vào** | `[Batch, 12, GCN_Features]` | Đầu ra từ tầng GCN |
-| **Đầu ra** | Tensor dự báo 6 bước | 6 x 5 phút = **30 phút tương lai** |
-| **Mục đích** | Học tính chu kỳ | Sáng đông -> Trưa vắng -> Chiều kẹt |
-
----
-
-## 2. Mô hình Thay thế (Neural Surrogate Model)
-
-### Bối cảnh & Động lực
-
-Mô phỏng giao thông vi mô (Micro-simulation như SUMO, Vissim) thường mất **hàng phút đến hàng giờ** để tính toán kịch bản giả định. Do yêu cầu hệ thống trả kết quả trong **dưới 3 phút** (lõi AI cần < 500ms), một mô hình Surrogate xấp xỉ được triển khai thay thế.
-
-### 2.1. Cấu trúc ADE (Adversarial Diverse Deep Ensemble)
-
-ADE là mô hình ensemble nâng cao nhằm giải quyết **độ bất định (Uncertainty)** trong các kịch bản cực trị (Corner Cases).
+Surrogate xấp xỉ kết quả của SUMO cho một trạng thái mạng và một `IncidentVector`. GCN–LSTM cung cấp baseline; surrogate dự báo delta/kết quả sau can thiệp.
 
 ```mermaid
 flowchart TB
-    INPUT["Dữ liệu hiện tại\n+ Vector sự cố"] --> M1["Sub-model 1\n(Kiến trúc A)"]
-    INPUT --> M2["Sub-model 2\n(Kiến trúc B)"]
-    INPUT --> M3["Sub-model N\n(Kiến trúc C)"]
-
-    ADV["Adversarial\nPerturbations"] --> M1
-    ADV --> M2
-    ADV --> M3
-    CC["Corner Cases\n(Tắc đường, Tai nạn)"] --> ADV
-
-    M1 --> AGG["Aggregation\n(Ensemble Average)"]
+    SPACE["Scenario design\nclosure, demand, signal, duration"] --> SUMO["SUMO calibrated offline"]
+    SUMO --> DATA["Scenario dataset\nstate + incident → outcomes"]
+    DATA --> SPLIT["Split theo scenario family/time"]
+    SPLIT --> M1["MLP"]
+    SPLIT --> M2["CNN-1D"]
+    SPLIT --> M3["Light Transformer"]
+    M1 --> AGG["Weighted ensemble"]
     M2 --> AGG
     M3 --> AGG
-    AGG --> OUT["Ma trận Dự báo\n~100-300ms"]
-
-    style INPUT fill:#1e3a5f,stroke:#4a9eff,color:#fff
-    style AGG fill:#3b1f6e,stroke:#a78bfa,color:#fff
-    style ADV fill:#5c2d00,stroke:#ff9500,color:#fff
-    style OUT fill:#1a4d1a,stroke:#4ade80,color:#fff
+    AGG --> CAL["Uncertainty calibration"]
+    CAL --> RESULT["SimulationResult"]
 ```
 
-| Thành phần | Mô tả |
-|------------|-------|
-| **Diverse Ensemble** | Khởi tạo N mô hình con (sub-models) độc lập, có kiến trúc khác biệt hoặc hàm mất mát khác nhau |
-| **Adversarial Training** | Huấn luyện đối kháng ngoại tuyến — các kịch bản xấu nhất (tắc đường cục bộ, tai nạn) được thêm nhiễu đối kháng để mô hình không bị overfitting với điều kiện bình thường |
+`IncidentVector` tối thiểu gồm:
 
-### 2.2. Luồng Thực thi (Inference Flow)
+| Trường | Kiểu | Mô tả |
+|---|---|---|
+| `event_type` | enum | accident, flood, lane_closure, demand_surge, signal_change |
+| `affected_node_ids` | list[string] | Node chịu tác động |
+| `lane_closure_ratio` | float [0,1] | Tỷ lệ làn bị đóng |
+| `demand_multiplier` | float | Hệ số nhu cầu |
+| `duration_minutes` | integer | Thời lượng giả định |
+| `signal_plan_delta` | object/null | Thay đổi green ratio/offset nếu có |
 
-Khi Agent truy vấn kịch bản "What-if" (Ví dụ: *"Nếu đóng 2 làn đường A vì ngập, lưu lượng ngã tư B sẽ thế nào?"*):
+`SimulationResult` chứa metrics theo node/horizon: volume, speed, V/C, uncertainty; summary chứa network delay, clearance time và max V/C.
 
-| Bước | Hành động | Thời gian |
-|------|-----------|-----------|
-| **1** | Agent gửi vector sự cố C_incident | — |
-| **2** | ADE nhận dữ liệu hiện tại + vector sự cố | — |
-| **3** | Xuất ma trận kết quả dự báo | **~100–300ms** |
+### 3.2. Uncertainty và OOD
 
-> [!IMPORTANT]
-> Thời gian inference của Neural Network là O(1) — không phụ thuộc vào quy mô kịch bản, khác biệt hoàn toàn so với mô phỏng vật lý O(N^2) của SUMO.
+Variance giữa ba sub-model không tự động là uncertainty đáng tin cậy. Threshold phải được chọn trên held-out validation data bằng prediction-interval coverage và error theo uncertainty bucket.
 
----
+| Trạng thái | Xử lý |
+|---|---|
+| Trong distribution, uncertainty đạt ngưỡng | Cho phép chuyển sang Safety Loop |
+| Uncertainty cao | Truy xuất case tương tự làm bằng chứng; trạng thái `needs_review` |
+| OOD hoặc không có case đủ gần | Fail closed; không sinh `recommended_action` |
+| Case lịch sử | Không blend trực tiếp vào online input; chỉ dùng làm evidence hoặc dữ liệu huấn luyện offline |
 
-## 3. Pipeline Đánh giá (Evaluation Metrics)
+## 4. Metrics và benchmark
 
-| Chỉ số | Mô tả | Mục đích |
-|--------|-------|----------|
-| **RMSE** | Root Mean Square Error | Đo độ chính xác lưu lượng dự báo |
-| **MAE** | Mean Absolute Error | Đo sai lệch trung bình tuyệt đối |
-| **F1-Score** | F1 theo class Bình thường / Ùn ứ / Kẹt cứng | Đánh giá khả năng phát hiện ùn tắc |
-| **TTP (P99)** | Time-to-Prediction ở phân vị thứ 99 | **Phải < 500ms** — Ràng buộc cứng về hiệu năng |
+| Nhóm | Metrics |
+|---|---|
+| Forecast | MAE/RMSE theo target và horizon, congestion F1, error theo node |
+| Surrogate | MAE/RMSE so với SUMO, max-V/C error, ranking/action consistency |
+| Calibration | Coverage, interval width, error theo uncertainty decile |
+| Performance | P50/P95/P99, throughput và GPU memory |
+| Data quality | Missing ratio và performance theo missing bucket |
 
-> [!WARNING]
-> Nếu TTP tại P99 vượt ngưỡng 500ms, mô hình Surrogate **phải được tối ưu lại** (pruning, quantization, hoặc giảm ensemble size) trước khi triển khai production.
+Benchmark chuẩn: 8 CPU cores, 32 GB RAM, NVIDIA GPU 12–16 GB, warm-up cố định, payload 20 node và concurrency được ghi trong report. Surrogate phải đạt P99 < 500 ms trên profile này. Không mô tả inference là O(1); chi phí phụ thuộc N, batch, model và phần cứng.
 
----
+## 5. Acceptance gates
 
-## Phụ lục
+1. Data contract và node order đúng với DOC-01.
+2. Không leakage; scaler/model artifact có version.
+3. Forecast được so với cả ba baseline.
+4. SUMO dataset có scenario coverage report và calibration record.
+5. Uncertainty threshold được cố định trước test.
+6. OOD/high uncertainty luôn dẫn đến `needs_review`.
+7. P99 < 500 ms trên benchmark profile đã chốt.
 
-### Lịch sử Phiên bản
+## Phụ lục: Lịch sử phiên bản
 
-| Phiên bản | Ngày | Tác giả | Mô tả thay đổi |
-|-----------|------|---------|-----------------|
+| Phiên bản | Ngày | Tác giả | Mô tả |
+|---|---|---|---|
 | 1.0 | 15/06/2026 | Nhóm STWI | Soạn thảo ban đầu |
-| 1.1 | 15/06/2026 | Nhóm STWI | Chuẩn hóa format doanh nghiệp, sửa lỗi Mermaid render, chuyển đổi các công thức và ký hiệu LaTeX sang Unicode/Plain Text |
-
-### Tài liệu Liên quan
-
-- ⬅️ Tài liệu trước: [01_System_Architecture_Data_Pipeline.md](./01_System_Architecture_Data_Pipeline.md)
-- ➡️ Tài liệu tiếp: [03_Knowledge_Base_and_RAG_Design.md](./03_Knowledge_Base_and_RAG_Design.md)
+| 1.1 | 15/06/2026 | Nhóm STWI | Chuẩn hóa format |
+| 1.2 | 20/06/2026 | Nhóm STWI | Baseline và surrogate ensemble |
+| 1.3 | 20/06/2026 | Nhóm STWI | Cập nhật 16 feature |
+| 1.4 | 21/06/2026 | Nhóm STWI | Đổi thành GCN–LSTM, tensor 4D, output hai target, bổ sung SUMO dataset, calibration và OOD fail-closed |

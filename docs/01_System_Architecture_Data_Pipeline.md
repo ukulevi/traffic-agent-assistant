@@ -6,172 +6,149 @@
 |---|---|
 | **Dự án** | SmartTraffic What-If (STWI) |
 | **Mã tài liệu** | STWI-DOC-01 |
-| **Phiên bản** | 1.1 |
+| **Phiên bản** | 1.4 |
 | **Ngày tạo** | 15/06/2026 |
-| **Cập nhật lần cuối** | 15/06/2026 |
+| **Cập nhật lần cuối** | 21/06/2026 |
 | **Trạng thái** | 📝 Đang soạn thảo (Draft) |
 | **Phân loại** | Tài liệu nội bộ — Đặc tả kỹ thuật |
 
 > [!NOTE]
-> Tài liệu này đặc tả chi tiết **Tầng 1 — Thu thập & Chuẩn hóa Dữ liệu (Data Pipeline)** và cung cấp bức tranh tổng thể về kiến trúc 4 tầng của dự án STWI.
+> Tài liệu này đặc tả Tầng 1 và hợp đồng dữ liệu đưa vào GCN–LSTM. Giá trị chuẩn được phản chiếu trong [`project_contract.json`](../project_contract.json).
 
----
+## 1. Phạm vi MVP
 
-## Mục lục
+- Chạy chức năng trên mạng 20 node và tối đa 20 video ghi sẵn/RTSP.
+- Kiểm thử ingestion ở quy mô 1.000 camera bằng producer tổng hợp gửi aggregate 5 phút.
+- Không tuyên bố inference thị giác đồng thời trên 1.000 video stream.
+- Video được xử lý tại biên; chỉ aggregate và audit metadata được truyền/lưu.
 
-- [1. Bức Tranh Tổng Thể (System Overview)](#1-bức-tranh-tổng-thể-system-overview)
-- [2. Đặc tả Tầng Thu thập Dữ liệu Đa phương thức](#2-đặc-tả-tầng-thu-thập-dữ-liệu-đa-phương-thức-data-pipeline)
-  - [2.1. Phân hệ Thị giác Máy tính (CCTV Pipeline)](#21-phân-hệ-thị-giác-máy-tính-cctv-pipeline)
-  - [2.2. Phân hệ Cảm biến Môi trường & Khí tượng](#22-phân-hệ-cảm-biến-môi-trường--khí-tượng)
-- [3. Cấu trúc và Chuẩn hóa Dữ liệu](#3-cấu-trúc-và-chuẩn-hóa-dữ-liệu-data-normalization)
-- [Phụ lục](#phụ-lục)
+## 2. Thu thập dữ liệu
 
----
-
-## 1. Bức Tranh Tổng Thể (System Overview)
-
-Hệ thống STWI hoạt động dựa trên cơ chế **Multi-modal Data Pipeline** (Dòng dữ liệu đa nguồn), tạo thành một vòng lặp khép kín chuyển hóa từ Số liệu (Data) -> Ngôn ngữ tự nhiên (NLP) -> Hành động (Action).
-
-Kiến trúc tổng thể gồm 4 tầng (Tiers) tương tác mật thiết với nhau:
-
-| Tầng | Tên gọi | Chức năng chính |
-|------|---------|-----------------|
-| **1** | Thu thập & Chuẩn hóa Dữ liệu (Data Pipeline) | Phân tích Camera và Cảm biến -> 3D Tensor |
-| **2** | Dự báo Số liệu & Giả lập (Numerical Simulation) | STGCN + LSTM & Surrogate Model |
-| **3** | Tri thức Đô thị (RAG) | Vector Database và Schema-Level RAG |
-| **4** | Tác tử Điều phối (AI Agent Orchestrator) | Trưởng phòng điều phối ảo & CF-VLA |
-
-### Sơ đồ Kiến trúc Tổng quan
-
-```mermaid
-graph TD
-    A["📹 CCTV / YOLO + ByteTrack"] -->|"Lưu lượng, Vận tốc, Loại xe"| D["⚙️ Data Normalization Pipeline"]
-    B["🌡️ Cảm biến Môi trường"] -->|"CO, NOx, PM2.5..."| D
-    C["☁️ Trạm Khí tượng"] -->|"Nhiệt độ, Độ ẩm, Sức gió"| D
-    D -->|"3D Tensor [B, 12, 14]"| E["🧠 Tầng 2: STGCN+LSTM / Surrogate"]
-    E -->|"Kịch bản Số liệu"| F["🤖 Tầng 4: Agent Orchestrator"]
-    G["📚 SOP, Luật Giao thông"] -->|"Vector DB"| H["🔍 Tầng 3: XiYanSQL & RealGen"]
-    H <-->|"Truy vấn Ngữ cảnh"| F
-    F -->|"Đề xuất Hành động"| I["📺 Dashboard / Operator"]
-
-    style D fill:#1e3a5f,stroke:#4a9eff,color:#fff
-    style E fill:#1e3a5f,stroke:#4a9eff,color:#fff
-    style F fill:#5c2d00,stroke:#ff9500,color:#fff
-    style I fill:#1a4d1a,stroke:#4ade80,color:#fff
-```
-
----
-
-## 2. Đặc tả Tầng Thu thập Dữ liệu Đa phương thức (Data Pipeline)
-
-Tầng này có nhiệm vụ **tiếp nhận dữ liệu thời gian thực** từ phần cứng ngoại vi và **đồng bộ hóa** chúng vào một cấu trúc chuẩn.
-
-### 2.1. Phân hệ Thị giác Máy tính (CCTV Pipeline)
+### 2.1. CCTV
 
 ```mermaid
 flowchart LR
-    CAM["📹 Camera CCTV\n(1000 cameras)"] --> YOLO["🎯 YOLO v8\nObject Detection"]
-    YOLO --> BT["🔗 ByteTrack\nMulti-Object Tracking"]
-    BT --> OUT["📊 Output mỗi 5 phút"]
-    OUT --> V["traffic_volume\n(Lưu lượng)"]
-    OUT --> S["average_velocity\n(Vận tốc TB km/h)"]
-    OUT --> C["vehicle_class\n(Phân loại phương tiện)"]
-
-    style CAM fill:#1e3a5f,stroke:#4a9eff,color:#fff
-    style YOLO fill:#3b1f6e,stroke:#a78bfa,color:#fff
-    style BT fill:#3b1f6e,stroke:#a78bfa,color:#fff
-    style OUT fill:#5c2d00,stroke:#ff9500,color:#fff
+    CAM["Video ghi sẵn/RTSP"] --> CAL["Calibration\nROI + homography"]
+    CAL --> DET["YOLOv8"]
+    DET --> TRACK["ByteTrack"]
+    TRACK --> AGG["Aggregate 5 phút"]
+    AGG --> OUT["traffic_volume_5m\navg_speed_kmh\nheavy_vehicle_ratio"]
 ```
 
-| Thông số | Mô tả | Chi tiết |
-|----------|--------|----------|
-| **Nguồn cấp** | Mạng lưới camera CCTV | 1000 camera tại các giao lộ |
-| **Object Detection** | Phát hiện vật thể | `YOLO` (YOLOv8 hoặc tương đương) |
-| **Multi-Object Tracking** | Theo dõi đa đối tượng | `ByteTrack` — không đếm trùng phương tiện qua các frame |
-| **Chu kỳ xuất** | Tần suất trích xuất | 5 phút/lần |
+| Yêu cầu | Quy tắc |
+|---|---|
+| Đếm xe | Theo line-crossing/ROI đã hiệu chỉnh, chống đếm lặp bằng track ID |
+| Tốc độ | Chỉ tính khi camera có homography hoặc hệ số hiệu chỉnh được phê duyệt |
+| Phân loại | Gom nhóm xe nặng: tải và buýt |
+| Privacy | Không lưu frame/clip mặc định; log chỉ chứa camera ID, model version và quality metrics |
+| Offline | Sau 15 phút không có aggregate hợp lệ, đánh dấu source offline |
 
-**Thông số trích xuất:**
+### 2.2. Cảm biến và đồng bộ node
 
-| Biến | Tên kỹ thuật | Đơn vị / Mô tả |
-|------|-------------|-----------------|
-| Lưu lượng | `traffic_volume` | Số lượng phương tiện qua nút giao |
-| Vận tốc TB | `average_velocity` | km/h |
-| Phân loại | `vehicle_class` | Xe máy, ô tô con, xe tải, xe buýt |
+Cảm biến gửi MQTT bằng schema có version. Mỗi trạm được ánh xạ tới một hoặc nhiều node qua `sensor_node_map`; bản ghi phải có `source_id`, `observed_at`, `received_at`, unit và quality flag.
 
-### 2.2. Phân hệ Cảm biến Môi trường & Khí tượng
+| Nhóm | Feature | Đơn vị |
+|---|---|---|
+| Khí thải | `co_ppm`, `co2_ppm`, `nox_ppb`, `pm25_ugm3`, `pm10_ugm3` | ppm, ppb, µg/m³ |
+| Khí tượng | `temperature_c`, `humidity_pct`, `wind_speed_ms` | °C, %, m/s |
+| Tín hiệu | `green_time_ratio` | Tỷ lệ thời gian đèn xanh trong cửa sổ 5 phút |
 
-| Nhóm | Biến đo | Ký hiệu |
-|------|---------|---------|
-| **Khí thải** | Carbon monoxide | CO |
-| | Carbon dioxide | CO₂ |
-| | Nitrogen oxides | NOx |
-| | Bụi mịn nhỏ | PM₂.₅ |
-| | Bụi mịn lớn | PM₁₀ |
-| **Khí tượng** | Nhiệt độ | °C |
-| | Độ ẩm | % |
-| | Tốc độ gió | m/s |
+> [!IMPORTANT]
+> `green_time_ratio` thay cho trạng thái đèn tức thời. Một bit “đang xanh” không đại diện được chu kỳ tín hiệu trong aggregate 5 phút.
 
-> [!TIP]
-> **Logic kỹ thuật đáng chú ý:** Tốc độ gió tỷ lệ nghịch với thời gian lưu giữ bụi mịn tại bề mặt giao lộ. Mô hình cần capture được mối quan hệ **non-linear** này để đánh giá chất lượng không khí khi ùn tắc xảy ra.
+## 3. Hợp đồng tensor
 
----
-
-## 3. Cấu trúc và Chuẩn hóa Dữ liệu (Data Normalization)
-
-Do các nguồn dữ liệu có thang đo khác nhau (ví dụ: nhiệt độ đo bằng °C, lưu lượng lên đến hàng ngàn xe/giờ), tất cả phải đi qua bộ lọc **MinMaxScaler** đưa về khoảng `(0, 1)`.
-
-Dữ liệu sau khi xử lý được đóng gói thành một **Tensor 3 chiều (3D Tensor)** để feed vào mô hình STGCN + LSTM.
-
-### Cấu trúc 3D Tensor
+### 3.1. Shape và trục
 
 ```
-Input Shape = [Batch Size, Time Steps, Features]
+X = [Batch, HistorySteps, Nodes, Features] = [B, 12, N, 16]
+M = [Batch, HistorySteps, Nodes, Features] = [B, 12, N, 16]
+A = [Nodes, Nodes] = [N, N]
 ```
 
-| Chiều | Ý nghĩa | Giá trị mặc định | Ghi chú |
-|-------|---------|-------------------|---------|
-| **Batch Size** | Số mẫu xử lý đồng thời | `32` hoặc `64` | Tùy thuộc VRAM GPU |
-| **Time Steps** | Cửa sổ thời gian (Window Size) | `12` | 12 bước x 5 phút = **60 phút** dữ liệu quá khứ |
-| **Features** | Ma trận biến đặc trưng | `14` | Chi tiết bên dưới |
+| Trục | Ý nghĩa |
+|---|---|
+| `B` | Số cửa sổ mạng trong batch; không phải số camera |
+| `12` | 60 phút lịch sử, mỗi bước 5 phút |
+| `N` | Số node theo thứ tự bất biến trong `node_registry` |
+| `16` | Số feature trên mỗi node |
+| `M` | 1 nếu quan sát thật, 0 nếu thiếu hoặc được impute |
+| `A` | Adjacency có cùng node order với `X` |
 
-### Chi tiết 14 Biến Đặc trưng (Features)
+### 3.2. Danh sách 16 features
 
-| Nhóm | Số biến | Chi tiết |
-|------|---------|----------|
-| Giao thông | 3 | Volume, Velocity, V-Class Ratio |
-| Khí thải | 5 | CO, CO₂, NOx, PM₂.₅, PM₁₀ |
-| Khí tượng | 3 | Nhiệt độ, Độ ẩm, Tốc độ gió |
-| Phụ trợ | 3 | Thời gian trong ngày, Ngày trong tuần, Trạng thái đèn tín hiệu |
-| **Tổng** | **14** | |
+| # | Tên chuẩn | Đơn vị | Encoding |
+|---|---|---|---|
+| 1 | `traffic_volume_5m` | vehicles/5min | scaled continuous |
+| 2 | `avg_speed_kmh` | km/h | scaled continuous |
+| 3 | `heavy_vehicle_ratio` | [0,1] | bounded ratio |
+| 4 | `co_ppm` | ppm | scaled continuous |
+| 5 | `co2_ppm` | ppm | scaled continuous |
+| 6 | `nox_ppb` | ppb | scaled continuous |
+| 7 | `pm25_ugm3` | µg/m³ | scaled continuous |
+| 8 | `pm10_ugm3` | µg/m³ | scaled continuous |
+| 9 | `temperature_c` | °C | scaled continuous |
+| 10 | `humidity_pct` | % | scaled continuous |
+| 11 | `wind_speed_ms` | m/s | scaled continuous |
+| 12 | `time_of_day_sin` | [-1,1] | cyclical |
+| 13 | `time_of_day_cos` | [-1,1] | cyclical |
+| 14 | `day_of_week_sin` | [-1,1] | cyclical |
+| 15 | `day_of_week_cos` | [-1,1] | cyclical |
+| 16 | `green_time_ratio` | [0,1] | bounded ratio |
 
-### Ví dụ Code (PyTorch-like)
+### 3.3. Chuẩn hóa và missing data
+
+1. Fit scaler **chỉ trên training split theo thời gian**.
+2. Chỉ transform 8 feature `scaled_continuous`; giữ nguyên cyclical và ratio.
+3. Outlier không bị clamp im lặng: giữ quality flag, thay bằng giá trị đã impute nếu vượt hard sanity bound.
+4. Thiếu ≤ 15 phút: forward/interpolate theo feature; thiếu lâu hơn: ưu tiên node lân cận rồi population median.
+5. Mọi giá trị impute phải có `M=0`; model và metrics phải báo tỷ lệ missing.
+6. Scaler, node registry, feature order và capacity table đều có version trong model artifact.
+
+### 3.4. Ví dụ PyTorch-like
 
 ```python
 import torch
 
-batch_size = 32
-time_steps = 12  # 60 phút lịch sử (12 bước x 5 phút)
-features = 14    # 14 biến đặc trưng
+B, T, N, F = 32, 12, 20, 16
+X = torch.rand(B, T, N, F)
+M = torch.ones(B, T, N, F, dtype=torch.bool)
+A = torch.eye(N)
 
-# Dummy input tensor sau Data Pipeline
-input_tensor = torch.rand(batch_size, time_steps, features)
-
-print(f"Data shape ready for simulation tier: {input_tensor.shape}")
-# Output: Data shape ready for simulation tier: torch.Size([32, 12, 14])
+assert X.shape == (32, 12, 20, 16)
+assert M.shape == X.shape
+assert A.shape == (20, 20)
 ```
 
----
+## 4. Validation và observability
 
-## Phụ lục
+| Kiểm tra | Hành động |
+|---|---|
+| Sai schema/version/unit | Reject record; đưa vào dead-letter queue |
+| Timestamp lệch quá tolerance | Reject hoặc gắn `late_event` |
+| Node/source không tồn tại | Reject và cảnh báo cấu hình |
+| Thiếu dữ liệu dài | Impute + `M=0` + degraded quality |
+| Camera calibration hết hạn | Không phát hành speed; vẫn có volume nếu hợp lệ |
+| Video thô xuất khỏi edge | Fail privacy check |
 
-### Lịch sử Phiên bản
+Metrics bắt buộc: ingest lag, valid-record ratio, missing ratio theo feature/node, camera FPS, track quality, calibration age và tensor build latency.
 
-| Phiên bản | Ngày | Tác giả | Mô tả thay đổi |
-|-----------|------|---------|-----------------|
+## 5. Mock và kiểm thử quy mô
+
+| Generator | Mục đích |
+|---|---|
+| `MockNetworkGenerator` | Mạng 20 node, adjacency và capacity có version |
+| `MockCCTVAggregateProducer` | Pattern sáng/chiều, sự cố và quality flags |
+| `MockSensorProducer` | MQTT messages có missing/outlier/late events |
+| `LoadProducer1000` | 1.000 nguồn aggregate để kiểm thử ingestion, không phải video inference |
+| `MockTensorBuilder` | Sinh `X[B,12,N,16]`, `M[B,12,N,16]`, `A[N,N]` |
+
+## Phụ lục: Lịch sử phiên bản
+
+| Phiên bản | Ngày | Tác giả | Mô tả |
+|---|---|---|---|
 | 1.0 | 15/06/2026 | Nhóm STWI | Soạn thảo ban đầu |
-| 1.1 | 15/06/2026 | Nhóm STWI | Chuẩn hóa format doanh nghiệp, sửa lỗi Mermaid render, chuyển đổi các công thức và ký hiệu LaTeX sang Unicode |
-
-### Tài liệu Liên quan
-
-- ⬅️ Tài liệu trước: [00_STWI_Summary_and_Guidelines.md](./00_STWI_Summary_and_Guidelines.md)
-- ➡️ Tài liệu tiếp: [02_ML_and_Simulation_Specification.md](./02_ML_and_Simulation_Specification.md)
+| 1.1 | 15/06/2026 | Nhóm STWI | Chuẩn hóa format |
+| 1.2 | 20/06/2026 | Nhóm STWI | Validation, MQTT và mock data |
+| 1.3 | 20/06/2026 | Nhóm STWI | Cyclical encoding đầy đủ |
+| 1.4 | 21/06/2026 | Nhóm STWI | Bổ sung node axis và missing mask, chuẩn hóa unit/feature, đổi tín hiệu sang green-time ratio, giới hạn camera MVP và privacy |

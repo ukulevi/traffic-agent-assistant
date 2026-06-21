@@ -1,165 +1,55 @@
-\section{Data Contract --- Pydantic Models}
+\section{Data Contracts}
 
-\begin{lstlisting}[caption={Data Contract định nghĩa Tensor shape (bất biến)},label={lst:pydantic}]
-from pydantic import BaseModel, field_validator
-from typing import Literal
-import torch
-
-class TensorContract(BaseModel):
-    """Hop dong bat bien cho Tensor dau vao Tầng 2.
-    Moi thay doi shape phai qua HĐ Kien truc phe duyet (QC-3).
-    """
-    batch_size:  int = 32
-    time_steps:  int = 12   # Bat buoc: 60 phut / 5 phut = 12 buoc
-    num_features: int = 14  # Bat buoc: 3 GT + 5 KT + 3 KK + 3 PT
-
-    @field_validator('time_steps')
-    def time_steps_must_be_12(cls, v):
-        if v != 12:
-            raise ValueError(f"time_steps phai la 12, nhan {v}. "
-                           "Thay doi can phe duyet cua HĐ Kien truc.")
-        return v
-
-    @field_validator('num_features')
-    def features_must_be_14(cls, v):
-        if v != 14:
-            raise ValueError(f"num_features phai la 14, nhan {v}.")
-        return v
-
-class IncidentVector(BaseModel):
-    """Dac ta Vector Su co cho ADE Surrogate Model."""
-    incident_node_id: str
-    incident_type: Literal['accident', 'flood', 'closure', 'event']
-    severity: float          # [0.0, 1.0]
-    lanes_closed: int        # [0, 4]
-    duration_min: float
-    affected_edges: list[str]
-    time_of_day: float       # [0.0, 1.0] = gio/24
-    weather_flag: Literal['normal', 'rain', 'flood']
-
-class WhatIfRequest(BaseModel):
-    """Schema request cho API What-if."""
-    scenario: str            # Min length 10 chars
-    operator_id: str
-    max_computation_time_ms: int = 180000
-    priority: Literal['low', 'normal', 'high'] = 'normal'
-    cf_vla_enabled: bool = True
-
-    @field_validator('cf_vla_enabled')
-    def cf_vla_cannot_be_disabled(cls, v):
-        if not v:
-            raise ValueError("CF-VLA khong the tat (QC-5). "
-                           "He thong tu choi moi request voi cf_vla_enabled=False.")
-        return v
+\begin{lstlisting}[caption={Hợp đồng tensor}]
+X: float32[B, 12, N, 16]
+M: bool[B, 12, N, 16]
+A: float32[N, N]
+Y: float32[B, 6, N, 2]
+targets: [traffic_volume_5m, avg_speed_kmh]
 \end{lstlisting}
 
-\section{Cấu trúc Thư mục Dự án}
+Feature order, node registry, adjacency, capacity, scaler và model đều có version. Feature thứ 16 là \texttt{green\_time\_ratio}; chỉ continuous feature được scale.
 
-\begin{lstlisting}[language={},caption={Cấu trúc monorepo STWI},label={lst:project_structure}]
-stwi/
-|-- tier1-data/                # Tang 1: Data Pipeline
-|   |-- cctv/
-|   |   |-- yolo_inference.py  # YOLOv8 inference wrapper
-|   |   |-- bytetrack.py       # ByteTrack integration
-|   |   |-- aggregator.py      # 5-min aggregation
-|   |-- sensors/
-|   |   |-- mqtt_subscriber.py # MQTT adapter
-|   |   |-- imputer.py         # Missing data handling
-|   |-- pipeline/
-|       |-- tensor_builder.py  # 3D Tensor construction
-|       |-- scaler.pkl         # Serialized MinMaxScaler
-|
-|-- tier2-ml/                  # Tang 2: ML & Surrogate
-|   |-- models/
-|   |   |-- stgcn_lstm.py      # STGCN + Stacked LSTM
-|   |   |-- ade_surrogate.py   # ADE Ensemble
-|   |-- training/
-|   |   |-- train_stgcn.py
-|   |   |-- train_ade.py
-|   |-- api/
-|       |-- simulate.py        # POST /internal/simulate
-|
-|-- tier3-rag/                 # Tang 3: Knowledge Base
-|   |-- ingestion/
-|   |   |-- chunker.py         # Sentence-level chunking
-|   |   |-- embedder.py        # BGE-m3 embedding
-|   |-- retrieval/
-|   |   |-- vector_db.py       # Qdrant client
-|   |   |-- xiyansql.py        # Text-to-SQL module
-|   |   |-- realgen.py         # Corner case retrieval
-|   |-- db/
-|       |-- schema.sql         # DuckDB in-memory schema
-|
-|-- tier4-agent/               # Tang 4: Multi-Agent
-|   |-- orchestrator.py        # LangChain/CrewAI setup
-|   |-- agents/
-|   |   |-- simulation_agent.py
-|   |   |-- legal_agent.py
-|   |   |-- evaluation_agent.py
-|   |-- cfvla/
-|       |-- engine.py          # CF-VLA Safety Loop
-|       |-- checker.py         # V/C ratio verification
-|
-|-- api/                       # REST API + WebSocket
-|   |-- main.py                # FastAPI application
-|   |-- schemas.py             # Pydantic models (Data Contract)
-|   |-- routers/
-|       |-- whatif.py          # /api/v1/agent/what-if
-|
-|-- dashboard/                 # Frontend
-|   |-- src/
-|       |-- components/
-|           |-- NodeHeatmap.tsx
-|           |-- ActionReport.tsx
-|
-|-- scripts/
-|   |-- convert_docs.py        # MD -> LaTeX conversion
-|   |-- benchmark_ttp.py       # TTP benchmark tool
-|
-|-- docs/                      # Technical documentation
-|-- chapters/                  # LaTeX chapters
-|-- .github/workflows/         # CI/CD
-|-- docker-compose.yml
-|-- main.tex                   # LaTeX master file
+\section{Domain Schemas}
+
+\begin{lstlisting}[caption={Các schema cốt lõi}]
+IncidentVector:
+  event_type: enum
+  affected_node_ids: list[str]
+  lane_closure_ratio: float[0,1]
+  demand_multiplier: float
+  duration_minutes: int
+  signal_plan_delta: object|null
+
+SimulationQuery:
+  job_id: str
+  node_ids: list[str]
+  metrics: enum[]
+  horizons_minutes: int[]
+  aggregation: enum
+  limit: int[1,1000]
+
+Citation:
+  document_id: str
+  document_number: str
+  provision: str
+  source_url: str
+  effective_from: date
+  effective_to: date|null
+  content_hash: str
 \end{lstlisting}
 
-\section{Docker Compose Configuration}
+\section{Project Layout}
 
-\begin{lstlisting}[language={},caption={docker-compose.yml (cấu trúc dịch vụ)},label={lst:docker}]
-version: '3.9'
-services:
-  # Vector Database
-  qdrant:
-    image: qdrant/qdrant:v1.9.0
-    ports: ["6333:6333"]
-    volumes: ["qdrant_data:/qdrant/storage"]
-
-  # Cache Layer
-  redis:
-    image: redis:7-alpine
-    ports: ["6379:6379"]
-
-  # Metrics
-  prometheus:
-    image: prom/prometheus:v2.50.0
-    volumes: ["./prometheus.yml:/etc/prometheus/prometheus.yml"]
-
-  # TimeSeries DB for Tier 1
-  influxdb:
-    image: influxdb:2.7
-    ports: ["8086:8086"]
-    environment:
-      DOCKER_INFLUXDB_INIT_MODE: setup
-      DOCKER_INFLUXDB_INIT_BUCKET: stwi-traffic
-
-  # STWI API
-  stwi-api:
-    build: ./api
-    ports: ["8000:8000"]
-    environment:
-      QDRANT_URL: http://qdrant:6333
-      REDIS_URL: redis://redis:6379
-      ADE_MODEL_PATH: /models/ade_surrogate_v2.pt
-    depends_on: [qdrant, redis]
-    volumes: ["./models:/models"]
+\begin{lstlisting}
+contracts/       # Pydantic contracts
+tier1-data/      # CCTV, MQTT, tensor/mask builder
+tier2-ml/        # GCN-LSTM, SUMO dataset, surrogate
+tier3-rag/       # Qdrant, SimulationQuery, citations
+tier4-agent/     # LangGraph and Safety Loop
+api/             # FastAPI job/status/SSE routes
+workers/         # Celery tasks
+dashboard/       # Operator review UI
+mocks/           # 20-node and 1000-producer fixtures
+tests/           # unit, contract, integration, security
 \end{lstlisting}

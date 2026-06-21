@@ -1,78 +1,19 @@
 \chapter{Kết luận và Hướng Phát triển}
 
-\section{Tóm tắt Kết quả}
+STWI được chuẩn hóa thành MVP 13 tuần có phạm vi kiểm chứng được: mạng 20 node, camera demo giới hạn, GCN--LSTM cho baseline, surrogate học từ SUMO, tri thức pháp lý có version và Counterfactual Safety Loop fail-closed.
 
-Báo cáo này đã trình bày đặc tả kỹ thuật toàn diện cho hệ thống \textbf{SmartTraffic What-If (STWI)} --- một nền tảng điều phối giao thông đô thị thông minh thế hệ mới tích hợp bốn lĩnh vực công nghệ tiên tiến: học máy không gian--thời gian, mô phỏng nơ-ron tốc độ cao, hệ thống truy xuất tri thức tăng cường (RAG) và điều phối đa tác tử AI với cơ chế phản biện phản thực tế (CF-VLA).
+Đóng góp kỹ thuật chính không nằm ở một tên mô hình riêng lẻ mà ở hợp đồng end-to-end: tensor có node axis và missing mask, tách baseline với scenario model, uncertainty/OOD gate, typed query, structured citations, async job API và human approval.
 
-\textbf{Các đóng góp kỹ thuật chính} của dự án:
+\section{Giới hạn}
 
-\begin{enumerate}[leftmargin=1.5cm, itemsep=6pt]
-  \item \textbf{Kiến trúc 4 tầng khép kín:} Lần đầu tiên trong nghiên cứu tại Việt Nam, một hệ thống tích hợp đồng thời STGCN, Neural Surrogate (ADE), Schema-Level RAG và Multi-Agent AI trong một pipeline điều phối giao thông duy nhất, hoạt động end-to-end trong dưới 3 phút.
-
-  \item \textbf{Mô hình ADE cho bài toán What-if:} Việc áp dụng Adversarial Diverse Deep Ensemble vào bài toán dự báo tình huống giả định giao thông, đạt TTP $P_{99} < 500$ms --- nhanh hơn ít nhất 100$\times$ so với mô phỏng vi mô SUMO truyền thống, đồng thời duy trì độ chính xác đủ để ra quyết định thực tế.
-
-  \item \textbf{CF-VLA Safety Loop bắt buộc:} Cơ chế phản biện phản thực tế được triển khai như một ràng buộc cứng (hard constraint), không thể bypass trong bất kỳ điều kiện nào. Đây là đảm bảo an toàn hệ thống mà các nền tảng AI giao thông hiện tại chưa có.
-
-  \item \textbf{No-Hallucination Policy:} Kết hợp RAG, XiYanSQL và Citation Validator, hệ thống đảm bảo 100\% đề xuất điều phối đều được neo vào văn bản pháp lý thực tế, loại bỏ nguy cơ ảo giác AI trong bối cảnh an toàn giao thông nghiêm trọng.
-
-  \item \textbf{Hybrid RAG (Semantic + SQL):} Giải pháp kết hợp vector similarity search cho tri thức phi cấu trúc với text-to-SQL cho dữ liệu số có cấu trúc, giải quyết hạn chế cơ bản của RAG truyền thống trong bài toán có cả văn bản pháp lý lẫn số liệu mô phỏng.
-\end{enumerate}
-
-\section{Hạn chế Hiện tại}
-
-Mặc dù có nhiều đóng góp quan trọng, hệ thống STWI trong phiên bản hiện tại (v2.0) vẫn còn một số hạn chế cần được giải quyết trong các phiên bản tương lai:
-
-\begin{table}[H]
-\centering
-\caption{Hạn chế hiện tại và định hướng cải thiện}
-\label{tab:limitations}
-\renewcommand{\arraystretch}{1.5}
-\begin{tabular}{p{5cm} p{7cm}}
-\toprule
-\textbf{Hạn chế} & \textbf{Định hướng cải thiện} \\
-\midrule
-Dữ liệu training từ lịch sử, không có dữ liệu thực từ 1.000 camera & Tích hợp dữ liệu thực từ TOC TP.HCM sau pilot \\
-\rowcolor{rowgray}
-ADE chỉ xấp xỉ tốt trong vùng phân phối training & Mở rộng corpus corner cases; tích hợp mô phỏng SUMO chạy offline \\
-Chưa hỗ trợ đa ngôn ngữ Anh-Việt đầy đủ & Fine-tune BGE-m3 trên corpus pháp lý song ngữ \\
-\rowcolor{rowgray}
-Dashboard chưa có mobile app & Phát triển Progressive Web App (PWA) \\
-Chưa tích hợp dữ liệu xe buýt GPS thực tế & Kết nối với API Sở GTVT --- hệ thống quản lý xe buýt \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\section{Hướng Phát triển Tương lai}
-
-\subsection{Ngắn hạn (6 tháng)}
-
-\begin{itemize}[leftmargin=1.5cm, itemsep=4pt]
-  \item \textbf{Pilot thực tế:} Triển khai thử nghiệm tại 50 nút giao trọng điểm TP.HCM (quận 1, quận 3).
-  \item \textbf{Online Learning:} Thêm cơ chế cập nhật mô hình STGCN liên tục (incremental learning) từ dữ liệu thực tế mới.
-  \item \textbf{Integration with SCATS:} Kết nối với hệ thống điều khiển đèn tín hiệu SCATS để tự động đề xuất thay đổi chu kỳ đèn.
+\begin{itemize}
+  \item Load test 1.000 producer không chứng minh khả năng xử lý 1.000 video stream.
+  \item Surrogate chỉ đáng tin trong scenario space và calibration đã công bố.
+  \item Citation validator giảm unsupported claim nhưng không thay thế chuyên gia pháp lý.
+  \item Ngưỡng V/C 0,9 là policy MVP có thể cấu hình, không phải luật.
+  \item Hệ thống chỉ hỗ trợ quyết định và không tự actuate.
 \end{itemize}
 
-\subsection{Trung hạn (1--2 năm)}
+\section{Hướng Phát triển}
 
-\begin{itemize}[leftmargin=1.5cm, itemsep=4pt]
-  \item \textbf{Multi-city Expansion:} Mở rộng sang Hà Nội, Đà Nẵng. Mỗi thành phố có graph và knowledge base riêng.
-  \item \textbf{Reinforcement Learning:} Thay Evaluation Agent bằng mô hình RL (PPO/SAC) được huấn luyện trong môi trường SUMO để tự tối ưu phương án phân luồng.
-  \item \textbf{Federated Learning:} Cho phép các thành phố huấn luyện mô hình chung mà không chia sẻ dữ liệu nhạy cảm.
-\end{itemize}
-
-\subsection{Dài hạn (3--5 năm)}
-
-\begin{itemize}[leftmargin=1.5cm, itemsep=4pt]
-  \item \textbf{Digital Twin of the City:} Xây dựng bản sao số (digital twin) toàn bộ mạng lưới giao thông TP.HCM, cho phép lập kế hoạch hạ tầng dài hạn dựa trên mô phỏng.
-  \item \textbf{Autonomous Traffic Coordination:} Hướng đến hệ thống AI có thể tự thực thi một số quyết định đơn giản (điều chỉnh đèn, kích hoạt biển hiệu điện tử) sau khi có Operator approval.
-\end{itemize}
-
-\section{Lời kết}
-
-Dự án SmartTraffic What-If (STWI) đại diện cho một bước tiến quan trọng trong ứng dụng Trí tuệ Nhân tạo vào quản lý giao thông đô thị tại Việt Nam. Thông qua việc kết hợp các kỹ thuật học máy tiên tiến nhất (STGCN, Deep Ensemble, RAG, Multi-Agent) trong một kiến trúc có tính an toàn cao (CF-VLA, No-Hallucination), hệ thống hứa hẹn chuyển hóa cách thức các Trung tâm điều phối giao thông vận hành: từ phản ứng thụ động sang chủ động phòng ngừa tắc nghẽn dựa trên dữ liệu và trí tuệ nhân tạo.
-
-Thành công của STWI sẽ không chỉ cải thiện hiệu quả giao thông mà còn góp phần giảm ô nhiễm môi trường (do giảm thời gian xe chạy chậm), tiết kiệm nhiên liệu và nâng cao chất lượng cuộc sống của hàng triệu người dân đô thị Việt Nam.
-
-\begin{tcolorbox}[tipbox]
-\textbf{Cam kết:} Toàn bộ source code, tài liệu kỹ thuật và bộ dữ liệu synthetic sẽ được công khai theo giấy phép MIT sau khi pilot thành công, nhằm thúc đẩy cộng đồng nghiên cứu giao thông thông minh tại Việt Nam và Đông Nam Á.
-\end{tcolorbox}
+Sau MVP, các hướng hợp lý là pilot với dữ liệu thật, mở rộng SUMO coverage, đánh giá chuyển vùng, high availability, governance mô hình/corpus và tích hợp hiện trường chỉ sau khi có phê duyệt pháp lý--an toàn độc lập.

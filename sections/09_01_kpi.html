@@ -20,8 +20,8 @@
                 <span style="font-weight:700;color:#1e293b;font-size:1rem;">ML Accuracy</span>
             </div>
             <div style="display:flex;flex-direction:column;gap:6px;font-size:0.9rem;color:#334155;">
-                <div style="display:flex;justify-content:space-between;"><span>RMSE STGCN</span><b style="color:#3b82f6;">&lt; 15 xe/5 min</b></div>
-                <div style="display:flex;justify-content:space-between;"><span>ADE TTP P99</span><b style="color:#3b82f6;">&lt; 500ms</b></div>
+                <div style="display:flex;justify-content:space-between;"><span>GCN–LSTM vs baselines</span><b style="color:#3b82f6;">Phải thắng baseline</b></div>
+                <div style="display:flex;justify-content:space-between;"><span>surrogate ensemble TTP P99</span><b style="color:#3b82f6;">&lt; 500ms</b></div>
                 <div style="display:flex;justify-content:space-between;"><span>V/C Error</span><b style="color:#3b82f6;">&lt; 5%</b></div>
             </div>
         </div>
@@ -31,9 +31,9 @@
                 <span style="font-weight:700;color:#1e293b;font-size:1rem;">Knowledge Quality</span>
             </div>
             <div style="display:flex;flex-direction:column;gap:6px;font-size:0.9rem;color:#334155;">
-                <div style="display:flex;justify-content:space-between;"><span>RAG Recall@3</span><b style="color:#10b981;">≥ 85%</b></div>
-                <div style="display:flex;justify-content:space-between;"><span>SQL Accuracy</span><b style="color:#10b981;">≥ 90%</b></div>
-                <div style="display:flex;justify-content:space-between;"><span>Legal Grounding</span><b style="color:#10b981;">100%</b></div>
+                <div style="display:flex;justify-content:space-between;"><span>Citation precision</span><b style="color:#10b981;">≥ 95%</b></div>
+                <div style="display:flex;justify-content:space-between;"><span>SQL allowlist / binding</span><b style="color:#10b981;">100%</b></div>
+                <div style="display:flex;justify-content:space-between;"><span>Expired-doc rejection</span><b style="color:#10b981;">100%</b></div>
             </div>
         </div>
         <div style="background:rgba(139,92,246,0.06);border:1.5px solid rgba(139,92,246,0.25);border-radius:14px;padding:18px;">
@@ -42,14 +42,14 @@
                 <span style="font-weight:700;color:#1e293b;font-size:1rem;">Agent + E2E</span>
             </div>
             <div style="display:flex;flex-direction:column;gap:6px;font-size:0.9rem;color:#334155;">
-                <div style="display:flex;justify-content:space-between;"><span>CF-VLA Coverage</span><b style="color:#8b5cf6;">100%</b></div>
+                <div style="display:flex;justify-content:space-between;"><span>Counterfactual Safety Loop Coverage</span><b style="color:#8b5cf6;">100%</b></div>
                 <div style="display:flex;justify-content:space-between;"><span>V/C Safety ≤ 0.9</span><b style="color:#8b5cf6;">100%</b></div>
-                <div style="display:flex;justify-content:space-between;"><span>E2E Latency P95</span><b style="color:#8b5cf6;">&lt; 3 phút</b></div>
+                <div style="display:flex;justify-content:space-between;"><span>E2E Latency</span><b style="color:#8b5cf6;">P95 ≤ 30s · P99 ≤ 180s</b></div>
             </div>
         </div>
     </div>
     <div style="background:rgba(0,102,153,0.06);border:1px solid rgba(0,102,153,0.2);border-radius:12px;padding:14px 24px;width:90%;text-align:center;">
-        <b style="color:#006699;">30 Kịch Bản Kiểm Thử:</b>
-        <span style="color:#475569;font-size:0.95rem;"> Unit (10) · Integration (10) · E2E (5) · Performance (5) — Acceptance Criteria rõ ràng từng TC</span>
+        <b style="color:#006699;">Ma trận kiểm thử bắt buộc:</b>
+        <span style="color:#475569;font-size:0.95rem;"> Contract · leakage/calibration · injection/SQL · fail-closed · benchmark · UI</span>
     </div>
 </div>

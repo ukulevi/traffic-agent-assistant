@@ -1,4 +1,7 @@
-# 🚦 DỰ ÁN: SMARTTRAFFIC WHAT-IF (STWI) SYSTEM BLUEPRINT
+# 🗄️ ARCHIVED — SMARTTRAFFIC WHAT-IF (STWI) INITIAL BLUEPRINT
+
+> [!CAUTION]
+> Tài liệu này chỉ lưu dấu ý tưởng ban đầu và không còn là nguồn sự thật. Kiến trúc hiện hành nằm trong `project_contract.json` và STWI-DOC-00–05. Các thuật ngữ, shape dữ liệu, timeline và cam kết quy mô bên dưới có thể đã lỗi thời.
 
 * **Mô tả hệ thống:** Hệ thống hỗ trợ ra quyết định giao thông đô thị thông minh bằng cách tích hợp mô hình dự báo chuỗi thời gian không-thời gian, hệ thống truy xuất tri thức pháp lý (RAG) và tác tử thông minh (AI Agent) để xử lý các kịch bản giả định "What-if".
 * **Trạng thái tài liệu:** Bản đặc tả kỹ thuật tổng thể (Tổng hợp 2026).

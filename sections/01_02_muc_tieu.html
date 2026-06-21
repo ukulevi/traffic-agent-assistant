@@ -11,27 +11,27 @@
         <div style="background:white;border-radius:16px;padding:24px;border-top:5px solid #3b82f6;box-shadow:0 4px 16px rgba(0,0,0,0.07);">
             <div style="font-size:2rem;margin-bottom:10px;">🧠</div>
             <h3 style="font-size:1.1rem;font-weight:700;color:#3b82f6;margin-bottom:10px;">MO2</h3>
-            <p style="font-size:0.95rem;color:#334155;line-height:1.5;">Dự báo lưu lượng & trạng thái giao thông với ADE Surrogate P99 &lt; 500ms</p>
+            <p style="font-size:0.95rem;color:#334155;line-height:1.5;">GCN–LSTM dự báo baseline 30 phút; surrogate ensemble đánh giá IncidentVector P99 &lt; 500ms</p>
         </div>
         <div style="background:white;border-radius:16px;padding:24px;border-top:5px solid #10b981;box-shadow:0 4px 16px rgba(0,0,0,0.07);">
             <div style="font-size:2rem;margin-bottom:10px;">📚</div>
             <h3 style="font-size:1.1rem;font-weight:700;color:#10b981;margin-bottom:10px;">MO3</h3>
-            <p style="font-size:0.95rem;color:#334155;line-height:1.5;">Truy xuất tri thức pháp lý & SOP tự động qua RAG, đảm bảo <code>legal_grounding</code></p>
+            <p style="font-size:0.95rem;color:#334155;line-height:1.5;">Truy xuất tri thức pháp lý & SOP tự động qua RAG, đảm bảo <code>citations</code></p>
         </div>
         <div style="background:white;border-radius:16px;padding:24px;border-top:5px solid #8b5cf6;box-shadow:0 4px 16px rgba(0,0,0,0.07);">
             <div style="font-size:2rem;margin-bottom:10px;">🤖</div>
             <h3 style="font-size:1.1rem;font-weight:700;color:#8b5cf6;margin-bottom:10px;">MO4</h3>
-            <p style="font-size:0.95rem;color:#334155;line-height:1.5;">Điều phối Multi-Agent & CF-VLA tự tạo + kiểm định phương án hành động</p>
+            <p style="font-size:0.95rem;color:#334155;line-height:1.5;">Điều phối Multi-Agent & Counterfactual Safety Loop tự tạo + kiểm định phương án hành động</p>
         </div>
         <div style="background:white;border-radius:16px;padding:24px;border-top:5px solid #0ea5e9;box-shadow:0 4px 16px rgba(0,0,0,0.07);">
             <div style="font-size:2rem;margin-bottom:10px;">⚡</div>
             <h3 style="font-size:1.1rem;font-weight:700;color:#0ea5e9;margin-bottom:10px;">MO5</h3>
-            <p style="font-size:0.95rem;color:#334155;line-height:1.5;">Thời gian phản hồi End-to-End &lt; 3 phút từ câu hỏi What-if đến báo cáo</p>
+            <p style="font-size:0.95rem;color:#334155;line-height:1.5;">E2E P95 ≤ 30 giây; hard deadline/P99 ≤ 180 giây</p>
         </div>
         <div style="background:white;border-radius:16px;padding:24px;border-top:5px solid #f43f5e;box-shadow:0 4px 16px rgba(0,0,0,0.07);">
             <div style="font-size:2rem;margin-bottom:10px;">🛡️</div>
             <h3 style="font-size:1.1rem;font-weight:700;color:#f43f5e;margin-bottom:10px;">MO6</h3>
-            <p style="font-size:0.95rem;color:#334155;line-height:1.5;">100% đề xuất có <code>legal_grounding</code> hợp lệ, V/C ≤ 0.9 tại mọi nút lân cận</p>
+            <p style="font-size:0.95rem;color:#334155;line-height:1.5;">100% đề xuất có <code>citations[]</code> hợp lệ; V/C 0.9 là policy cấu hình</p>
         </div>
     </div>
 </div>

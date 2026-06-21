@@ -9,20 +9,20 @@
                 <span class="tier-badge tier4" style="font-size:0.8rem;margin-top:4px;display:inline-flex;">Tầng 4</span>
             </div>
             <div style="flex:1;">
-                <b style="font-size:1.15rem;color:#8b5cf6;">Multi-Agent Orchestrator + CF-VLA Engine</b>
-                <div style="font-size:0.95rem;color:#475569;margin-top:4px;">Sim Agent · Legal Agent · CF Agent · Reporting Agent | ADE API · RAG API</div>
+                <b style="font-size:1.15rem;color:#8b5cf6;">Multi-Agent Orchestrator + Counterfactual Safety Loop</b>
+                <div style="font-size:0.95rem;color:#475569;margin-top:4px;">Sim Agent · Legal Agent · CF Agent · Reporting Agent | surrogate ensemble API · RAG API</div>
             </div>
-            <div style="font-family:'Azeret Mono',monospace;font-size:0.85rem;color:#8b5cf6;background:rgba(139,92,246,0.1);padding:4px 10px;border-radius:6px;">E2E &lt; 3 phút</div>
+            <div style="font-family:'Azeret Mono',monospace;font-size:0.85rem;color:#8b5cf6;background:rgba(139,92,246,0.1);padding:4px 10px;border-radius:6px;">E2E P95 ≤ 30s</div>
         </div>
-        <div style="text-align:center;font-size:1.2rem;color:#94a3b8;">⬆ What-if báo cáo &nbsp;|&nbsp; ⬇ ADE request</div>
+        <div style="text-align:center;font-size:1.2rem;color:#94a3b8;">⬆ What-if báo cáo &nbsp;|&nbsp; ⬇ surrogate ensemble request</div>
         <div style="display:flex;gap:20px;align-items:center;background:rgba(16,185,129,0.07);border:1.5px solid rgba(16,185,129,0.25);border-radius:14px;padding:18px 24px;">
             <div style="min-width:90px;text-align:center;">
                 <div style="font-size:1.8rem;">📚</div>
                 <span class="tier-badge tier3" style="font-size:0.8rem;margin-top:4px;display:inline-flex;">Tầng 3</span>
             </div>
             <div style="flex:1;">
-                <b style="font-size:1.15rem;color:#10b981;">RAG + XiYanSQL + RealGen</b>
-                <div style="font-size:0.95rem;color:#475569;margin-top:4px;">Vector DB (FAISS/Weaviate) · DuckDB In-memory · BGE-M3 Embedding · Legal Grounding</div>
+                <b style="font-size:1.15rem;color:#10b981;">RAG + Typed Query Service + Case Retrieval</b>
+                <div style="font-size:0.95rem;color:#475569;margin-top:4px;">Qdrant · BGE-M3 · SimulationQuery · TimescaleDB · Structured Citations</div>
             </div>
             <div style="font-family:'Azeret Mono',monospace;font-size:0.85rem;color:#10b981;background:rgba(16,185,129,0.1);padding:4px 10px;border-radius:6px;">SQL Acc ≥ 90%</div>
         </div>
@@ -33,8 +33,8 @@
                 <span class="tier-badge tier2" style="font-size:0.8rem;margin-top:4px;display:inline-flex;">Tầng 2</span>
             </div>
             <div style="flex:1;">
-                <b style="font-size:1.15rem;color:#3b82f6;">STGCN+LSTM + ADE Neural Surrogate</b>
-                <div style="font-size:0.95rem;color:#475569;margin-top:4px;">Graph Encoder · Temporal Decoder · Simulation Emulator · InfluxDB / TimescaleDB</div>
+                <b style="font-size:1.15rem;color:#3b82f6;">GCN–LSTM + Surrogate Ensemble</b>
+                <div style="font-size:0.95rem;color:#475569;margin-top:4px;">Graph Encoder · Temporal Decoder · Simulation Emulator · TimescaleDB</div>
             </div>
             <div style="font-family:'Azeret Mono',monospace;font-size:0.85rem;color:#3b82f6;background:rgba(59,130,246,0.1);padding:4px 10px;border-radius:6px;">P99 &lt; 500ms</div>
         </div>
@@ -46,7 +46,7 @@
             </div>
             <div style="flex:1;">
                 <b style="font-size:1.15rem;color:#f97316;">Thu Thập & Chuẩn Hóa Dữ Liệu</b>
-                <div style="font-size:0.95rem;color:#475569;margin-top:4px;">1,000 Camera CCTV · YOLOv8+ByteTrack · Cảm biến MT/KT · Tensor Builder [B,12,14]</div>
+                <div style="font-size:0.95rem;color:#475569;margin-top:4px;">20 camera demo · 1.000 aggregate producers · Tensor X[B,12,N,16] + mask</div>
             </div>
             <div style="font-family:'Azeret Mono',monospace;font-size:0.85rem;color:#f97316;background:rgba(249,115,22,0.1);padding:4px 10px;border-radius:6px;">5 phút/batch</div>
         </div>

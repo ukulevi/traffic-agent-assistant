@@ -1,258 +1,33 @@
-\chapter{Kế hoạch Triển khai}
+\chapter{Kế hoạch Triển khai MVP 13 Tuần}
 
-\section{Chiến lược Triển khai Tổng thể}
+\section{Giả định}
 
-Dự án STWI được triển khai theo mô hình \textbf{Agile/Scrum} với các Sprint 2 tuần, chia thành \textbf{5 giai đoạn (Phase)} trong thời gian 12 tuần. Các giai đoạn được thiết kế có tính song song (concurrent) để tối ưu thời gian: Phase 3 (RAG) bắt đầu song song với Phase 2 (ML) từ tuần 5, và Phase 4 (Agent) từ tuần 8.
+Nhóm gồm 1 lead, 1 data engineer, 2 ML engineers, 2 AI/backend engineers, 1 frontend engineer, 1 DevOps và reviewer pháp lý. Mạng chức năng có 20 node; 1.000 camera chỉ được mô phỏng bằng aggregate producers.
 
-\begin{table}[H]
-\centering
-\caption{Tổng quan 5 giai đoạn triển khai STWI}
-\label{tab:phases_overview}
-\renewcommand{\arraystretch}{1.5}
-\begin{tabular}{>{\centering}p{1.5cm} p{4cm} p{3.5cm} p{3cm}}
+\section{Timeline}
+
+\begin{longtable}{p{2cm} p{3cm} p{8cm}}
 \toprule
-\textbf{Phase} & \textbf{Tên giai đoạn} & \textbf{Tuần} & \textbf{Deliverable chính} \\
+\textbf{Phase} & \textbf{Tuần} & \textbf{Deliverable/Gate} \\
 \midrule
-Phase 0 & Project Bootstrap & Tuần 1 & Repo + CI/CD + Data Contract \\
-\rowcolor{rowgray}
-Phase 1 & Tầng 1: Data Pipeline & Tuần 2--4 & Tensor \texttt{[B,12,14]} pipeline \\
-Phase 2 & Tầng 2: ML \& Surrogate & Tuần 3--8 & ADE TTP $<500$ms \\
-\rowcolor{rowgray}
-Phase 3 & Tầng 3: RAG & Tuần 5--9 & Vector DB + XiYanSQL live \\
-Phase 4 & Tầng 4: Agent + E2E & Tuần 8--12 & API E2E + CF-VLA + Dashboard \\
+P0 & 1 & Contracts, CI, TimescaleDB, Qdrant, Redis, fake adapters và privacy baseline \\
+P1 & 2--4 & Camera/sensor pipeline, $\mathbf{X}[B,12,N,16]$, mask, adjacency và load test 1.000 aggregate producers \\
+P2A & 3--7 & Baselines, time split và GCN--LSTM $\mathbf{Y}[B,6,N,2]$ \\
+P2B & 4--9 & SUMO scenario dataset, surrogate ensemble, uncertainty calibration và benchmark \\
+P3 & 5--10 & Luật/SOP có hiệu lực, Qdrant, SimulationQuery, parameterized SQL và citation validator \\
+P4 & 8--12 & LangGraph, Celery/Redis, async jobs, SSE, dashboard và operator approval \\
+Hardening & 12--13 & E2E, security, benchmark, docs/PDF/slides và demo \\
 \bottomrule
-\end{tabular}
-\end{table}
+\end{longtable}
 
-\section{Biểu đồ Gantt Tổng thể}
+\section{Phase Gates}
 
-\begin{figure}[H]
-\centering
-\begin{ganttchart}[
-  hgrid,
-  vgrid={*{6}{dotted}, black},
-  title/.style={fill=bkblue!80, draw=none, font=\small\bfseries\color{white}},
-  title label font=\small\bfseries\color{white},
-  bar/.style={fill=tier1col!60},
-  bar label font=\small,
-  group/.style={fill=bkblue!90},
-  group label font=\small\bfseries\color{white},
-  milestone/.style={fill=accentorange, draw=none},
-  x unit=1.05cm,
-  y unit title=0.6cm,
-  y unit chart=0.55cm,
-  time slot format=isodate-yearmonth
-]{2026-06}{2026-09}
+\begin{enumerate}
+  \item \textbf{P0:} Contract tests và Docker health checks pass.
+  \item \textbf{P1:} Tensor $[32,12,20,16]$, mask/adjacency đúng; privacy check pass.
+  \item \textbf{P2:} Forecast baseline report, SUMO coverage, calibration và surrogate $P_{99}<500$ms.
+  \item \textbf{P3:} Không có SQL thô; citation precision $\geq95\%$ và unsupported claim bằng 0 sau abstention.
+  \item \textbf{P4:} E2E $P_{95}\leq30$s, hard deadline/$P_{99}\leq180$s; mọi failure an toàn fail-closed.
+\end{enumerate}
 
-  \gantttitlecalendar{year, month=shortname} \\
-
-  % Phase 0
-  \ganttgroup[group/.style={fill=tier1col!80}]{Phase 0: Bootstrap}{2026-06}{2026-06} \\
-  \ganttbar[bar/.style={fill=tier1col!50}]{Monorepo + CI/CD}{2026-06}{2026-06} \\
-  \ganttbar[bar/.style={fill=tier1col!50}]{Data Contract (Pydantic)}{2026-06}{2026-06} \\
-
-  % Phase 1
-  \ganttgroup[group/.style={fill=tier2col!80}]{Phase 1: Data Pipeline}{2026-06}{2026-07} \\
-  \ganttbar[bar/.style={fill=tier2col!50}]{CCTV Pipeline (YOLOv8)}{2026-06}{2026-06} \\
-  \ganttbar[bar/.style={fill=tier2col!50}]{Sensor Pipeline (MQTT)}{2026-06}{2026-07} \\
-  \ganttbar[bar/.style={fill=tier2col!50}]{Tensor Builder [B,12,14]}{2026-07}{2026-07} \\
-  \ganttmilestone{M1: Tensor Pipeline OK}{2026-07} \\
-
-  % Phase 2
-  \ganttgroup[group/.style={fill=tier3col!80}]{Phase 2: ML \& Surrogate}{2026-07}{2026-08} \\
-  \ganttbar[bar/.style={fill=tier3col!50}]{Traffic Graph Build}{2026-07}{2026-07} \\
-  \ganttbar[bar/.style={fill=tier3col!50}]{STGCN+LSTM Training}{2026-07}{2026-08} \\
-  \ganttbar[bar/.style={fill=tier3col!50}]{ADE Surrogate Build}{2026-08}{2026-08} \\
-  \ganttmilestone{M2: TTP < 500ms}{2026-08} \\
-
-  % Phase 3
-  \ganttgroup[group/.style={fill=tier4col!80}]{Phase 3: RAG}{2026-07}{2026-08} \\
-  \ganttbar[bar/.style={fill=tier4col!50}]{Vector DB (Qdrant)}{2026-07}{2026-07} \\
-  \ganttbar[bar/.style={fill=tier4col!50}]{XiYanSQL Integration}{2026-07}{2026-08} \\
-  \ganttbar[bar/.style={fill=tier4col!50}]{RealGen Component}{2026-08}{2026-08} \\
-  \ganttmilestone{M3: Legal Query OK}{2026-08} \\
-
-  % Phase 4
-  \ganttgroup[group/.style={fill=accentorange!80}]{Phase 4: Agent + E2E}{2026-08}{2026-09} \\
-  \ganttbar[bar/.style={fill=accentorange!50}]{Multi-Agent Framework}{2026-08}{2026-08} \\
-  \ganttbar[bar/.style={fill=accentorange!50}]{CF-VLA Engine}{2026-08}{2026-09} \\
-  \ganttbar[bar/.style={fill=accentorange!50}]{REST API + Dashboard}{2026-09}{2026-09} \\
-  \ganttbar[bar/.style={fill=accentorange!50}]{E2E Testing + Tuning}{2026-09}{2026-09} \\
-  \ganttmilestone{M4: Demo E2E < 3 min}{2026-09} \\
-
-\end{ganttchart}
-\caption{Biểu đồ Gantt tổng thể dự án STWI (12 tuần)}
-\label{fig:gantt}
-\end{figure}
-
-\section{Chi tiết Từng Giai đoạn}
-
-\subsection{Phase 0 --- Project Bootstrap (Tuần 1)}
-
-\begin{table}[H]
-\centering
-\caption{Danh sách task Phase 0}
-\label{tab:phase0}
-\renewcommand{\arraystretch}{1.4}
-\begin{tabular}{>{\centering}p{1cm} p{4.5cm} p{6cm}}
-\toprule
-\textbf{Task} & \textbf{Tên} & \textbf{Chi tiết} \\
-\midrule
-T0.1 & Monorepo Setup & Cấu trúc thư mục: \texttt{tier1-data/}, \texttt{tier2-ml/}, \texttt{tier3-rag/}, \texttt{tier4-agent/}, \texttt{api/}, \texttt{dashboard/} \\
-\rowcolor{rowgray}
-T0.2 & Dev Environment & Docker Compose: PostgreSQL, Redis, MinIO, Qdrant. Python 3.11+, PyTorch 2.x \\
-T0.3 & CI/CD Pipeline & GitHub Actions: lint (ruff) $\to$ typecheck (mypy) $\to$ test (pytest) $\to$ build \\
-\rowcolor{rowgray}
-T0.4 & Data Contract & Pydantic models cho Tensor schema, Incident vector, API request/response \\
-T0.5 & Logging \& Tracing & OpenTelemetry integration để đo TTP ngay từ đầu \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\subsection{Phase 1 --- Tầng 1: Data Pipeline (Tuần 2--4)}
-
-\begin{table}[H]
-\centering
-\caption{Danh sách task Phase 1 --- Data Pipeline}
-\label{tab:phase1}
-\renewcommand{\arraystretch}{1.4}
-\begin{tabular}{>{\centering}p{1cm} p{4.5cm} p{6cm}}
-\toprule
-\textbf{Task} & \textbf{Tên} & \textbf{Chi tiết và Tiêu chí Pass} \\
-\midrule
-T1.1 & YOLOv8 Inference & Setup với TensorRT FP16; test $>$ 99\% uptime trong 48h liên tục \\
-\rowcolor{rowgray}
-T1.2 & ByteTrack Integration & Kiểm tra: đếm lưu lượng sai số $< 2\%$ so với ground truth \\
-T1.3 & Sensor MQTT Adapter & Xử lý 8 loại cảm biến; test missing data interpolation \\
-\rowcolor{rowgray}
-T1.4 & MinMaxScaler Pipeline & Fit scaler trên tập train; serialize và load khi inference \\
-T1.5 & Tensor Builder & Output shape \textbf{bắt buộc}: \texttt{assert tensor.shape == (B, 12, 14)} \\
-\rowcolor{rowgray}
-T1.6 & TimeSeries DB Setup & InfluxDB với retention policy 90 ngày; query $< 50$ms \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\subsection{Phase 2 --- Tầng 2: ML \& Surrogate (Tuần 3--8)}
-
-Giai đoạn này bắt đầu sớm hơn Phase 1 kết thúc vì quá trình thu thập dữ liệu synthetic để training có thể bắt đầu ngay từ tuần 3.
-
-\begin{table}[H]
-\centering
-\caption{Danh sách task Phase 2 --- ML \& Surrogate}
-\label{tab:phase2}
-\renewcommand{\arraystretch}{1.4}
-\begin{tabular}{>{\centering}p{1cm} p{4.5cm} p{6cm}}
-\toprule
-\textbf{Task} & \textbf{Tên} & \textbf{Tiêu chí Pass} \\
-\midrule
-T2.1 & Traffic Graph Build & Ma trận kề $\mathbf{W}_{1000 \times 1000}$ từ OSM; normalized Laplacian \\
-\rowcolor{rowgray}
-T2.2 & STGCN Model & GCN-2 layers $+$ LSTM-3 layers; RMSE $< 15$ xe/5min \\
-T2.3 & STGCN Training & 100 epochs, early stopping, MLflow logging; F1 $> 0{,}85$ \\
-\rowcolor{rowgray}
-T2.4 & ADE Sub-models & 4 sub-models (MLP, CNN-1D, Transformer, MLP-wide) \\
-T2.5 & Adversarial Training & FGSM với $\epsilon = 0{,}01$; test trên 50 corner cases \\
-\rowcolor{rowgray}
-T2.6 & TTP Benchmark & \textbf{Bắt buộc:} $P_{99} < 500$ms, $P_{50} < 150$ms \\
-T2.7 & REST API Tầng 2 & \texttt{POST /internal/simulate}; latency SLA tested \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\subsection{Phase 3 --- Tầng 3: RAG (Tuần 5--9)}
-
-\begin{table}[H]
-\centering
-\caption{Danh sách task Phase 3 --- RAG}
-\label{tab:phase3}
-\renewcommand{\arraystretch}{1.4}
-\begin{tabular}{>{\centering}p{1cm} p{4.5cm} p{6cm}}
-\toprule
-\textbf{Task} & \textbf{Tên} & \textbf{Tiêu chí Pass} \\
-\midrule
-T3.1 & Corpus Collection & SOP $> 200$ trang; Luật GTĐB $> 100$ điều khoản \\
-\rowcolor{rowgray}
-T3.2 & Chunking Pipeline & Sentence-level; kiểm tra không cắt giữa điều khoản \\
-T3.3 & BGE-m3 Embedding & Index $>$ 5.000 chunks; embedding thời gian $< 2$s/chunk \\
-\rowcolor{rowgray}
-T3.4 & Qdrant Setup & Recall@5 $> 90\%$ trên 20 câu hỏi pháp lý mẫu \\
-T3.5 & XiYanSQL Integration & 10 test queries; SQL chính xác 100\% với schema đã định \\
-\rowcolor{rowgray}
-T3.6 & RealGen Component & Top-3 similar case retrieval $< 200$ms \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\subsection{Phase 4 --- Tầng 4: Agent + E2E (Tuần 8--12)}
-
-\begin{table}[H]
-\centering
-\caption{Danh sách task Phase 4 --- Agent \& E2E}
-\label{tab:phase4}
-\renewcommand{\arraystretch}{1.4}
-\begin{tabular}{>{\centering}p{1cm} p{4.5cm} p{6cm}}
-\toprule
-\textbf{Task} & \textbf{Tên} & \textbf{Tiêu chí Pass} \\
-\midrule
-T4.1 & LangChain/CrewAI Setup & Orchestrator điều phối 3 agent; timeout handling \\
-\rowcolor{rowgray}
-T4.2 & Agent Tools & Simulation tool, Vector DB tool, XiYanSQL tool hoàn thiện \\
-T4.3 & CF-VLA Engine & \textbf{Không được bypass}; $\leq 3$ correction loops \\
-\rowcolor{rowgray}
-T4.4 & REST API E2E & \texttt{POST /api/v1/agent/what-if}; response schema đầy đủ 7 trường \\
-T4.5 & WebSocket Stream & Real-time progress events cho Dashboard \\
-\rowcolor{rowgray}
-T4.6 & Dashboard UI & React; V/C heatmap, đề xuất text, legal grounding hiển thị \\
-T4.7 & E2E Load Test & 10 queries đồng thời; $P_{99}$ E2E $< 3$ phút \\
-\rowcolor{rowgray}
-T4.8 & No-Hallucination Test & 100\% response có \texttt{legal\_grounding} hợp lệ \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\section{Cột mốc Dự án (Milestones)}
-
-\begin{table}[H]
-\centering
-\caption{Các cột mốc quan trọng của dự án STWI}
-\label{tab:milestones}
-\renewcommand{\arraystretch}{1.5}
-\begin{tabular}{>{\centering}p{1cm} p{2.5cm} p{3cm} p{5cm}}
-\toprule
-\textbf{MS} & \textbf{Tên} & \textbf{Thời điểm} & \textbf{Tiêu chí hoàn thành} \\
-\midrule
-M0 & Repo Ready & Cuối tuần 1 & CI/CD green, Data Contract merged \\
-\rowcolor{rowgray}
-M1 & Tensor Pipeline & Cuối tuần 4 & Synthetic tensor \texttt{[32,12,14]} chạy được \\
-M2 & Surrogate Live & Cuối tuần 8 & ADE API $P_{99} < 500$ms verified \\
-\rowcolor{rowgray}
-M3 & RAG Live & Cuối tuần 9 & Legal query với citations $\geq 90\%$ recall \\
-M4 & E2E Demo & Cuối tuần 12 & Demo What-if $< 3$ phút với CF-VLA \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\section{Phân công Nhóm và Trách nhiệm}
-
-\begin{table}[H]
-\centering
-\caption{Phân công nhóm dự án STWI}
-\label{tab:team}
-\renewcommand{\arraystretch}{1.5}
-\begin{tabular}{p{3cm} p{3.5cm} p{5.5cm}}
-\toprule
-\textbf{Vai trò} & \textbf{Chịu trách nhiệm} & \textbf{Kỹ năng yêu cầu} \\
-\midrule
-ML Engineer (2 người) & Phase 2: STGCN, ADE & PyTorch, torch-geometric, MLOps \\
-\rowcolor{rowgray}
-Data Engineer (1 người) & Phase 1: CCTV, Sensors & OpenCV, MQTT, InfluxDB \\
-AI Engineer (2 người) & Phase 3, 4: RAG, Agent & LangChain, Qdrant, FastAPI \\
-\rowcolor{rowgray}
-Frontend Engineer (1 người) & Phase 4: Dashboard & React, WebSocket, D3.js \\
-DevOps (1 người) & Phase 0, CI/CD & Docker, GitHub Actions, Monitoring \\
-\rowcolor{rowgray}
-Project Lead (1 người) & Tất cả phase & Kiến trúc hệ thống, Review, QA \\
-\bottomrule
-\end{tabular}
-\end{table}
+Không được cắt safety, citation validation hoặc privacy để bù timeline. Hạng mục có thể cắt trước là UI nâng cao, fine-tuning embedding và MLOps không thiết yếu.

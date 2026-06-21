@@ -99,20 +99,20 @@ Các công cụ mô phỏng vi mô (Microscopic Simulation) như SUMO (Simulatio
 \renewcommand{\arraystretch}{1.4}
 \begin{tabular}{l p{4cm} p{4cm}}
 \toprule
-\textbf{Tiêu chí} & \textbf{Mô phỏng Vi mô (SUMO)} & \textbf{Neural Surrogate (ADE)} \\
+\textbf{Tiêu chí} & \textbf{Mô phỏng Vi mô (SUMO)} & \textbf{Neural Surrogate} \\
 \midrule
-Độ phức tạp & $\mathcal{O}(N^2)$ --- phụ thuộc quy mô & $\mathcal{O}(1)$ --- cố định \\
+Độ phức tạp & Phụ thuộc số xe, bước thời gian và mạng & Phụ thuộc số node, batch và kích thước model \\
 \rowcolor{rowgray}
 Thời gian chạy & 10 phút -- vài giờ & 100--300 ms \\
 Độ chính xác & Rất cao (mô phỏng vật lý) & Xấp xỉ (học từ dữ liệu lịch sử) \\
 \rowcolor{rowgray}
-Xử lý Corner Cases & Tốt (mô hình vật lý đầy đủ) & Yêu cầu ADE + RealGen \\
+Xử lý Corner Cases & Phụ thuộc calibration và scenario coverage & Yêu cầu OOD gate và uncertainty calibration \\
 Khả năng Real-time & Không & Có \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\subsection{Lý thuyết Deep Ensemble và ADE}
+\subsection{Lý thuyết Deep Ensemble và ADE (Related Work)}
 
 Deep Ensemble \cite{lakshminarayanan2017ade} là kỹ thuật đơn giản nhưng hiệu quả để ước lượng độ bất định (uncertainty):
 
@@ -122,7 +122,7 @@ Deep Ensemble \cite{lakshminarayanan2017ade} là kỹ thuật đơn giản nhưn
   \label{eq:ensemble}
 \end{equation}
 
-ADE (Adversarial Diverse Deep Ensemble) bổ sung hai cơ chế:
+ADE (Adversarial Diverse Deep Ensemble) là hướng nghiên cứu liên quan. MVP STWI không triển khai ADE; hệ thống dùng heterogeneous ensemble và calibration trên held-out data.
 \begin{enumerate}[itemsep=3pt]
   \item \textbf{Diversity:} Các sub-model $f_{\theta_1}, \ldots, f_{\theta_M}$ có kiến trúc khác nhau (MLP, CNN-1D, Transformer nhẹ) để tăng đa dạng dự báo.
   \item \textbf{Adversarial Training:} Huấn luyện với các mẫu đối kháng $\mathbf{x}' = \mathbf{x} + \epsilon \cdot \nabla_\mathbf{x} \mathcal{L}$ (theo FGSM) để mô hình bền vững với các kịch bản cực trị (Corner Cases).
@@ -145,7 +145,7 @@ RAG \cite{lewis2020rag} là kỹ thuật kết hợp LLM với nguồn tri thứ
 
 \subsection{Schema-Level RAG và Text-to-SQL}
 
-RAG truyền thống chỉ xử lý văn bản phi cấu trúc. Trong STWI, dữ liệu số liệu mô phỏng có cấu trúc bảng (structured data) không thể truy vấn bằng semantic search. \textbf{Schema-Level RAG} giải quyết vấn đề này bằng cách chuyển đổi câu hỏi tự nhiên thành câu lệnh SQL thông qua mô hình Text-to-SQL (XiYanSQL \cite{guo2023xiyansql}).
+RAG truyền thống xử lý văn bản phi cấu trúc, còn số liệu mô phỏng cần truy vấn có kiểu. XiYanSQL \cite{guo2023xiyansql} là related work; MVP dùng LLM tạo \textit{SimulationQuery} có kiểu và server dựng SQL tham số hóa.
 
 \section{Hệ thống Đa Tác tử (Multi-Agent Systems)}
 
@@ -162,9 +162,9 @@ Một \textbf{tác tử} (agent) là thực thể tính toán có khả năng: \
 \toprule
 \textbf{Tác tử} & \textbf{Công cụ (Tools)} & \textbf{Nhiệm vụ} \\
 \midrule
-Simulation Agent & API Tầng 2 (ADE) & Chạy mô phỏng What-if \\
+Simulation Agent & API Tầng 2 (surrogate ensemble) & Chạy mô phỏng What-if \\
 \rowcolor{rowgray}
-Legal \& SOP Agent & Vector DB, XiYanSQL & Tra cứu pháp lý, truy vấn số liệu \\
+Legal \& SOP Agent & Qdrant, SimulationQuery & Tra cứu pháp lý, truy vấn số liệu \\
 Evaluation Agent & Tổng hợp kết quả & Đánh giá và đề xuất phương án \\
 \rowcolor{rowgray}
 Orchestrator & Điều phối 3 agent trên & Phân rã nhiệm vụ, hợp nhất kết quả \\
@@ -188,12 +188,12 @@ Suy luận nhân quả (causal reasoning) theo khung của Pearl \cite{pearl2018
   \item \textbf{Phản thực tế (Counterfactual):} ``Nếu thay vào đó tôi đóng đường Z (thay vì X), hậu quả sẽ tệ hơn hay tốt hơn?''
 \end{enumerate}
 
-\subsection{CF-VLA trong STWI}
+\subsection{CF-VLA và Cơ chế Lấy cảm hứng trong STWI}
 
-CF-VLA (Counterfactual--Vision--Language--Action) trong STWI thực hiện tầng suy luận thứ 3: sau khi sinh một đề xuất sơ bộ, hệ thống \textit{tự đặt câu hỏi phản thực tế}: ``Nếu thực hiện hành động này, các nút giao lân cận có bị quá tải không?'' Câu trả lời được xác minh bằng mô phỏng ADE lần thứ hai, trước khi đề xuất được phê duyệt.
+CF-VLA là mô hình Vision--Language--Action end-to-end cho lái xe tự động. STWI không triển khai kiến trúc đó; dự án chỉ lấy cảm hứng từ ý tưởng self-reflection để xây dựng Counterfactual Safety Loop trên dữ liệu, mô phỏng và citations.
 
 \begin{tcolorbox}[dangerbox]
-\textbf{Tại sao CF-VLA là bắt buộc?} Nhiều hệ thống AI giao thông hiện tại đề xuất phân luồng mà không kiểm tra tác động bậc 2. Ví dụ: phân luồng toàn bộ xe từ đường A sang đường B có thể giải quyết ùn tắc tại A nhưng gây ùn tắc nghiêm trọng hơn tại ngã tư C (nút giao của đường B với đường khác). CF-VLA phát hiện và ngăn chặn kịch bản này.
+\textbf{Vai trò của Safety Loop:} Kiểm tra tác động bậc hai trước khi phát hành khuyến nghị. Khi không hội tụ, OOD hoặc thiếu evidence, workflow fail closed và chuyển operator review.
 \end{tcolorbox}
 
 \section{Độ Đo Đánh giá Hệ thống}

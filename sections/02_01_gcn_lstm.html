@@ -1,17 +1,17 @@
 <div class="slide slide-container" style="justify-content:flex-start;padding-top:60px;">
     <h2 style="font-size:2.4rem;font-weight:800;color:#3b82f6;margin-bottom:30px;text-align:center;width:100%;">
-        <i class="fa-solid fa-network-wired"></i> STGCN + LSTM — Dự Báo Giao Thông
+        <i class="fa-solid fa-network-wired"></i> GCN–LSTM — Dự Báo Giao Thông
     </h2>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:30px;width:90%;margin:0 auto;align-items:start;">
         <div>
             <div style="background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.2);border-radius:16px;padding:24px;">
-                <h3 style="color:#3b82f6;font-size:1.2rem;margin-bottom:16px;"><i class="fa-solid fa-diagram-project"></i> Spatio-Temporal GCN</h3>
+                <h3 style="color:#3b82f6;font-size:1.2rem;margin-bottom:16px;"><i class="fa-solid fa-diagram-project"></i> GCN Spatial Encoder</h3>
                 <ul style="font-size:1.05rem;line-height:1.9;color:#334155;list-style:none;padding:0;">
                     <li>🗺 Graph $G=(V,E,W)$ — mạng lưới nút giao</li>
                     <li>🔁 Chebyshev Graph Conv: $\hat{A} = D^{-1/2}AD^{-1/2}$</li>
-                    <li>⏱ Nhận Tensor $\mathbf{X} \in \mathbb{R}^{N \times T \times F}$</li>
+                    <li>⏱ Nhận X[B,12,N,16] + M[B,12,N,16] + A[N,N]</li>
                     <li>📊 T=12 bước × 5 phút = 60 phút lịch sử</li>
-                    <li>🎯 F=14 features (traffic + emission + weather)</li>
+                    <li>🎯 F=16 features (traffic + emission + weather)</li>
                 </ul>
             </div>
         </div>
@@ -20,16 +20,16 @@
                 <h3 style="color:#8b5cf6;font-size:1.2rem;margin-bottom:16px;"><i class="fa-solid fa-timeline"></i> LSTM Temporal Decoder</h3>
                 <ul style="font-size:1.05rem;line-height:1.9;color:#334155;list-style:none;padding:0;">
                     <li>🔮 Dự báo T'=6 bước (30 phút tương lai)</li>
-                    <li>📉 Target: traffic_volume, avg_velocity, V/C ratio</li>
-                    <li>🎯 RMSE &lt; 15 xe/5 phút</li>
+                    <li>📉 Target: traffic_volume_5m và avg_speed_kmh; V/C tính từ capacity</li>
+                    <li>🎯 So sánh với persistence, historical average và LSTM-only</li>
                     <li>📐 Teacher forcing + scheduled sampling</li>
-                    <li>⚡ Inference time &lt; 50ms trên GPU A100</li>
+                    <li>⚡ Benchmark trên profile 8 cores, 32GB RAM, GPU 12–16GB</li>
                 </ul>
             </div>
         </div>
     </div>
     <div style="margin-top:24px;background:white;border-radius:12px;padding:20px 30px;border:1px solid #e2e8f0;width:90%;text-align:center;font-size:1.2rem;color:#475569;">
         <b style="color:#3b82f6;">Pipeline:</b>
-        Raw Sensor → Tensor [B,12,14] → GCN Encoder → LSTM Decoder → Prediction [B,6,3]
+        Raw Sensor → Tensor [B,12,N,16] → GCN Encoder → LSTM Decoder → Prediction [B,6,N,2]
     </div>
 </div>

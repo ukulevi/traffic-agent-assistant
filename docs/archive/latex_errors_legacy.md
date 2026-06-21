@@ -1,4 +1,7 @@
-# LaTeX Build Error Log (Run 20)
+# ARCHIVED — LaTeX Build Error Log (Run 20)
+
+> Historical debugging artifact. CI now uploads failure logs as artifacts and
+> never commits generated logs back to the repository.
 SHA: 975d395d | Fri Jun 19 15:23:12 UTC 2026
 
 ## Fatal Errors (lines with !)
