@@ -35,8 +35,8 @@ jobs:
 
       - name: Validate canonical contract and documentation
         run: |
-          python scripts/validate_docs.py
-          python -m unittest tests.test_project_contract
+          python scripts/validation/validate_docs.py
+          python -m unittest tests.contracts.test_project_contract
 
       - name: Compile LaTeX to PDF (XeLaTeX via latexmk)
         uses: xu-cheng/latex-action@v3
