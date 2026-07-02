@@ -1,0 +1,198 @@
+\chapter{Tầng 3: Cơ sở Tri thức Đô thị và Hệ thống RAG}
+
+\section{Tổng quan Tầng Tri thức}
+
+Tầng 3 đóng vai trò là \textbf{bộ nhớ pháp lý} của hệ thống STWI --- đảm bảo rằng mọi đề xuất điều phối đều được neo (grounded) vào:
+\begin{itemize}[itemsep=3pt]
+  \item \textbf{SOP (Standard Operating Procedures):} Quy trình vận hành tiêu chuẩn của Sở GTVT TP.HCM cho từng loại sự cố.
+  \item \textbf{Luật hiện hành:} Luật Đường bộ 35/2024/QH15 và Luật Trật tự, an toàn giao thông đường bộ 36/2024/QH15 cùng văn bản hướng dẫn còn hiệu lực.
+  \item \textbf{Số liệu mô phỏng cấu trúc:} Kết quả từ Tầng 2 (ma trận lưu lượng, V/C ratio).
+\end{itemize}
+
+\section{Kiến trúc Tổng quan Tầng RAG}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.5cm and 0.8cm, scale=0.82, transform shape]
+
+  % Ingestion Pipeline (offline)
+  \node[font=\small\bfseries, text=tier1col] (offline_label) at (-3.4,3.8)
+    {Luồng Nạp dữ liệu (Offline)};
+
+  \node[sysbox=tier1col, text width=1.8cm, minimum height=1.0cm, font=\scriptsize] (sop)
+    at (-5.5,2.8) {SOP Sở GTVT\\(PDF/Word)};
+  \node[sysbox=tier1col, text width=1.8cm, minimum height=1.0cm, font=\scriptsize] (law)
+    at (-3.4,2.8) {Luật 35/2024 và 36/2024\\(văn bản pháp lý)};
+  \node[sysbox=tier1col, text width=1.8cm, minimum height=1.0cm, font=\scriptsize] (log)
+    at (-1.3,2.8) {Log lịch sử\\(case studies)};
+
+  \node[sysbox=tier2col, text width=2.4cm, minimum height=1.0cm, font=\scriptsize] (chunk)
+    at (-3.4,1.2) {Chunking\\Điều/khoản\\Max 512 tokens};
+  \node[sysbox=tier2col, text width=2.4cm, minimum height=1.0cm, font=\scriptsize] (emb)
+    at (-3.4,-0.4) {BGE-m3\\Multilingual\\Embedding};
+  \node[sysbox=tier3col, text width=2.6cm, minimum height=1.0cm, font=\scriptsize] (vdb)
+    at (-3.4,-2.0) {Qdrant\\Dense + Sparse\\Effective-date filter};
+
+  \draw[arrow] (sop) -- (chunk);
+  \draw[arrow] (law) -- (chunk);
+  \draw[arrow] (log) -- (chunk);
+  \draw[arrow] (chunk) -- (emb);
+  \draw[arrow] (emb) -- (vdb);
+
+  % Query Pipeline (online)
+  \node[font=\small\bfseries, text=tier4col] (online_label) at (3.4,3.8)
+    {Luồng Truy vấn (Online)};
+
+  \node[sysbox=tier4col, text width=2.4cm, minimum height=1.0cm, font=\scriptsize] (query)
+    at (3.4,2.8) {Agent Query\\(ngôn ngữ tự nhiên)};
+  \node[sysbox=tier2col, text width=2.4cm, minimum height=1.0cm, font=\scriptsize] (q_emb)
+    at (3.4,1.2) {BGE-m3\\Query Embedding};
+  \node[sysbox=tier3col, text width=2.4cm, minimum height=1.0cm, font=\scriptsize] (search)
+    at (3.4,-0.4) {Semantic Search\\Top-$k$ chunks};
+  \node[sysbox=tier4col, text width=2.4cm, minimum height=1.0cm, font=\scriptsize] (ctx)
+    at (3.4,-2.0) {Context Assembly\\$+$ citations};
+  \node[sysbox=tier4col, text width=2.4cm, minimum height=1.0cm, font=\scriptsize,
+    fill=alertgreen!50, draw=green!50!black] (ans)
+    at (3.4,-3.6) {Agent Response\\với citations hợp lệ};
+
+  \draw[arrow] (query) -- (q_emb);
+  \draw[arrow] (q_emb) -- (search);
+  \draw[arrow] (search) -- (ctx);
+  \draw[arrow] (ctx) -- (ans);
+
+  % Cross-connect
+  \draw[dasharrow, bkblue!70] (vdb) -- (search);
+
+  % Typed Query Service branch
+  \node[sysbox=tier2col, text width=2.4cm, minimum height=1.0cm, font=\scriptsize] (xsql)
+    at (3.4,-5.3) {SimulationQuery\\Parameterized SQL\\TimescaleDB read-only};
+
+  \draw[dasharrow, accentorange!80] (ans.south) -- (xsql.north);
+
+\end{tikzpicture}
+\caption{Kiến trúc tổng quan Tầng RAG của STWI}
+\label{fig:rag_arch}
+\end{figure}
+
+\section{Cơ sở Dữ liệu Vector}
+
+\subsection{Nguồn Dữ liệu Tích hợp}
+
+\begin{table}[H]
+\centering
+\caption{Các nguồn dữ liệu được tích hợp vào Vector Database}
+\label{tab:knowledge_sources}
+\renewcommand{\arraystretch}{1.5}
+\begin{tabular}{>{\centering}p{0.8cm} p{4cm} p{7cm}}
+\toprule
+\textbf{ID} & \textbf{Nguồn dữ liệu} & \textbf{Nội dung và Ví dụ} \\
+\midrule
+KB-1 & SOP Sở GTVT TP.HCM & Quy trình xử lý: tràn dầu, đổ cây, ngập cục bộ, tai nạn liên hoàn; Phối hợp CSGT, Cứu hỏa, Y tế \\
+\rowcolor{rowgray}
+KB-2 & Luật 35/2024, Luật 36/2024 và văn bản hướng dẫn & Điều khoản còn hiệu lực về đường bộ và trật tự, an toàn giao thông \\
+KB-3 & Log kịch bản lịch sử & 500+ case studies xử lý sự cố thành công, được dùng làm tiền lệ tham khảo \\
+\rowcolor{rowgray}
+KB-4 & Bản đồ giao thông & Năng lực đường (capacity), loại đường, số làn, tốc độ thiết kế \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Firecrawl Snapshot Gate}
+
+Firecrawl được dùng như lớp discovery/scrape để tìm và chụp snapshot văn bản luật, nghị định/thông tư, nguồn đối soát và tài liệu vận hành. Kết quả crawl không được đưa thẳng vào Qdrant. Script \path{scripts/infra/build_firecrawl_snapshot.py} đọc JSON Firecrawl, kiểm tra HTTPS và \texttt{source\_registry}, sau đó ghi manifest ứng viên vào thư mục private \texttt{firecrawl\_snapshots}.
+
+\begin{itemize}[itemsep=3pt]
+  \item \textbf{Nguồn pháp lý chính thức:} \texttt{vanban.chinhphu.vn} và \texttt{datafiles.chinhphu.vn} có thể tạo ứng viên corpus nhưng mặc định \texttt{approved\_for\_index=false}.
+  \item \textbf{Nguồn đối soát:} \texttt{vbpl.vn} chỉ dùng để kiểm tra hiệu lực và quan hệ sửa đổi/thay thế, không làm nội dung canonical.
+  \item \textbf{Nguồn vận hành công khai:} cổng TP.HCM/Sở/CSGT chỉ là ngữ cảnh vận hành; không tự động trở thành SOP nếu thiếu số hiệu, ngày duyệt, phiên bản, scope và owner.
+\end{itemize}
+
+Chỉ bản ghi được legal/SOP owner duyệt mới đi tiếp sang chunking, embedding và index. Promotion dùng \path{scripts/infra/review_firecrawl_snapshot.py} với reviewer và \texttt{snapshot\_id} explicit; script chỉ ghi manifest đã review, không gọi Qdrant. URL ngoài allowlist, không dùng HTTPS hoặc thiếu nội dung kiểm chứng phải bị ghi vào phần rejected của manifest và không sinh citation.
+
+\subsection{Mô hình Nhúng BGE-m3}
+
+BGE-m3 \cite{chen2023bge} (Beijing Academy of AI General Embedding, Multi-lingual Multi-functionality Multi-granularity) được chọn vì:
+
+\begin{itemize}[itemsep=4pt]
+  \item \textbf{Hỗ trợ tiếng Việt tốt:} Được huấn luyện trên corpus đa ngôn ngữ bao gồm tiếng Việt với dấu phụ đầy đủ.
+  \item \textbf{Đa chức năng:} Hỗ trợ đồng thời dense retrieval, sparse retrieval và multi-vector retrieval.
+  \item \textbf{Độ dài context lớn:} Xử lý được đoạn văn bản dài tới 8.192 tokens.
+  \item \textbf{Kích thước embedding:} 1.024 chiều, cân bằng giữa độ chính xác và hiệu năng.
+\end{itemize}
+
+\subsection{Chiến lược Chunking}
+
+Chunking là bước quan trọng ảnh hưởng trực tiếp đến chất lượng truy xuất:
+
+\begin{table}[H]
+\centering
+\caption{Chiến lược chunking theo loại văn bản pháp lý}
+\label{tab:chunking}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{p{3cm} p{3cm} p{6cm}}
+\toprule
+\textbf{Loại văn bản} & \textbf{Chiến lược} & \textbf{Lý do} \\
+\midrule
+Điều khoản Luật & Theo điều khoản (Điều 1, Điều 2...) & Mỗi điều khoản là một đơn vị pháp lý độc lập \\
+\rowcolor{rowgray}
+SOP & Theo bước thực hiện & Mỗi bước SOP cần được tra cứu độc lập \\
+Case Studies & Theo sự cố & Mỗi case study là một đơn vị tham chiếu \\
+\rowcolor{rowgray}
+Văn bản dài & Sliding window 256 tokens, overlap 64 & Đảm bảo không mất ngữ cảnh ở biên chunk \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Typed SimulationQuery}
+
+RAG văn bản không dùng để trả lời số liệu mô phỏng. LLM chỉ ánh xạ câu hỏi sang \texttt{SimulationQuery} có kiểu; server validate và dựng SQL tham số hóa trên TimescaleDB bằng read-only role.
+
+\begin{lstlisting}[caption={SimulationQuery có kiểu},label={lst:simulation_query}]
+{
+  "job_id": "wf_01J...",
+  "node_ids": ["A", "B"],
+  "metrics": ["avg_speed_kmh", "vc_ratio"],
+  "horizons_minutes": [5, 10, 15, 30],
+  "aggregation": "avg",
+  "limit": 100
+}
+\end{lstlisting}
+
+Table, metric, aggregation và order đều là enum. Mỗi query có statement timeout, row limit, tenant/job scope và audit hash. Không có đường thực thi SQL thô từ output LLM. DuckDB chỉ dùng cho phân tích offline và contract tests.
+
+\section{Citation và Hiệu lực Pháp lý}
+
+Corpus tối thiểu gồm Luật Đường bộ 35/2024/QH15 và Luật Trật tự, an toàn giao thông đường bộ 36/2024/QH15, cùng hiệu lực từ 01/01/2025. Chunking giữ nguyên điều/khoản và metadata gồm số văn bản, provision, URL nguồn, effective range, superseded flag và content hash.
+
+\begin{lstlisting}[caption={Citation có cấu trúc},label={lst:citation}]
+{
+  "document_id": "law-36-2024-qh15",
+  "document_number": "36/2024/QH15",
+  "provision": "Dieu 10, Khoan 2",
+  "source_url": "https://vanban.chinhphu.vn/",
+  "effective_from": "2025-01-01",
+  "effective_to": null,
+  "content_hash": "sha256:..."
+}
+\end{lstlisting}
+
+Citation validator kiểm tra source allowlist, hiệu lực tại \texttt{scenario\_time}, provision và content hash. Nếu claim không được hỗ trợ trực tiếp, hệ thống loại claim hoặc abstain; việc chỉ có field citation không đủ để coi response là grounded.
+
+\section{Case Retrieval và OOD}
+
+Case lịch sử nằm trong collection riêng và chỉ có giá trị khi đã được operator xác nhận. Online retrieval cung cấp evidence cho evaluator/operator; offline retrieval hỗ trợ thiết kế thêm SUMO run hoặc training data.
+
+\begin{tcolorbox}[dangerbox]
+Không blend row truy xuất trực tiếp vào input surrogate. Khi uncertainty cao, similarity thấp hoặc case chưa xác nhận, workflow trả \texttt{needs\_review}.
+\end{tcolorbox}
+
+\section{Bảo mật và Nghiệm thu}
+
+\begin{itemize}[itemsep=3pt]
+  \item Treat retrieved content as untrusted data; prompt injection không được thay đổi system policy.
+  \item Typed QuerySpec, parameter binding và read-only role chặn SQL injection.
+  \item Retrieval test có ít nhất 50 câu, gồm unanswerable và văn bản hết hiệu lực.
+  \item Citation precision mục tiêu $\geq95\%$; unsupported claim bằng 0 sau validator/abstention.
+  \item Firecrawl snapshot/review test phải chứng minh nguồn ngoài allowlist bị loại, nguồn công khai không tự thành SOP, mọi candidate mặc định chưa được index và chỉ \texttt{snapshot\_id} đủ điều kiện mới được reviewer approve.
+  \item Corpus có owner pháp lý và lịch review hiệu lực hàng tháng trong MVP.
+\end{itemize}

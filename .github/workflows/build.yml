@@ -24,7 +24,7 @@ jobs:
           echo "=========================================="
           ls -la
           echo "--- Chapter files ---"
-          ls chapters/ 2>/dev/null || echo "(no chapters dir yet)"
+          ls report/chapters/ 2>/dev/null || echo "(no chapters dir yet)"
           echo "--- Docs files ---"
           ls docs/*.md 2>/dev/null || echo "(no md files)"
 
@@ -42,10 +42,10 @@ jobs:
         uses: xu-cheng/latex-action@v3
         with:
           root_file: main.tex
+          working_directory: report
           latexmk_use_xelatex: true
           latexmk_shell_escape: true
           args: >-
-            -pdf
             -xelatex
             -interaction=nonstopmode
             -halt-on-error
@@ -59,35 +59,35 @@ jobs:
             echo "SHA: ${GITHUB_SHA:0:8} | $(date -u)"
             echo ""
             echo "## Fatal Errors (lines with !)"
-            grep -n "^!" main.log 2>/dev/null | head -50 || echo "(no ! lines)"
+            grep -n "^!" report/main.log 2>/dev/null | head -50 || echo "(no ! lines)"
             echo ""
             echo "## Error keywords"
-            grep -n "Error\|Undefined\|undefined\|Missing\|Emergency stop\|Fatal" main.log 2>/dev/null | head -60 || echo "(none)"
+            grep -n "Error\|Undefined\|undefined\|Missing\|Emergency stop\|Fatal" report/main.log 2>/dev/null | head -60 || echo "(none)"
             echo ""
             echo "## Last 200 lines of main.log"
-            tail -200 main.log 2>/dev/null || echo "(main.log not found)"
+            tail -200 report/main.log 2>/dev/null || echo "(main.log not found)"
           } > latex_errors.md
 
       - name: Verify PDF was created
         run: |
-          if [ -f main.pdf ]; then
-            echo "[OK] main.pdf generated successfully"
-            ls -lh main.pdf
+          if [ -f report/main.pdf ]; then
+            echo "[OK] report/main.pdf generated successfully"
+            ls -lh report/main.pdf
             # Get page count if pdfinfo is available
             if command -v pdfinfo &>/dev/null; then
-              pdfinfo main.pdf | grep Pages || true
+              pdfinfo report/main.pdf | grep Pages || true
             fi
           else
-            echo "[ERROR] main.pdf NOT found!"
+            echo "[ERROR] report/main.pdf NOT found!"
             echo "--- LaTeX log (last 100 lines) ---"
-            tail -100 main.log || true
+            tail -100 report/main.log || true
             exit 1
           fi
 
       - name: Rename PDF for Release
         run: |
           VERSION="v$(date -u +'%Y%m%d')-build${{ github.run_number }}"
-          cp main.pdf "STWI_Technical_Report_${VERSION}.pdf"
+          cp report/main.pdf "STWI_Technical_Report_${VERSION}.pdf"
           echo "REPORT_NAME=STWI_Technical_Report_${VERSION}" >> $GITHUB_ENV
           echo "Renamed to: STWI_Technical_Report_${VERSION}.pdf"
 
@@ -104,11 +104,11 @@ jobs:
         with:
           name: latex-build-logs
           path: |
-            main.log
-            main.aux
-            main.toc
-            main.lof
-            main.lot
+            report/main.log
+            report/main.aux
+            report/main.toc
+            report/main.lof
+            report/main.lot
             latex_errors.md
           retention-days: 7
 

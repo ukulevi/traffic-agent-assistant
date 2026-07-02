@@ -18,6 +18,7 @@ Trong 13 tuần, nhóm xây dựng MVP hỗ trợ operator đánh giá What-if t
 |---|---|
 | Nhân sự | 1 lead, 1 data, 2 ML, 2 AI/backend, 1 frontend, 1 DevOps; có reviewer pháp lý |
 | Demo camera | Tối đa 20 video ghi sẵn/RTSP |
+| Vision dataset | Roboflow export chỉ là dữ liệu offline; train YOLOv8 local trong `data/derived/private/vision_training/roboflow_v001` |
 | Scale test | 1.000 producer aggregate tổng hợp |
 | Hạ tầng benchmark | 8 CPU cores, 32 GB RAM, NVIDIA GPU 12–16 GB |
 | Điều khiển hiện trường | Ngoài phạm vi; MVP chỉ đưa khuyến nghị |
@@ -43,10 +44,10 @@ Trong 13 tuần, nhóm xây dựng MVP hỗ trợ operator đánh giá What-if t
 
 | ID | Công việc |
 |---|---|
-| 1.1 | Calibration ROI/homography cho video demo; YOLOv8 + ByteTrack |
+| 1.1 | Calibration ROI/homography cho video demo; train/load YOLOv8 local từ dataset `roboflow_v001` + ByteTrack |
 | 1.2 | Aggregate 5 phút: volume, speed, heavy-vehicle ratio |
 | 1.3 | MQTT schema có version, unit, observed/received timestamp và quality flag |
-| 1.4 | Edge-processing/privacy test; không phát hành video thô |
+| 1.4 | Dataset manifest, privacy review, local detector metrics; không phát hành video thô, image base64, signed URL hoặc weight private |
 
 ### Tuần 3–4: tensor và quality
 
@@ -59,7 +60,7 @@ Trong 13 tuần, nhóm xây dựng MVP hỗ trợ operator đánh giá What-if t
 | 1.9 | Load test 1.000 aggregate producers; không dùng 1.000 video stream |
 | 1.10 | Contract integration T1→T2 |
 
-**Gate P1:** tensor `[32,12,20,16]`, mask và adjacency đúng contract; quality/privacy tests pass.
+**Gate P1:** tensor `[32,12,20,16]`, mask và adjacency đúng contract; dataset manifest, local detector artifact, quality/privacy tests pass.
 
 ## 4. Phase 2 — Forecast và surrogate (Tuần 3–9)
 
@@ -95,27 +96,28 @@ Trong 13 tuần, nhóm xây dựng MVP hỗ trợ operator đánh giá What-if t
 
 | ID | Công việc |
 |---|---|
-| 3.1 | Ingest Luật 35/2024/QH15, Luật 36/2024/QH15 và SOP đã duyệt |
-| 3.2 | Chunk theo điều/khoản; metadata hiệu lực, superseded, source URL và content hash |
-| 3.3 | Qdrant dense + sparse retrieval, effective-date filter và reranking |
-| 3.4 | Bộ test ≥ 50 câu gồm unanswerable và văn bản hết hiệu lực |
+| 3.1 | Source registry + Firecrawl snapshot gate cho luật, văn bản hướng dẫn và SOP ứng viên |
+| 3.2 | Ingest Luật 35/2024/QH15, Luật 36/2024/QH15 và SOP đã duyệt |
+| 3.3 | Chunk theo điều/khoản; metadata hiệu lực, superseded, source URL và content hash |
+| 3.4 | Qdrant dense + sparse retrieval, effective-date filter và reranking |
+| 3.5 | Bộ test ≥ 50 câu gồm unanswerable và văn bản hết hiệu lực |
 
 ### Tuần 7–9: query và citations
 
 | ID | Công việc |
 |---|---|
-| 3.5 | LLM tạo Pydantic `SimulationQuery`, không tạo SQL tự do |
-| 3.6 | Parameterized SQL builder, TimescaleDB read-only role, timeout/row/tenant limit |
-| 3.7 | DuckDB chỉ dùng cho offline analysis và contract tests |
-| 3.8 | Citation validator: source allowlist, hiệu lực, provision và content hash |
-| 3.9 | Prompt-injection, SQL-injection và tenant-isolation tests |
+| 3.6 | LLM tạo Pydantic `SimulationQuery`, không tạo SQL tự do |
+| 3.7 | Parameterized SQL builder, TimescaleDB read-only role, timeout/row/tenant limit |
+| 3.8 | DuckDB chỉ dùng cho offline analysis và contract tests |
+| 3.9 | Citation validator: source allowlist, hiệu lực, provision và content hash |
+| 3.10 | Prompt-injection, SQL-injection và tenant-isolation tests |
 
 ### Tuần 10: tích hợp
 
 | ID | Công việc |
 |---|---|
-| 3.10 | Integration T3→orchestrator bằng fake và real adapters |
-| 3.11 | Citation precision ≥ 95%; unsupported claim bằng 0 sau validator/abstention |
+| 3.11 | Integration T3→orchestrator bằng fake và real adapters |
+| 3.12 | Citation precision ≥ 95%; unsupported claim bằng 0 sau validator/abstention |
 
 **Gate P3:** query không có đường SQL thô; thiếu evidence phải trả structured failure/`needs_review`.
 
@@ -160,7 +162,7 @@ Trong 13 tuần, nhóm xây dựng MVP hỗ trợ operator đánh giá What-if t
 | Tuần | Luồng chính |
 |---|---|
 | 1 | Contracts, CI, TimescaleDB, Qdrant, Redis |
-| 2–4 | Camera/sensor pipeline, tensor 4D, privacy, 1.000 aggregate producers |
+| 2–4 | Camera/sensor pipeline, local YOLOv8 training, tensor 4D, privacy, 1.000 aggregate producers |
 | 3–7 | Baselines và GCN–LSTM |
 | 4–9 | SUMO scenario dataset, surrogate và calibration |
 | 5–10 | Legal corpus, Qdrant, QuerySpec và citation validator |
@@ -170,6 +172,7 @@ Trong 13 tuần, nhóm xây dựng MVP hỗ trợ operator đánh giá What-if t
 ## 8. Definition of Done
 
 - Code có unit/contract/integration tests và traceable version.
+- Vision model artifact có dataset version, checksum, class map, metrics và privacy review trước khi dùng cho demo.
 - Không dùng mock qua phase gate trừ test fixture được ghi rõ.
 - Không tuyên bố KPI nếu thiếu benchmark profile và raw result.
 - Mọi model claim có baseline; mọi legal claim có citation hợp lệ.
@@ -190,6 +193,7 @@ Trong 13 tuần, nhóm xây dựng MVP hỗ trợ operator đánh giá What-if t
 | R8 | Missing data cao | Trung bình | Missing ratio vượt policy | Data lead | Mask/impute/degraded mode |
 | R9 | Timeline trễ | Cao | Gate trễ > 1 tuần | Project lead | Cắt optional UI/MLOps, không cắt safety |
 | R10 | Scope 1.000 camera bị hiểu sai | Cao | Demo claim sai | Project lead | Ghi rõ synthetic aggregate load test |
+| R11 | Dataset Roboflow không đủ quyền dùng hoặc lệch class map | Trung bình | Manifest thiếu license/privacy hoặc class không ánh xạ | Data lead | Không promote weights, bổ sung review/label hoặc thu hẹp detector claim |
 
 ## 10. Lịch sử phiên bản
 

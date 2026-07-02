@@ -1,0 +1,4 @@
+interface:
+  display_name: "STWI Release QA"
+  short_description: "Validate STWI contracts, docs, PDF, and slides"
+  default_prompt: "Use $stwi-release-qa to run release checks and report any STWI artifact drift."

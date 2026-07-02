@@ -1,0 +1,108 @@
+{
+  "schema_version": "1.0",
+  "task": "cleanup_vision_data_artifacts",
+  "created_at_utc": "2026-07-01T07:59:54.592665+00:00",
+  "mode": "quarantine",
+  "targets": [
+    {
+      "path": "data/derived/private/vision_smoke",
+      "exists": false,
+      "files": 0,
+      "bytes": 0,
+      "action": "skipped_missing"
+    },
+    {
+      "path": "data/derived/private/vision_training/images",
+      "exists": false,
+      "files": 0,
+      "bytes": 0,
+      "action": "skipped_missing"
+    },
+    {
+      "path": "data/derived/private/vision_training/labels",
+      "exists": false,
+      "files": 0,
+      "bytes": 0,
+      "action": "skipped_missing"
+    },
+    {
+      "path": "data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_aug",
+      "exists": false,
+      "files": 0,
+      "bytes": 0,
+      "action": "skipped_missing"
+    },
+    {
+      "path": "data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_ann_rebalanced_moto_r3",
+      "exists": false,
+      "files": 0,
+      "bytes": 0,
+      "action": "skipped_missing"
+    },
+    {
+      "path": "data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_ann_smallmoto_area006_r2",
+      "exists": false,
+      "files": 0,
+      "bytes": 0,
+      "action": "skipped_missing"
+    },
+    {
+      "path": "data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_moto_r2",
+      "exists": false,
+      "files": 0,
+      "bytes": 0,
+      "action": "skipped_missing"
+    },
+    {
+      "path": "data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_moto_r2_bus_r2",
+      "exists": false,
+      "files": 0,
+      "bytes": 0,
+      "action": "skipped_missing"
+    },
+    {
+      "path": "data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam",
+      "exists": false,
+      "files": 0,
+      "bytes": 0,
+      "action": "skipped_missing"
+    },
+    {
+      "path": "data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_yolor_hardcase160",
+      "exists": false,
+      "files": 0,
+      "bytes": 0,
+      "action": "skipped_missing"
+    },
+    {
+      "path": "data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_vietnam_aug",
+      "exists": false,
+      "files": 0,
+      "bytes": 0,
+      "action": "skipped_missing"
+    },
+    {
+      "path": "data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_vietnam_hardcase80",
+      "exists": false,
+      "files": 0,
+      "bytes": 0,
+      "action": "skipped_missing"
+    },
+    {
+      "path": "data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_vietnam_motoonly",
+      "exists": false,
+      "files": 0,
+      "bytes": 0,
+      "action": "skipped_missing"
+    },
+    {
+      "path": "data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_yolor_moto_aug",
+      "exists": false,
+      "files": 0,
+      "bytes": 0,
+      "action": "skipped_missing"
+    }
+  ],
+  "total_files": 0,
+  "total_bytes": 0
+}

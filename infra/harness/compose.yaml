@@ -1,0 +1,19 @@
+name: stwi-harness
+
+services:
+  harness:
+    image: harness/harness@sha256:c1bd76817ad7d2e7d78827653a54c55d4aec87c2777a586ebbad1ed01fc9e83f
+    container_name: stwi-harness
+    restart: unless-stopped
+    ports:
+      - "${HARNESS_HTTP_PORT:-3000}:3000"
+      - "${HARNESS_SSH_PORT:-3022}:3022"
+    volumes:
+      - harness-data:/data
+      - harness-git:/git
+
+volumes:
+  harness-data:
+    name: stwi-harness-data
+  harness-git:
+    name: stwi-harness-git

@@ -1,0 +1,55 @@
+name: stwi-phase3
+
+# Phase 3 integration services for T3 Knowledge tier.
+# Provides Qdrant (vector DB) and TimescaleDB (read-only simulation results).
+#
+# Usage:
+#   docker compose -f infra/harness/compose.phase3.yaml up -d
+#   docker compose -f infra/harness/compose.phase3.yaml down -v
+#
+# Health checks: both services must pass before running integration tests.
+
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.9.7
+    container_name: stwi-qdrant
+    restart: unless-stopped
+    ports:
+      - "${QDRANT_HTTP_PORT:-6333}:6333"
+      - "${QDRANT_GRPC_PORT:-6334}:6334"
+    volumes:
+      - qdrant-storage:/qdrant/storage
+    environment:
+      QDRANT__LOG_LEVEL: INFO
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  timescaledb:
+    image: timescale/timescaledb:2.14.2-pg16
+    container_name: stwi-timescaledb
+    restart: unless-stopped
+    ports:
+      - "${TSDB_PORT:-5432}:5432"
+    volumes:
+      - timescaledb-data:/var/lib/postgresql/data
+      - ./timescaledb-init:/docker-entrypoint-initdb.d:ro
+    environment:
+      POSTGRES_DB: ${TSDB_DB:-stwi}
+      POSTGRES_USER: ${TSDB_USER:-stwi_admin}
+      POSTGRES_PASSWORD: ${TSDB_PASSWORD:-stwi_dev_password}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${TSDB_USER:-stwi_admin} -d ${TSDB_DB:-stwi}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  qdrant-storage:
+    name: stwi-qdrant-storage
+  timescaledb-data:
+    name: stwi-timescaledb-data

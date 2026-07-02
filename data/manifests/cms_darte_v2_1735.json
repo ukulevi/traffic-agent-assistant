@@ -1,0 +1,464 @@
+{
+  "schema_version": "1.0.0",
+  "dataset_id": "cms_darte_v2_1735",
+  "inventory_at": "2026-06-22T05:35:52+00:00",
+  "source_url": "https://doi.org/10.3334/ORNLDAAC/1735",
+  "citation": "Gately, C., L.R. Hutyra, and I.S. Wing. 2019. DARTE Annual On-road CO2 Emissions on a 1-km Grid, Conterminous USA, V2, 1980-2017. ORNL DAAC.",
+  "license_policy_url": "https://www.earthdata.nasa.gov/engage/open-data-services-software-policies/data-use-guidance",
+  "data_origin": "external_emissions_inventory",
+  "storage_scope": "offline_research_only",
+  "publish": false,
+  "role": "emissions-pattern reference for mock research only",
+  "usable_for_stwi_feature_directly": false,
+  "semantic_warning": "Values are annual on-road CO2 emissions in kg CO2/km2/year over the conterminous USA, not ambient co2_ppm and not Vietnam traffic flow.",
+  "temporal_coverage": "1980-2017",
+  "temporal_resolution": "annual",
+  "spatial_resolution": "1 km",
+  "raster_metadata_from_guide": {
+    "width": 5070,
+    "height": 3560,
+    "bands": 1,
+    "pixel_depth_bits": 64,
+    "nodata": -9999.0,
+    "projection": "Lambert Conformal Conic"
+  },
+  "file_count": 87,
+  "total_size_bytes": 3172943691,
+  "files": [
+    {
+      "path": "comp/CMS_DARTE_V2.pdf",
+      "size_bytes": 1610035,
+      "sha256": "0521617365074d380d4b65d93242b4a4041bc6988a3f1625b1efdb8f1d83b7cb"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000001.freelist",
+      "size_bytes": 4440,
+      "sha256": "7e077299e633e2cfe71d42aac4909b13d6883051c012cbce3f0bdd2eb186c9b3"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000001.gdbindexes",
+      "size_bytes": 110,
+      "sha256": "80ba95b873e151074244f7655f9e29ce8967aab1bd57ff4c06a329b723a3d46c"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000001.gdbtable",
+      "size_bytes": 414,
+      "sha256": "a68a456fc34475fa9d4de98fd1b26846165d213018a8c39d23d67b86aefffe73"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000001.gdbtablx",
+      "size_bytes": 5152,
+      "sha256": "129ade0862c3006364ed118fcd8d7aa9cd052699680682b9ee3c2822a5a07c8d"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000001.TablesByName.atx",
+      "size_bytes": 4118,
+      "sha256": "cbba85351222451d72ea2245940d5ea90967d88e55c7c7d6af2f65142ef438d3"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000002.gdbtable",
+      "size_bytes": 2055,
+      "sha256": "9efa50dc62a40e109a546054943ae5ad4b3d41aa81ece0dfa026b7b23cb09da8"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000002.gdbtablx",
+      "size_bytes": 5152,
+      "sha256": "f3ac9865dec6ab40e73d91dd1f5c2eef0248e66e359d4abb1d97edba92b5df88"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000003.gdbindexes",
+      "size_bytes": 42,
+      "sha256": "de0911d18e2f304380c04ae123ea18057d262d788301f7cc3148298231c7c618"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000003.gdbtable",
+      "size_bytes": 1077,
+      "sha256": "aa5b785b6a2f78a47d759502131920d195710141ac0bd185c656f50f1806610b"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000003.gdbtablx",
+      "size_bytes": 5152,
+      "sha256": "d63fd5f8a490aa6aeffde1336e80ce35b5399af5752a72b316570a670b09d167"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000004.CatItemsByPhysicalName.atx",
+      "size_bytes": 4118,
+      "sha256": "73acce4456f295392d87ca54a9c7525c62cb1b8742d36bfe1be412716d4966fd"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000004.CatItemsByType.atx",
+      "size_bytes": 4118,
+      "sha256": "c4eb729be089a6cf4b66f0b05aed7425f14527012341b73438fc6005c9d70a52"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000004.FDO_UUID.atx",
+      "size_bytes": 4118,
+      "sha256": "3b6e13cb9073cc255874049a4559ce5a486147a9934d3ff6719e4dcfb7bffc23"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000004.freelist",
+      "size_bytes": 24920,
+      "sha256": "18cb6bcd9179202b6b23d1d981ae6623089f9af42652eb8862cd9f1d4d23b189"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000004.gdbindexes",
+      "size_bytes": 310,
+      "sha256": "f29887c93b126a3feb0e20958cd73cc774f76ab79284b9c7286dc12eb05db858"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000004.gdbtable",
+      "size_bytes": 113033,
+      "sha256": "b4176036c19d362b889241cac3a1dab98e7ae185c8ae05781ca0c91a00e5dbe6"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000004.gdbtablx",
+      "size_bytes": 5152,
+      "sha256": "90040eccc9c6cdc1fd36e7d03f4988629a8eef836559707122d16de6449f0c01"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000004.spx",
+      "size_bytes": 4118,
+      "sha256": "3fb8b09b32e15a44d66c92ebae1590176b5a3bdc7a2bb1b2ca9b066822977521"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000005.CatItemTypesByName.atx",
+      "size_bytes": 12310,
+      "sha256": "98772e062f271ceadbbbdeba054b67705145c00b960f29417a9f22c915c70622"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000005.CatItemTypesByParentTypeID.atx",
+      "size_bytes": 4118,
+      "sha256": "6ee7d170f8d2308b160120ad6e3e66febb78b0e9b8dc3694ae519760aaed66ac"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000005.CatItemTypesByUUID.atx",
+      "size_bytes": 4118,
+      "sha256": "d561e534a99b09f7a5e66cc0a1ea5aeddfa4f76305d0e28411cdc256a2c93645"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000005.gdbindexes",
+      "size_bytes": 296,
+      "sha256": "c21e650994b48cc72d174b3caf2ac1bd19e2d7305c8087aaae97e24caecf98a5"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000005.gdbtable",
+      "size_bytes": 2021,
+      "sha256": "c5ea043f858423289802fa9cdbb7919300225cdcf5232097164461c0ffbef9b7"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000005.gdbtablx",
+      "size_bytes": 5152,
+      "sha256": "64105e1c94b3f9180fbe1a32160aab4248b3b4e9b80bf17fc34a568b448f72d9"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000006.CatRelsByDestinationID.atx",
+      "size_bytes": 4118,
+      "sha256": "65f1b0d1920ce0a1826b05949332e9a61819abcb4b1655707ecaeb7676537528"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000006.CatRelsByOriginID.atx",
+      "size_bytes": 4118,
+      "sha256": "6f3501d3ad19940ff48e07c88afe413285cf37ed5ee390f0e4f7d20cf97ac171"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000006.CatRelsByType.atx",
+      "size_bytes": 4118,
+      "sha256": "72e5a3dcb0b5de9292672540d6ef48f56c437e682273349f06d43cea6c657078"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000006.FDO_UUID.atx",
+      "size_bytes": 4118,
+      "sha256": "0e4f6c37f4be2d8b7882b05d9872dd1790d424d01788bcb6680f39a96771c7eb"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000006.freelist",
+      "size_bytes": 4440,
+      "sha256": "3c25ce300b516b396b5c62785bc4a2ccbe0eacf44942666d38bf44590ce35e68"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000006.gdbindexes",
+      "size_bytes": 318,
+      "sha256": "1919a00326f198a90dc97545ec448c10b2b90d367020222212f7b00433fe09b5"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000006.gdbtable",
+      "size_bytes": 336,
+      "sha256": "3d651695f9fe44cffbef50555dbb29a66d46e9dbd0ec6d26962384cb8223b333"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000006.gdbtablx",
+      "size_bytes": 5152,
+      "sha256": "f27b525a5335bf2a2293a80c5aebc81fae66d82fa9f45818e685ace2a0d04375"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000007.CatRelTypesByBackwardLabel.atx",
+      "size_bytes": 4118,
+      "sha256": "8e3c6e931148aa6dea3d4851ccd52d20adee49b777a1751d110efa49ba73cb09"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000007.CatRelTypesByDestItemTypeID.atx",
+      "size_bytes": 4118,
+      "sha256": "ceb6a9496e63cad8d733757233962df7baed5e9edc7c8761e6155c38d5aa1bcf"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000007.CatRelTypesByForwardLabel.atx",
+      "size_bytes": 4118,
+      "sha256": "bb84c829286537a3ad010cdd0adfc98ee4a12a15585ee643308b849dc90f1b6b"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000007.CatRelTypesByName.atx",
+      "size_bytes": 4118,
+      "sha256": "b747daa52af224eaebfd08699a96ceebc9f025a19e07e2d5fcd5c4e6cdaf0e28"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000007.CatRelTypesByOriginItemTypeID.atx",
+      "size_bytes": 4118,
+      "sha256": "5ff81422d3bc2c8d8ce7fd6f3706165225c42ef83339d05b838a8ade6d0b4395"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000007.CatRelTypesByUUID.atx",
+      "size_bytes": 4118,
+      "sha256": "004e7fa4cace7b0752629d67eb3ffd82ba6c306a8943cd4e5a10973365ae0f3f"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000007.gdbindexes",
+      "size_bytes": 602,
+      "sha256": "dc98e24d04eddd7f38905d176c1ea43c547a3a2daa0c80091a20d3443c726621"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000007.gdbtable",
+      "size_bytes": 3363,
+      "sha256": "0aca0f529bf4bbab96e13042e5aa24f2923c8871c291ee75b3748f609be30094"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a00000007.gdbtablx",
+      "size_bytes": 5152,
+      "sha256": "65d077c3492c05f3b93546dd7a55a83af32241fdaa43c707c8b2bfd5b4452076"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a0000000a.gdbindexes",
+      "size_bytes": 116,
+      "sha256": "760bd4864717c60d5e7c0c6461a622062680e6f79f51250f49456aa609b43774"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a0000000a.gdbtable",
+      "size_bytes": 490303537,
+      "sha256": "94e204c038b47a1f9626710c69c2e042b757eef8ed5cc79c9e64125a91228264"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a0000000a.gdbtablx",
+      "size_bytes": 1105952,
+      "sha256": "7c18a3fab1bd5a37efbcb7aebb1b691e4438d6c1326259212978909a40d65171"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/a0000000a.spx",
+      "size_bytes": 3719190,
+      "sha256": "e6b7ec53025cb5f73213f4b527e64f68e418fd8faee00769c3f7a7c49ae7994d"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/gdb",
+      "size_bytes": 4,
+      "sha256": "2594b6a92ebfb1c3312deb7d01c015fb95e9fbe9bd7bc6b527af07813ec7b910"
+    },
+    {
+      "path": "data/DARTE_v2.gdb/timestamps",
+      "size_bytes": 400,
+      "sha256": "3a5291e23bfbd5fa3c85de8b920e74c8fc81aff5eb3b7266348bef330de4fd7d"
+    },
+    {
+      "path": "data/onroad_1980.tif",
+      "size_bytes": 70407436,
+      "sha256": "7bf99fa1e79e9637a22c0362409205e57d78a6d6f51bf34124b6140ce0962af9"
+    },
+    {
+      "path": "data/onroad_1981.tif",
+      "size_bytes": 70405194,
+      "sha256": "d1af88aed11b347bf174a870762519219b49e19309a13ea80c40c86b6a86928a"
+    },
+    {
+      "path": "data/onroad_1982.tif",
+      "size_bytes": 70406556,
+      "sha256": "9eda771c39aa4fc2f05b42b8aef68aa5967af7498b0f099c716ab5873083837c"
+    },
+    {
+      "path": "data/onroad_1983.tif",
+      "size_bytes": 70406451,
+      "sha256": "cbb73df4b70975abe55b78b9025d2e0d066838f4a8a80db3e141c12409426a79"
+    },
+    {
+      "path": "data/onroad_1984.tif",
+      "size_bytes": 70409818,
+      "sha256": "0c82420eae99f171e6cb4e6d55398972f9690454181035a38e9289af1b745901"
+    },
+    {
+      "path": "data/onroad_1985.tif",
+      "size_bytes": 70415082,
+      "sha256": "1712aa8a2a8d00be4635df85db4dc12172f37a4e761101a5503ce2a67258b112"
+    },
+    {
+      "path": "data/onroad_1986.tif",
+      "size_bytes": 70418091,
+      "sha256": "e27bb4754a89feae2222055c6cfc46e443a548dc21fe84dc8fcb5204473d1992"
+    },
+    {
+      "path": "data/onroad_1987.tif",
+      "size_bytes": 70420794,
+      "sha256": "983b71d66c8e6bb6a97fece6e8244cdcce924b8aeec1be7870980ac4ea8ddb23"
+    },
+    {
+      "path": "data/onroad_1988.tif",
+      "size_bytes": 70423675,
+      "sha256": "5ecb0d66c4aff99666ccd383f8e0864785e437d1595617ca68beded68808f5ed"
+    },
+    {
+      "path": "data/onroad_1989.tif",
+      "size_bytes": 70424967,
+      "sha256": "efa2f4d6fba3cf76b374a83dd2629ca17f83f1ddd9cc8739caab12c0d8ddc6b8"
+    },
+    {
+      "path": "data/onroad_1990.tif",
+      "size_bytes": 70419623,
+      "sha256": "0aeca2597a7031f91dc25f53f7ecfb83a79f8c2b502fea91064acfbc9b41af37"
+    },
+    {
+      "path": "data/onroad_1991.tif",
+      "size_bytes": 70418841,
+      "sha256": "d8ef56af92f8d3de90a45c28811539e4ea572d23e7af09ee9414011c938dd003"
+    },
+    {
+      "path": "data/onroad_1992.tif",
+      "size_bytes": 70416861,
+      "sha256": "1b2b9f16ee71eecd7f79b3d47cd1e4aaf0a8872ad781208172f28962e159baac"
+    },
+    {
+      "path": "data/onroad_1993.tif",
+      "size_bytes": 70421077,
+      "sha256": "b12b62d22fd21d77fcf57afb9bb6a5bfbc93b5b39cd0eb5f4dfd6cc46d19a143"
+    },
+    {
+      "path": "data/onroad_1994.tif",
+      "size_bytes": 70429581,
+      "sha256": "db694a1a99aa2f4516be72c819cbf22406c2d894313439125961d2c7ca68d6b4"
+    },
+    {
+      "path": "data/onroad_1995.tif",
+      "size_bytes": 70430460,
+      "sha256": "41f911cfd956309f959bfada8e76e965d5e1037073e2031e55c185449d572bc7"
+    },
+    {
+      "path": "data/onroad_1996.tif",
+      "size_bytes": 70437472,
+      "sha256": "54db1d3f83594f6a1e43c8c50d98a70520bc64a15abfc7c41660570b8ffa7cc9"
+    },
+    {
+      "path": "data/onroad_1997.tif",
+      "size_bytes": 70438325,
+      "sha256": "fddd7670aa7d0d2b7d35e6de1d225299eb7c5df5f263444c266eb6bf7dce937f"
+    },
+    {
+      "path": "data/onroad_1998.tif",
+      "size_bytes": 70444910,
+      "sha256": "b4e6ddfd681f6befc532c34eb5a161676ace2ede3c5cd3a29f06100287679abd"
+    },
+    {
+      "path": "data/onroad_1999.tif",
+      "size_bytes": 70445449,
+      "sha256": "51358b778205edddafa18f6d83904e1807be2568cfc8a77903d5e05035a110a7"
+    },
+    {
+      "path": "data/onroad_2000.tif",
+      "size_bytes": 70447168,
+      "sha256": "46513ba6dbbc1a370e1c4ae2c860934ae97f2c3643c8f75d8650326e653af926"
+    },
+    {
+      "path": "data/onroad_2001.tif",
+      "size_bytes": 70443915,
+      "sha256": "2238a045f2f8fa12e6430bd8332149ff527a61d641515ccf9acce5aaa2a9630a"
+    },
+    {
+      "path": "data/onroad_2002.tif",
+      "size_bytes": 70443931,
+      "sha256": "335f0a8464970c349336a10456791a6aa12fc1a213eb947eabd5dc11d58827a9"
+    },
+    {
+      "path": "data/onroad_2003.tif",
+      "size_bytes": 70442269,
+      "sha256": "3b05a04a4b285543dfa36bc99b7f854ca868ada58491e376f3855d37579cf037"
+    },
+    {
+      "path": "data/onroad_2004.tif",
+      "size_bytes": 70446203,
+      "sha256": "c93b20951437b7868ae1c4d7ba2d2750c95554f81e7bb9c7bc1b5408749d100c"
+    },
+    {
+      "path": "data/onroad_2005.tif",
+      "size_bytes": 70447584,
+      "sha256": "5c93ef22e2063d849188f392aa659ad03572311b90a9a1521df0227596043f5b"
+    },
+    {
+      "path": "data/onroad_2006.tif",
+      "size_bytes": 70448189,
+      "sha256": "7c04a05718245331a8d1aea219704fc2f6e1bf571fa4824072e279d3d49006dd"
+    },
+    {
+      "path": "data/onroad_2007.tif",
+      "size_bytes": 70449487,
+      "sha256": "75e160ea2fa480d94245eccf5ce7de7e41df45816f3828c2948cf4fd1a572849"
+    },
+    {
+      "path": "data/onroad_2008.tif",
+      "size_bytes": 70447542,
+      "sha256": "e845c692953cb8c28544961f4b0adf63d1fabe0e73d40163d1fae48f19efa756"
+    },
+    {
+      "path": "data/onroad_2009.tif",
+      "size_bytes": 70435891,
+      "sha256": "e549db22ff8e2e48865d3c3386973d4d3a4d0957c43cf03923a493004a8ad382"
+    },
+    {
+      "path": "data/onroad_2010.tif",
+      "size_bytes": 70425304,
+      "sha256": "014714f6a07572ebb4047371d49f4d4d78deb210e69981084a30ac8c18f1ed09"
+    },
+    {
+      "path": "data/onroad_2011.tif",
+      "size_bytes": 70407609,
+      "sha256": "5d9be3c98ab45ae8b6989b664acd117b3f89a44b2b30aff7699d33226954ed96"
+    },
+    {
+      "path": "data/onroad_2012.tif",
+      "size_bytes": 70385631,
+      "sha256": "cc2ae90f564239d7c904d96ffd2eee06138a855b8fa5df389fdb37c53d3be6ee"
+    },
+    {
+      "path": "data/onroad_2013.tif",
+      "size_bytes": 70372147,
+      "sha256": "394adf3183a44b63ee67960aecdf33d07d5752c47f3189f029834977ff142d1f"
+    },
+    {
+      "path": "data/onroad_2014.tif",
+      "size_bytes": 70362232,
+      "sha256": "705f877e703a3800d8e226ea8dbfac96d72c2be0dd3500c058b07e7e6e5bb98f"
+    },
+    {
+      "path": "data/onroad_2015.tif",
+      "size_bytes": 70356992,
+      "sha256": "08c115e2b5d4cff6b03ef04c99454f56db26337f34f653527e85277c823c494e"
+    },
+    {
+      "path": "data/onroad_2016.tif",
+      "size_bytes": 70357843,
+      "sha256": "0daaa7e3a199e321c49d045dde58db0592c10e4bd8700fca2b0d15205b56bad8"
+    },
+    {
+      "path": "data/onroad_2017.tif",
+      "size_bytes": 70367521,
+      "sha256": "541583bd221d30742788070855ea3b012703b1978687a6be9f7d277d5d4039e9"
+    },
+    {
+      "path": "guide/Online_Version_CMS_DARTE_V2.html",
+      "size_bytes": 179,
+      "sha256": "638d2293346cd0e03f231bfd71e66300ef4a64d048d14dfd9bb86055a3cef4b1"
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0.0",
+  "dataset_id": "modelscope_bdd100k_test_metadata",
+  "inventory_at": "2026-06-22T05:35:52+00:00",
+  "source_url": "https://www.modelscope.ai/datasets/modelscope/image_object_detection_auto_dataset",
+  "upstream_dataset": "BDD100K",
+  "license_url": "https://doc.bdd100k.com/license.html",
+  "data_origin": "external_metadata",
+  "storage_scope": "catalog_only",
+  "publish": false,
+  "status": "incomplete",
+  "usable": false,
+  "reason": "Clone contains metadata and Git-LFS objects only; expected BDD100k_test_partial.zip and 100 images are absent from the working tree.",
+  "duplicate_warning": "The expected 100 images originate from BDD100K and add no independent domain coverage.",
+  "actual_image_count": 0,
+  "expected_image_count": 100,
+  "nested_git_head": "ref: refs/heads/master",
+  "top_level_files": [
+    {
+      "path": ".gitattributes",
+      "size_bytes": 3907,
+      "sha256": "c8661d7f1bc6eb5cc9a6631be3add2aeb29cf439df19d48d95aeabac9aa44ea9"
+    },
+    {
+      "path": "BDD100k_test_partial.csv",
+      "size_bytes": 4023,
+      "sha256": "5d7814683eb6c276c791c352f7c80c32bf209ac408a31de49512da94415c2d97"
+    },
+    {
+      "path": "dataset_infos.json",
+      "size_bytes": 170,
+      "sha256": "db42c647ff8f6f72dd992569878db6876b6958457de814cabb643833008fee94"
+    },
+    {
+      "path": "image_object_detection_auto_dataset.json",
+      "size_bytes": 149,
+      "sha256": "c61452f85bddc1e4d06b0c4fb488027639e5244bc3dcef118c7ae2957e982f68"
+    },
+    {
+      "path": "README.md",
+      "size_bytes": 1501,
+      "sha256": "7e25a177a80ea660d913ff2f2d7789585d95bd66dbe37149a6028dd64c4c6b95"
+    }
+  ]
+}

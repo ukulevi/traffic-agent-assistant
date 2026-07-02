@@ -1,0 +1,108 @@
+{
+  "schema_version": "1.0",
+  "task": "cleanup_vision_data_artifacts",
+  "created_at_utc": "2026-06-30T06:08:54.713048+00:00",
+  "mode": "dry-run",
+  "targets": [
+    {
+      "path": "data/derived/private/vision_smoke",
+      "exists": true,
+      "files": 23,
+      "bytes": 25778784,
+      "action": "dry-run"
+    },
+    {
+      "path": "data/derived/private/vision_training/images",
+      "exists": true,
+      "files": 125,
+      "bytes": 1765546,
+      "action": "dry-run"
+    },
+    {
+      "path": "data/derived/private/vision_training/labels",
+      "exists": true,
+      "files": 127,
+      "bytes": 43051,
+      "action": "dry-run"
+    },
+    {
+      "path": "data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_aug",
+      "exists": true,
+      "files": 25858,
+      "bytes": 840244376,
+      "action": "dry-run"
+    },
+    {
+      "path": "data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_ann_rebalanced_moto_r3",
+      "exists": true,
+      "files": 27228,
+      "bytes": 854913151,
+      "action": "dry-run"
+    },
+    {
+      "path": "data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_ann_smallmoto_area006_r2",
+      "exists": true,
+      "files": 26010,
+      "bytes": 796923016,
+      "action": "dry-run"
+    },
+    {
+      "path": "data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_moto_r2",
+      "exists": true,
+      "files": 31460,
+      "bytes": 990330941,
+      "action": "dry-run"
+    },
+    {
+      "path": "data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_moto_r2_bus_r2",
+      "exists": true,
+      "files": 39890,
+      "bytes": 1269795962,
+      "action": "dry-run"
+    },
+    {
+      "path": "data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam",
+      "exists": true,
+      "files": 28680,
+      "bytes": 840013068,
+      "action": "dry-run"
+    },
+    {
+      "path": "data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_yolor_hardcase160",
+      "exists": true,
+      "files": 28926,
+      "bytes": 1427007256,
+      "action": "dry-run"
+    },
+    {
+      "path": "data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_vietnam_aug",
+      "exists": true,
+      "files": 26146,
+      "bytes": 811306642,
+      "action": "dry-run"
+    },
+    {
+      "path": "data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_vietnam_hardcase80",
+      "exists": true,
+      "files": 25472,
+      "bytes": 737747449,
+      "action": "dry-run"
+    },
+    {
+      "path": "data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_vietnam_motoonly",
+      "exists": true,
+      "files": 25954,
+      "bytes": 790535854,
+      "action": "dry-run"
+    },
+    {
+      "path": "data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_yolor_moto_aug",
+      "exists": true,
+      "files": 28952,
+      "bytes": 5207014050,
+      "action": "dry-run"
+    }
+  ],
+  "total_files": 314851,
+  "total_bytes": 14593419146
+}

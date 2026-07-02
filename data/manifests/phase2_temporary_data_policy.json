@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0",
+  "policy_id": "phase2-mock-first-v1",
+  "purpose": "Temporary Phase-2 baseline and GCN-LSTM implementation while real adjacent-road camera and sensor coverage is unavailable.",
+  "approved_forecast_inputs": [
+    {
+      "dataset_id": "stwi_phase1_mock_v1",
+      "path": "data/derived/private/phase1_mock",
+      "scope": "development, contract tests, baseline and GCN-LSTM smoke training only"
+    }
+  ],
+  "prohibited_forecast_inputs": [
+    {
+      "dataset_id": "bdd100k_images_10k",
+      "reason": "vision images are not 5-minute network time series"
+    },
+    {
+      "dataset_id": "cms_darte_v2_1735",
+      "reason": "annual US CO2 inventory is not ambient Vietnam sensor data"
+    },
+    {
+      "dataset_id": "rtsp_quarantine_frames",
+      "reason": "frames must be converted to approved 5-minute aggregates before forecast use"
+    }
+  ],
+  "surrogate_policy": {
+    "training_allowed": false,
+    "reason": "No calibrated SUMO scenario dataset is available",
+    "required_source": "offline calibrated SUMO runs"
+  },
+  "replacement_gate": [
+    "approved 20-node registry and capacity table",
+    "versioned real 5-minute aggregates",
+    "chronological train/validation/test split",
+    "train-only scaler",
+    "quality and missing-mask report"
+  ],
+  "external_release": false
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "STWI Implement"
+  short_description: "Implement STWI changes against project contracts"
+  default_prompt: "Use $stwi-implement to implement this STWI change safely and verify affected contracts."

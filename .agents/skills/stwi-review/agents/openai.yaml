@@ -1,0 +1,4 @@
+interface:
+  display_name: "STWI Review"
+  short_description: "Review STWI code, plans, specs, and safety"
+  default_prompt: "Use $stwi-review to review this STWI change for correctness, safety, and contract drift."

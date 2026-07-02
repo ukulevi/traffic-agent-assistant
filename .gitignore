@@ -12,12 +12,22 @@
 *.synctex.gz
 
 # Generated chapters (pandoc output from docs/*.md - regenerated on CI)
-chapters/0*.tex
-chapters/temp_*.md
+report/chapters/0*.tex
+report/chapters/temp_*.md
 web_deploy/
 
 # Generated mermaid images
 docs/images/mermaid_*.png
+
+# Large media / external datasets
+*.mp4
+*.pt
+runs/
+data/external/
+data/quarantine/
+data/derived/private/
+*.yolov8/
+*.yolov8 (*/
 
 # OS / Editor files
 .DS_Store
@@ -25,6 +35,23 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Python cache
+# Python cache & build artifacts
 __pycache__/
 *.py[cod]
+*.egg-info/
+*.egg
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+
+# Node
+node_modules/
+
+# Local site build
+_site/

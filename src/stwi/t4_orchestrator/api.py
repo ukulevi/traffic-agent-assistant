@@ -1,0 +1,343 @@
+"""FastAPI application — Phase 4 what-if job API.
+
+Endpoints (from project_contract.json):
+  POST /api/v1/what-if-jobs          → 202 Accepted + job_id
+  GET  /api/v1/what-if-jobs/{job_id} → job status + result
+  GET  /api/v1/what-if-jobs/{job_id}/events → SSE progress stream
+
+Phase 4 provisional:
+- Jobs run synchronously in a background thread (no real Celery/Redis).
+- SSE streams the final result event; polling GET also works.
+- Swap BackgroundTasks for Celery workers in Phase 5.
+
+SSE event format:
+  data: {"event": "status", "status": "queued", "job_id": "..."}
+  data: {"event": "status", "status": "running", "job_id": "..."}
+  data: {"event": "result", "status": "succeeded|needs_review|failed", ...}
+  data: {"event": "error", "message": "..."}
+"""
+
+import asyncio
+import json
+import logging
+from datetime import datetime, timezone
+from typing import AsyncGenerator
+
+from stwi.config.runtime import RuntimeSettings, get_runtime_settings
+from stwi.t4_orchestrator.contracts import (
+    JobEnvelope,
+    JobEvent,
+    JobStatus,
+    OperatorDecisionRequest,
+    WhatIfJobRequest,
+)
+from stwi.t4_orchestrator.interfaces import JobStore
+from stwi.t4_orchestrator.job_store import InMemoryJobStore, get_job_store
+from stwi.t4_orchestrator.orchestrator import WhatIfOrchestrator
+
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# FastAPI app factory — lazy import so the module loads without fastapi
+# installed (for contract tests that only import orchestrator/contracts).
+# ---------------------------------------------------------------------------
+
+def create_app(
+    store: JobStore | None = None,
+    orchestrator: WhatIfOrchestrator | None = None,
+    settings: RuntimeSettings | None = None,
+) -> object:
+    """Create and return the FastAPI application.
+
+    Args:
+        store: Job store to use (defaults to module-level singleton).
+        orchestrator: Orchestrator to use (defaults to FakeT3Adapter-backed).
+    """
+    _settings = settings or get_runtime_settings()
+    if not _settings.allow_provisional_adapters and (
+        store is None or orchestrator is None
+    ):
+        raise RuntimeError(
+            "Production runtime requires explicit job store and orchestrator; "
+            "InMemoryJobStore/provisional defaults are disabled."
+        )
+
+    try:
+        from fastapi import BackgroundTasks, FastAPI, Header, HTTPException
+        from fastapi.responses import JSONResponse, StreamingResponse
+    except ImportError as exc:
+        raise ImportError(
+            "fastapi is required for the API. "
+            "Install with: pip install 'stwi[orchestrator]'"
+        ) from exc
+
+    _store = store or get_job_store()
+    _orchestrator = orchestrator or WhatIfOrchestrator()
+
+    app = FastAPI(
+        title="STWI What-If API",
+        description=(
+            "Decision-support only. Automatic actuation is NEVER performed. "
+            "Human approval is required before applying any recommended action."
+        ),
+        version="0.4.0-provisional",
+    )
+
+    # -----------------------------------------------------------------------
+    # POST /api/v1/what-if-jobs — create job (HTTP 202)
+    # -----------------------------------------------------------------------
+
+    @app.post("/api/v1/what-if-jobs", status_code=202)
+    async def create_job(
+        request: WhatIfJobRequest,
+        background_tasks: BackgroundTasks,
+    ) -> JSONResponse:
+        """Create a what-if scenario job and return 202 Accepted."""
+        envelope = _store.create(request)
+
+        background_tasks.add_task(_run_job, envelope.job_id, request, _store, _orchestrator)
+
+        return JSONResponse(
+            status_code=202,
+            content={
+                "job_id": envelope.job_id,
+                "status": JobStatus.QUEUED.value,
+                "message": (
+                    "Job accepted. Poll GET /api/v1/what-if-jobs/{job_id} "
+                    "or stream GET /api/v1/what-if-jobs/{job_id}/events"
+                ),
+                "warning": (
+                    "Phase 4 provisional — uses synthetic/mock data. "
+                    "Not production-ready."
+                ),
+            },
+        )
+
+    # -----------------------------------------------------------------------
+    # GET /api/v1/what-if-jobs/{job_id} — poll status
+    # -----------------------------------------------------------------------
+
+    @app.get("/api/v1/what-if-jobs/{job_id}")
+    async def get_job(job_id: str) -> dict:
+        """Return current job status and result (if complete)."""
+        envelope = _store.get(job_id)
+        if envelope is None:
+            raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+
+        response: dict = {
+            "job_id": envelope.job_id,
+            "status": envelope.status.value,
+            "tenant_id": envelope.tenant_id,
+            "created_at": envelope.created_at.isoformat(),
+            "updated_at": envelope.updated_at.isoformat(),
+        }
+        if envelope.result is not None:
+            response["result"] = _serialize_result(envelope.result)
+        if envelope.operator_decision is not None:
+            response["operator_decision"] = envelope.operator_decision.model_dump(mode="json")
+        if envelope.error_message:
+            response["error_message"] = envelope.error_message
+        return response
+
+    # -----------------------------------------------------------------------
+    # POST /api/v1/what-if-jobs/{job_id}/operator-decision â€” audit-only
+    # -----------------------------------------------------------------------
+
+    @app.post("/api/v1/what-if-jobs/{job_id}/operator-decision")
+    async def record_operator_decision(
+        job_id: str,
+        decision_request: OperatorDecisionRequest,
+    ) -> dict:
+        """Record a human operator decision without executing any action."""
+        envelope = _store.get(job_id)
+        if envelope is None:
+            raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+        if envelope.status not in (
+            JobStatus.SUCCEEDED,
+            JobStatus.NEEDS_REVIEW,
+            JobStatus.FAILED,
+            JobStatus.EXPIRED,
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail="Operator decision is allowed only after a terminal job status",
+            )
+        record = _store.record_operator_decision(
+            job_id=job_id,
+            operator_id=decision_request.operator_id,
+            decision=decision_request.decision.value,
+            comment=decision_request.comment,
+        )
+        if record is None:
+            raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+        return {
+            "job_id": job_id,
+            "operator_decision": record.model_dump(mode="json"),
+            "automatic_actuation": False,
+            "message": "Decision recorded for audit only; no field action was executed.",
+        }
+
+    # -----------------------------------------------------------------------
+    # GET /api/v1/what-if-jobs/{job_id}/events — SSE stream
+    # -----------------------------------------------------------------------
+
+    @app.get("/api/v1/what-if-jobs/{job_id}/events")
+    async def stream_events(
+        job_id: str,
+        last_event_id: str | None = Header(default=None, alias="Last-Event-ID"),
+    ) -> StreamingResponse:
+        """Stream SSE events for the job lifecycle."""
+        envelope = _store.get(job_id)
+        if envelope is None:
+            raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+        resume_after = _parse_last_event_id(last_event_id)
+
+        return StreamingResponse(
+            _event_generator(job_id, _store, last_event_id=resume_after),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+            },
+        )
+
+    return app
+
+
+# ---------------------------------------------------------------------------
+# Background job runner
+# ---------------------------------------------------------------------------
+
+def _run_job(
+    job_id: str,
+    request: WhatIfJobRequest,
+    store: JobStore,
+    orchestrator: WhatIfOrchestrator,
+) -> None:
+    """Run the orchestrator and persist the result (background task)."""
+    store.update_status(job_id, JobStatus.RUNNING)
+    try:
+        result = orchestrator.run(job_id=job_id, request=request)
+        store.set_result(job_id, result)
+        logger.info("Job %s completed with status %s", job_id, result.status.value)
+    except (TimeoutError, asyncio.TimeoutError) as exc:
+        logger.warning("Job %s timed out/expired: %s", job_id, exc)
+        store.update_status(
+            job_id,
+            JobStatus.EXPIRED,
+            error_message=str(exc),
+        )
+    except Exception as exc:
+        logger.exception("Job %s raised unhandled exception: %s", job_id, exc)
+        store.update_status(
+            job_id,
+            JobStatus.FAILED,
+            error_message=f"Unexpected error: {exc}",
+        )
+
+
+# ---------------------------------------------------------------------------
+# SSE event generator
+# ---------------------------------------------------------------------------
+
+async def _event_generator(
+    job_id: str,
+    store: JobStore,
+    last_event_id: int = 0,
+    poll_interval: float = 0.2,
+    timeout_seconds: float = 180.0,
+) -> AsyncGenerator[str, None]:
+    """Yield SSE-formatted events until job is terminal or timeout."""
+    elapsed = 0.0
+    cursor = max(last_event_id, 0)
+
+    while elapsed < timeout_seconds:
+        envelope = store.get(job_id)
+        if envelope is None:
+            yield _sse({"event": "error", "message": f"Job {job_id} not found"})
+            return
+
+        for event in store.events_since(job_id, cursor):
+            cursor = event.id
+            yield _sse_event(event)
+
+        terminal = envelope.status in (
+            JobStatus.SUCCEEDED,
+            JobStatus.NEEDS_REVIEW,
+            JobStatus.FAILED,
+            JobStatus.EXPIRED,
+        )
+        if terminal and not store.events_since(job_id, cursor):
+            return
+
+        await asyncio.sleep(poll_interval)
+        elapsed += poll_interval
+
+    # Mark expired in store if not terminal
+    envelope = store.get(job_id)
+    if envelope and envelope.status not in (
+        JobStatus.SUCCEEDED,
+        JobStatus.NEEDS_REVIEW,
+        JobStatus.FAILED,
+        JobStatus.EXPIRED,
+    ):
+        store.update_status(
+            job_id,
+            JobStatus.EXPIRED,
+            error_message=f"SSE stream timed out after {timeout_seconds}s for job {job_id}",
+        )
+        for event in store.events_since(job_id, cursor):
+            yield _sse_event(event)
+
+    yield _sse({
+        "event": "error",
+        "message": f"SSE stream timed out after {timeout_seconds}s for job {job_id}",
+    })
+
+
+def _sse(data: dict) -> str:
+    """Format a dict as an SSE data line."""
+    return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+
+def _sse_event(event: JobEvent) -> str:
+    """Format a stored JobEvent with SSE id/event fields for resume."""
+    data = {
+        "job_id": event.job_id,
+        "status": event.status.value if event.status else None,
+        "timestamp": event.created_at.isoformat(),
+        **event.payload,
+    }
+    return (
+        f"id: {event.id}\n"
+        f"event: {event.event}\n"
+        f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+    )
+
+
+def _parse_last_event_id(last_event_id: str | None) -> int:
+    """Parse Last-Event-ID defensively; invalid values resume from start."""
+    if not last_event_id:
+        return 0
+    try:
+        parsed = int(last_event_id)
+    except ValueError:
+        return 0
+    return max(parsed, 0)
+
+
+# ---------------------------------------------------------------------------
+# Result serializer (no sensitive raw data)
+# ---------------------------------------------------------------------------
+
+def _serialize_result(result: object) -> dict:
+    """Serialize WhatIfJobResult to JSON-safe dict (aggregate only)."""
+    d = result.model_dump(mode="json")
+    # Nested datetime serialization
+    for key in ("scenario_time", "created_at", "completed_at"):
+        if d.get(key) and not isinstance(d[key], str):
+            d[key] = d[key].isoformat()
+    return d
+
+
+__all__ = ["create_app"]

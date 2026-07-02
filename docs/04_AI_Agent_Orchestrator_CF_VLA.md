@@ -82,12 +82,17 @@ MVP không có actuator. Ngay cả `succeeded` vẫn cần operator phê duyệt
 
 ```json
 {
-  "scenario": "Tai nạn tại node A; đánh giá phương án phân luồng sang B",
+  "tenant_id": "test-tenant",
   "scenario_time": "2026-06-21T08:00:00+07:00",
-  "constraints": {
-    "deadline_ms": 180000,
-    "priority": "high"
-  }
+  "candidate_action": {
+    "node_id": "node-A",
+    "green_time_ratio": 0.7
+  },
+  "node_ids": ["node-A", "node-B"],
+  "scenario_query": "Tai nạn tại node A; đánh giá phương án phân luồng sang B",
+  "horizons_minutes": [5, 10, 15, 30],
+  "jurisdiction": "VN",
+  "vc_threshold": 0.9
 }
 ```
 
@@ -114,15 +119,17 @@ MVP không có actuator. Ngay cả `succeeded` vẫn cần operator phê duyệt
 {
   "job_id": "wf_01J...",
   "status": "succeeded",
+  "tenant_id": "test-tenant",
+  "scenario_time": "2026-06-21T08:00:00+07:00",
   "recommended_action": {
-    "summary": "Phân luồng tối đa 40% sang tuyến B và điều chỉnh green-time ratio tại C",
-    "requires_operator_approval": true
+    "node_id": "node-A",
+    "green_time_ratio": 0.7,
+    "action_kind": "recommended_action",
+    "executable": false,
+    "requires_operator_approval": true,
+    "automatic_actuation": false
   },
-  "simulation_metrics": {
-    "max_vc_ratio": 0.86,
-    "network_delay_seconds": 740,
-    "clearance_time_minutes": 18
-  },
+  "candidate_action": null,
   "citations": [
     {
       "document_id": "sop-incident-14",
@@ -135,18 +142,57 @@ MVP không có actuator. Ngay cả `succeeded` vẫn cần operator phê duyệt
       "content_hash": "sha256:..."
     }
   ],
-  "safety_evaluation": {
-    "policy_version": "csl-1.0",
-    "iterations": 2,
-    "converged": true,
-    "default_vc_threshold": 0.9
+  "needs_review_reason": null,
+  "baseline_summary": {
+    "node_count": 20,
+    "horizon_count": 4,
+    "avg_volume": 120.5,
+    "avg_speed": 45.2,
+    "warning": ""
   },
-  "model_versions": {
-    "forecast": "gcn-lstm-1.0",
-    "surrogate": "ensemble-1.0"
+  "scenario_summary": {
+    "node_count": 20,
+    "max_vc_ratio": 0.86,
+    "max_uncertainty": 0.12,
+    "max_ood_score": 0.05,
+    "avg_volume": 118.4,
+    "avg_speed": 47.1,
+    "warning": ""
   },
-  "trace_id": "tr_01J...",
-  "latency_ms": 21400
+  "safety_iterations": 2,
+  "safety_checks": [
+    {
+      "passed": false,
+      "iteration": 1,
+      "vc_ratio_ok": false,
+      "citations_ok": true,
+      "uncertainty_ok": true,
+      "ood_ok": true,
+      "fail_reason": "V/C ratio 0.95 exceeds threshold 0.90"
+    },
+    {
+      "passed": true,
+      "iteration": 2,
+      "vc_ratio_ok": true,
+      "citations_ok": true,
+      "uncertainty_ok": true,
+      "ood_ok": true,
+      "fail_reason": null
+    }
+  ],
+  "audit_record": {
+    "trace_id": "tr_01J...",
+    "job_id": "wf_01J...",
+    "tenant_id": "test-tenant",
+    "scenario_time": "2026-06-21T08:00:00+07:00",
+    "model_version": "provisional_mock_v1",
+    "corpus_parser_version": "1.0.0",
+    "status": "succeeded",
+    "status_reason": "succeeded",
+    "safety_iterations": 2
+  },
+  "model_version": "provisional_mock_v1",
+  "data_version": "synthetic_mock_phase4"
 }
 ```
 
@@ -156,25 +202,78 @@ MVP không có actuator. Ngay cả `succeeded` vẫn cần operator phê duyệt
 {
   "job_id": "wf_01J...",
   "status": "needs_review",
+  "tenant_id": "test-tenant",
+  "scenario_time": "2026-06-21T08:00:00+07:00",
+  "recommended_action": null,
   "candidate_action": {
-    "summary": "Phương án thử nghiệm: phân luồng 20% sang B",
+    "node_id": "node-A",
+    "green_time_ratio": 0.7,
+    "action_kind": "candidate_action",
     "executable": false,
-    "requires_operator_approval": true
+    "requires_operator_approval": true,
+    "automatic_actuation": false
   },
-  "warnings": [
+  "citations": [],
+  "needs_review_reason": "SAFETY_NOT_CONVERGED: Không đạt policy sau 3 vòng; max V/C còn 0.93",
+  "baseline_summary": {
+    "node_count": 20,
+    "horizon_count": 4,
+    "avg_volume": 120.5,
+    "avg_speed": 45.2,
+    "warning": ""
+  },
+  "scenario_summary": {
+    "node_count": 20,
+    "max_vc_ratio": 0.93,
+    "max_uncertainty": 0.15,
+    "max_ood_score": 0.08,
+    "avg_volume": 125.1,
+    "avg_speed": 40.5,
+    "warning": ""
+  },
+  "safety_iterations": 3,
+  "safety_checks": [
     {
-      "code": "SAFETY_NOT_CONVERGED",
-      "message": "Không đạt policy sau 3 vòng; max V/C còn 0.93"
+      "passed": false,
+      "iteration": 1,
+      "vc_ratio_ok": false,
+      "citations_ok": true,
+      "uncertainty_ok": true,
+      "ood_ok": true,
+      "fail_reason": "V/C ratio 0.95 exceeds threshold 0.90"
+    },
+    {
+      "passed": false,
+      "iteration": 2,
+      "vc_ratio_ok": false,
+      "citations_ok": true,
+      "uncertainty_ok": true,
+      "ood_ok": true,
+      "fail_reason": "V/C ratio 0.94 exceeds threshold 0.90"
+    },
+    {
+      "passed": false,
+      "iteration": 3,
+      "vc_ratio_ok": false,
+      "citations_ok": true,
+      "uncertainty_ok": true,
+      "ood_ok": true,
+      "fail_reason": "V/C ratio 0.93 exceeds threshold 0.90"
     }
   ],
-  "citations": [],
-  "safety_evaluation": {
-    "policy_version": "csl-1.0",
-    "iterations": 3,
-    "converged": false
+  "audit_record": {
+    "trace_id": "tr_01J...",
+    "job_id": "wf_01J...",
+    "tenant_id": "test-tenant",
+    "scenario_time": "2026-06-21T08:00:00+07:00",
+    "model_version": "provisional_mock_v1",
+    "corpus_parser_version": "1.0.0",
+    "status": "needs_review",
+    "status_reason": "SAFETY_NOT_CONVERGED",
+    "safety_iterations": 3
   },
-  "trace_id": "tr_01J...",
-  "latency_ms": 29600
+  "model_version": "provisional_mock_v1",
+  "data_version": "synthetic_mock_phase4"
 }
 ```
 

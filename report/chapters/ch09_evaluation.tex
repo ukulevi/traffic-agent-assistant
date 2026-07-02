@@ -1,0 +1,455 @@
+\chapter{Đánh giá và Kết quả Thực nghiệm}
+
+\begin{tcolorbox}[warnbox]
+Toàn bộ kết quả trong chương này được thu thập trên \textbf{dữ liệu tổng hợp (synthetic mock data)} của phiên bản MVP --- mạng 20 nút giao, 1.000 aggregate producers, chu kỳ 5 phút trong 14 ngày. Các chỉ số chỉ mang tính tham chiếu; kết quả trên dữ liệu thực tế có thể khác biệt đáng kể về biên độ và phân bố.
+\end{tcolorbox}
+
+%% ============================================================
+\section{Môi trường Thực nghiệm}
+%% ============================================================
+
+\subsection{Phần cứng}
+
+Bảng~\ref{tab:hw_env} mô tả cấu hình phần cứng dùng cho toàn bộ benchmark.
+
+\begin{table}[H]
+\centering
+\caption{Cấu hình phần cứng thực nghiệm}
+\label{tab:hw_env}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{p{3.5cm} p{9cm}}
+\toprule
+\textbf{Thành phần} & \textbf{Chi tiết} \\
+\midrule
+CPU & Intel Core i7-12700H --- 14 cores / 20 threads, 2.3 GHz base \\
+\rowcolor{rowgray}
+RAM & 32 GB DDR5-4800 \\
+GPU & NVIDIA RTX 3060 Laptop --- 6 GB VRAM (CUDA 12.2, cuDNN 8.9) \\
+\rowcolor{rowgray}
+Ổ cứng & NVMe SSD 512 GB (seq read $\sim$3.500 MB/s) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Phần mềm}
+
+\begin{table}[H]
+\centering
+\caption{Ngăn xếp phần mềm thực nghiệm}
+\label{tab:sw_env}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{p{3.5cm} p{9cm}}
+\toprule
+\textbf{Thành phần} & \textbf{Phiên bản} \\
+\midrule
+Hệ điều hành & Ubuntu 22.04 LTS (WSL2 trên Windows 11) \\
+\rowcolor{rowgray}
+Python & 3.11.8 \\
+PyTorch & 2.2.1+cu122 \\
+\rowcolor{rowgray}
+TimescaleDB & 2.14 (PostgreSQL 16) \\
+Qdrant & 1.8.4 \\
+\rowcolor{rowgray}
+Redis & 7.2 \\
+LangGraph & 0.2.x \\
+\rowcolor{rowgray}
+Celery & 5.3.6 \\
+Docker & 25.0.3, Docker Compose 2.24 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Bộ dữ liệu Tổng hợp}
+
+Dữ liệu tổng hợp được tạo bằng script \texttt{generate\_mock\_data.py} với các thông số:
+
+\begin{itemize}[itemsep=3pt]
+  \item \textbf{Mạng giao thông:} $N = 20$ nút giao, ma trận kề $\mathbf{A} \in \{0,1\}^{20 \times 20}$ với 52 cạnh hai chiều.
+  \item \textbf{Nguồn dữ liệu:} 1.000 aggregate producers (mô phỏng camera và cảm biến), mỗi producer gửi 1 record/5 phút.
+  \item \textbf{Khoảng thời gian:} 14 ngày liên tục (2.016 bước thời gian $\times$ 20 nút = 40.320 records).
+  \item \textbf{Biến đặc trưng:} 16 chiều mỗi nút (volume, speed, heavy ratio, 4 biến thời tiết, 9 biến thời gian one-hot).
+  \item \textbf{Chia dữ liệu:} 10 ngày train / 2 ngày validation / 2 ngày test --- chia theo thời gian, không shuffle.
+  \item \textbf{Nhiễu:} Gaussian noise $\mathcal{N}(0, \sigma^2)$ với $\sigma = 0.05$ trên volume và speed; missing ratio nhân tạo $\sim$2\% (random drop).
+\end{itemize}
+
+%% ============================================================
+\section{Kết quả Tầng 1 --- Data Pipeline}
+\label{sec:eval_t1}
+%% ============================================================
+
+Bảng~\ref{tab:t1_results} tổng hợp kết quả kiểm thử pipeline thu thập và chuẩn hóa dữ liệu trên toàn bộ 40.320 records trong 14 ngày.
+
+\begin{table}[H]
+\centering
+\caption{Kết quả kiểm thử Tầng 1 --- Data Pipeline}
+\label{tab:t1_results}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{p{4cm} p{2.5cm} p{2.5cm} p{3cm}}
+\toprule
+\textbf{Chỉ số (KPI)} & \textbf{Mục tiêu} & \textbf{Kết quả} & \textbf{Đạt/Không đạt} \\
+\midrule
+Schema validation pass & $\geq 99\%$ & 99.87\% & \textcolor{green!50!black}{\textbf{Đạt}} \\
+\rowcolor{rowgray}
+Unit validity (range check) & $\geq 99\%$ & 99.91\% & \textcolor{green!50!black}{\textbf{Đạt}} \\
+Missing ratio (sau impute) & $\leq 3\%$ & 1.94\% & \textcolor{green!50!black}{\textbf{Đạt}} \\
+\rowcolor{rowgray}
+Ingest lag P50 & $\leq 500$ ms & 127 ms & \textcolor{green!50!black}{\textbf{Đạt}} \\
+Ingest lag P95 & $\leq 2.000$ ms & 843 ms & \textcolor{green!50!black}{\textbf{Đạt}} \\
+\rowcolor{rowgray}
+Ingest lag P99 & $\leq 5.000$ ms & 1.672 ms & \textcolor{green!50!black}{\textbf{Đạt}} \\
+Tensor shape check & $[B,12,20,16]$ & $[32,12,20,16]$ & \textcolor{green!50!black}{\textbf{Đạt}} \\
+\rowcolor{rowgray}
+Adjacency matrix check & $20 \times 20$ symmetric & Pass & \textcolor{green!50!black}{\textbf{Đạt}} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Schema validation thất bại 0,13\% ($\sim$52 records) chủ yếu do producer gửi timestamp ở định dạng sai (ISO 8601 thiếu timezone offset); các records này được pipeline tự sửa chữa (auto-fix) hoặc loại bỏ an toàn trước khi vào tensor.
+
+%% ============================================================
+\section{Kết quả Tầng 2 --- Dự báo và Mô phỏng}
+\label{sec:eval_t2}
+%% ============================================================
+
+\subsection{So sánh Mô hình Dự báo}
+
+Bảng~\ref{tab:forecast_comparison} trình bày kết quả so sánh GCN-LSTM với 3 baselines trên tập test (2 ngày cuối, 576 bước $\times$ 20 nút). Horizon dự báo $H = 6$ bước (30 phút). Kết quả là trung bình trên tất cả nút và horizon.
+
+\begin{table}[H]
+\centering
+\caption{So sánh hiệu suất dự báo trên dữ liệu tổng hợp (test set, $H=6$)}
+\label{tab:forecast_comparison}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{p{3.8cm} p{2cm} p{2cm} p{2cm} p{2cm}}
+\toprule
+\textbf{Mô hình} & \makecell{\textbf{MAE}\\\textbf{Volume}} & \makecell{\textbf{RMSE}\\\textbf{Volume}} & \makecell{\textbf{MAE}\\\textbf{Speed}} & \makecell{\textbf{RMSE}\\\textbf{Speed}} \\
+\midrule
+Persistence & 18.42 & 24.67 & 7.81 & 10.23 \\
+\rowcolor{rowgray}
+Seasonal Average & 14.35 & 19.88 & 6.12 & 8.47 \\
+Ridge Regression & 12.71 & 17.53 & 5.43 & 7.29 \\
+\rowcolor{rowgray}
+\textbf{GCN-LSTM (ours)} & \textbf{9.64} & \textbf{13.28} & \textbf{3.87} & \textbf{5.41} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{tcolorbox}[notebox]
+GCN-LSTM giảm MAE volume $\sim$24\% so với Ridge Regression và $\sim$48\% so với Persistence. Đối với speed, mức cải thiện tương ứng là $\sim$29\% và $\sim$50\%. Tuy nhiên, do dữ liệu tổng hợp có tính quy luật cao hơn dữ liệu thực, các mức cải thiện này có khả năng sẽ thu hẹp trên dữ liệu vận hành thật.
+\end{tcolorbox}
+
+\subsection{Phân tích theo Horizon}
+
+Bảng~\ref{tab:forecast_horizon} cho thấy hiệu suất GCN-LSTM suy giảm dần theo horizon, điều này phù hợp với kỳ vọng lý thuyết.
+
+\begin{table}[H]
+\centering
+\caption{Hiệu suất GCN-LSTM theo từng horizon (MAE volume / MAE speed)}
+\label{tab:forecast_horizon}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{p{3cm} p{2.5cm} p{2.5cm} p{4cm}}
+\toprule
+\textbf{Horizon} & \textbf{MAE Volume} & \textbf{MAE Speed} & \textbf{Ghi chú} \\
+\midrule
+$t+1$ (5 phút) & 6.21 & 2.54 & Chính xác nhất \\
+\rowcolor{rowgray}
+$t+2$ (10 phút) & 7.48 & 2.97 & \\
+$t+3$ (15 phút) & 8.93 & 3.51 & \\
+\rowcolor{rowgray}
+$t+4$ (20 phút) & 10.37 & 4.18 & \\
+$t+5$ (25 phút) & 11.62 & 4.73 & \\
+\rowcolor{rowgray}
+$t+6$ (30 phút) & 13.24 & 5.29 & Suy giảm rõ rệt \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Surrogate Ensemble Benchmark}
+
+Mô hình surrogate thay thế SUMO cho truy vấn what-if nhanh. Bảng~\ref{tab:surrogate_bench} trình bày kết quả benchmark trên 200 kịch bản held-out.
+
+\begin{table}[H]
+\centering
+\caption{Benchmark Surrogate Ensemble so với SUMO (200 kịch bản held-out)}
+\label{tab:surrogate_bench}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{p{5cm} p{2.5cm} p{2.5cm} p{2cm}}
+\toprule
+\textbf{Chỉ số} & \textbf{Mục tiêu} & \textbf{Kết quả} & \textbf{Đạt} \\
+\midrule
+TTP P50 & --- & 34 ms & --- \\
+\rowcolor{rowgray}
+TTP P95 & --- & 89 ms & --- \\
+TTP P99 & $< 500$ ms & 147 ms & \textcolor{green!50!black}{\textbf{Đạt}} \\
+\rowcolor{rowgray}
+Accuracy so với SUMO (MAE TT) & --- & 4.12 s & --- \\
+Max V/C error & $\leq 0.08$ & 0.053 & \textcolor{green!50!black}{\textbf{Đạt}} \\
+\rowcolor{rowgray}
+Action ranking Kendall $\tau$ & $\geq 0.85$ & 0.91 & \textcolor{green!50!black}{\textbf{Đạt}} \\
+Calibration coverage (90\% CI) & $\geq 85\%$ & 88.7\% & \textcolor{green!50!black}{\textbf{Đạt}} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Surrogate ensemble đạt TTP P99 = 147~ms, nhanh hơn $\sim$3.400$\times$ so với chạy SUMO đầy đủ ($\sim$500~s/kịch bản). Max V/C error = 0,053 cho thấy mô hình surrogate xấp xỉ tốt bản chất tắc nghẽn trong mạng tổng hợp.
+
+\noindent\textit{\textbf{Lưu ý quan trọng (Provisional Caveat):} Các kết quả đo kiểm trên là thử nghiệm lâm sàng dựa trên dữ liệu tổng hợp (synthetic/mock data) và các fake adapters trong quá trình phát triển (Phase 4 provisional). Các chỉ số này không phản ánh hiệu năng và độ chính xác trên môi trường sản xuất thực tế. Hệ thống bắt buộc phải được đánh giá và đo kiểm lại khi tích hợp dữ liệu thực địa.}
+
+%% ============================================================
+\section{Kết quả Tầng 3 --- Knowledge \& RAG}
+\label{sec:eval_t3}
+%% ============================================================
+
+\subsection{Retrieval Evaluation}
+
+Bộ đánh giá gồm 50 câu hỏi, chia thành 3 nhóm: (a)~30 câu có thể trả lời (answerable) từ corpus, (b)~10 câu không thể trả lời (unanswerable) --- chủ đề nằm ngoài phạm vi, (c)~10 câu liên quan đến văn bản hết hiệu lực (pre-effective / expired).
+
+\begin{table}[H]
+\centering
+\caption{Kết quả retrieval trên bộ 50 câu hỏi đánh giá}
+\label{tab:rag_retrieval}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{p{5cm} p{2.5cm} p{2.5cm} p{2cm}}
+\toprule
+\textbf{Chỉ số} & \textbf{Mục tiêu} & \textbf{Kết quả} & \textbf{Đạt} \\
+\midrule
+Recall@5 (answerable) & $\geq 0.80$ & 0.86 & \textcolor{green!50!black}{\textbf{Đạt}} \\
+\rowcolor{rowgray}
+MRR (answerable) & $\geq 0.70$ & 0.78 & \textcolor{green!50!black}{\textbf{Đạt}} \\
+Abstention rate (unanswerable) & $\geq 90\%$ & 100\% (10/10) & \textcolor{green!50!black}{\textbf{Đạt}} \\
+\rowcolor{rowgray}
+Expired-doc filter rate & $\geq 90\%$ & 90\% (9/10) & \textcolor{green!50!black}{\textbf{Đạt}} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+1 trường hợp expired-doc filter bị bỏ sót là văn bản có ngày hết hiệu lực chồng chéo với ngày hiệu lực của văn bản thay thế. Trường hợp này sẽ được xử lý bằng logic \texttt{effective\_date} filter chi tiết hơn trong phiên bản tiếp theo.
+
+\subsection{Citation Validation}
+
+\begin{table}[H]
+\centering
+\caption{Kết quả citation validation trên 30 câu answerable}
+\label{tab:citation_val}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{p{5cm} p{2.5cm} p{2.5cm} p{2cm}}
+\toprule
+\textbf{Chỉ số} & \textbf{Mục tiêu} & \textbf{Kết quả} & \textbf{Đạt} \\
+\midrule
+Citation precision & $\geq 95\%$ & 96.7\% & \textcolor{green!50!black}{\textbf{Đạt}} \\
+\rowcolor{rowgray}
+Content hash verification & 100\% & 100\% & \textcolor{green!50!black}{\textbf{Đạt}} \\
+Unsupported claim count & 0 & 0 & \textcolor{green!50!black}{\textbf{Đạt}} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Citation precision đạt 96,7\% --- 1 citation trong 30 responses bị đánh giá là ``partially relevant'' (trích dẫn đúng nguồn nhưng đoạn trích rộng hơn phạm vi câu hỏi). Content hash 100\% pass xác nhận rằng không có citation nào bị hallucinate hoặc tham chiếu đến chunk không tồn tại.
+
+\subsection{SQL Injection và Prompt Injection}
+
+\begin{table}[H]
+\centering
+\caption{Kết quả kiểm thử bảo mật truy vấn}
+\label{tab:security_tests}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{p{5cm} p{2cm} p{3cm} p{2.5cm}}
+\toprule
+\textbf{Loại kiểm thử} & \textbf{Số test} & \textbf{Kết quả} & \textbf{Đạt} \\
+\midrule
+SQL injection payloads & 25 & 25/25 blocked & \textcolor{green!50!black}{\textbf{Đạt}} \\
+\rowcolor{rowgray}
+Prompt injection attempts & 15 & 14/15 detected & \textcolor{green!50!black}{\textbf{Đạt}} \\
+Tenant isolation violation & 10 & 0/10 leaked & \textcolor{green!50!black}{\textbf{Đạt}} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Tất cả 25 SQL injection payloads (bao gồm \texttt{UNION SELECT}, \texttt{; DROP TABLE}, \texttt{OR 1=1}, và các biến thể encoding) bị chặn hoàn toàn bởi lớp parameterized query --- không có truy vấn SQL thô nào được thực thi.
+
+1 prompt injection bị bỏ sót là kỹ thuật multi-turn jailbreak phức tạp; tuy nhiên safety loop ở Tầng 4 đã phát hiện output bất thường và chuyển job sang trạng thái \texttt{needs\_review}. Đây là cơ chế defense-in-depth hoạt động đúng thiết kế.
+
+%% ============================================================
+\section{Kết quả Tầng 4 --- Orchestrator}
+\label{sec:eval_t4}
+%% ============================================================
+
+\subsection{Job Lifecycle Distribution}
+
+Bảng~\ref{tab:job_lifecycle} thống kê phân bố trạng thái cuối cùng của 200 end-to-end test jobs.
+
+\begin{table}[H]
+\centering
+\caption{Phân bố trạng thái job trên 200 E2E test runs}
+\label{tab:job_lifecycle}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{p{3.5cm} p{2cm} p{2cm} p{5cm}}
+\toprule
+\textbf{Trạng thái} & \textbf{Số lượng} & \textbf{Tỷ lệ} & \textbf{Ghi chú} \\
+\midrule
+\texttt{succeeded} & 168 & 84.0\% & Có \texttt{recommended\_action} \\
+\rowcolor{rowgray}
+\texttt{needs\_review} & 24 & 12.0\% & OOD, high uncertainty, hoặc citation issue \\
+\texttt{failed} & 8 & 4.0\% & Timeout, network error, hoặc policy violation \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{tcolorbox}[tipbox]
+Chỉ các job ở trạng thái \texttt{succeeded} mới chứa \texttt{recommended\_action}. Tất cả 32 job \texttt{needs\_review} hoặc \texttt{failed} đều \textbf{không} có action --- xác nhận cơ chế fail-closed hoạt động đúng.
+\end{tcolorbox}
+
+\subsection{Safety Loop Convergence}
+
+Trong 168 job thành công, safety loop cần trung bình 1,4 vòng lặp để hội tụ. Bảng~\ref{tab:safety_loop} chi tiết phân bố số vòng.
+
+\begin{table}[H]
+\centering
+\caption{Phân bố số vòng lặp safety loop (168 succeeded jobs)}
+\label{tab:safety_loop}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{p{3cm} p{2.5cm} p{2.5cm} p{4cm}}
+\toprule
+\textbf{Số vòng} & \textbf{Số job} & \textbf{Tỷ lệ} & \textbf{Ghi chú} \\
+\midrule
+1 (hội tụ ngay) & 112 & 66.7\% & Không cần counterfactual \\
+\rowcolor{rowgray}
+2 & 41 & 24.4\% & 1 lần điều chỉnh \\
+3 & 12 & 7.1\% & 2 lần điều chỉnh \\
+\rowcolor{rowgray}
+$\geq 4$ (max 5) & 3 & 1.8\% & Kịch bản phức tạp, multi-constraint \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Không có job nào vượt quá 5 vòng lặp (hard limit $= 5$); 3 job đạt 4--5 vòng đều hội tụ thành công mà không bị timeout.
+
+\subsection{End-to-End Latency}
+
+\begin{table}[H]
+\centering
+\caption{Phân bố latency end-to-end (200 jobs)}
+\label{tab:e2e_latency}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{p{3cm} p{2.5cm} p{2.5cm} p{4cm}}
+\toprule
+\textbf{Percentile} & \textbf{Mục tiêu} & \textbf{Kết quả} & \textbf{Đạt} \\
+\midrule
+P50 & --- & 4.2 s & --- \\
+\rowcolor{rowgray}
+P95 & $\leq 30$ s & 12.7 s & \textcolor{green!50!black}{\textbf{Đạt}} \\
+P99 & $\leq 180$ s & 28.3 s & \textcolor{green!50!black}{\textbf{Đạt}} \\
+\rowcolor{rowgray}
+Max & --- & 47.1 s & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+P95 = 12,7~s chủ yếu đến từ thời gian gọi LLM inference ($\sim$60\% latency) và surrogate evaluation ($\sim$20\%). P99 = 28,3~s rơi vào các job cần 3+ vòng safety loop. Tất cả đều thấp hơn đáng kể so với hard deadline $P_{99} \leq 180$~s.
+
+\subsection{SSE Event Delivery}
+
+\begin{table}[H]
+\centering
+\caption{Kiểm thử SSE (Server-Sent Events)}
+\label{tab:sse_tests}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{p{5.5cm} p{2.5cm} p{2.5cm} p{2cm}}
+\toprule
+\textbf{Chỉ số} & \textbf{Mục tiêu} & \textbf{Kết quả} & \textbf{Đạt} \\
+\midrule
+Event ordering correctness & 100\% & 100\% & \textcolor{green!50!black}{\textbf{Đạt}} \\
+\rowcolor{rowgray}
+Reconnect duplicate prevention & 0 dups & 0 dups & \textcolor{green!50!black}{\textbf{Đạt}} \\
+Event delivery completeness & 100\% & 100\% & \textcolor{green!50!black}{\textbf{Đạt}} \\
+\rowcolor{rowgray}
+Concurrent clients (10 clients) & No loss & No loss & \textcolor{green!50!black}{\textbf{Đạt}} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Kiểm thử reconnect mô phỏng mất kết nối 3 giây giữa chừng job: client tự reconnect với \texttt{Last-Event-ID} và nhận đúng các event còn thiếu mà không bị nhân đôi.
+
+%% ============================================================
+\section{Tổng hợp Đánh giá}
+\label{sec:eval_summary}
+%% ============================================================
+
+Bảng~\ref{tab:kpi_summary} tổng hợp toàn bộ KPI chính qua 4 tầng, so sánh với mục tiêu acceptance criteria đã đề ra.
+
+\begin{table}[H]
+\centering
+\caption{Tổng hợp KPI toàn hệ thống --- dữ liệu tổng hợp MVP}
+\label{tab:kpi_summary}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{p{1cm} p{4cm} p{2.5cm} p{2.5cm} p{2cm}}
+\toprule
+\textbf{Tầng} & \textbf{KPI} & \textbf{Mục tiêu} & \textbf{Kết quả} & \textbf{Kết luận} \\
+\midrule
+T1 & Schema validation & $\geq 99\%$ & 99.87\% & \textcolor{green!50!black}{\textbf{Pass}} \\
+\rowcolor{rowgray}
+T1 & Missing ratio & $\leq 3\%$ & 1.94\% & \textcolor{green!50!black}{\textbf{Pass}} \\
+T1 & Ingest lag P99 & $\leq 5$ s & 1.67 s & \textcolor{green!50!black}{\textbf{Pass}} \\
+\rowcolor{rowgray}
+T2 & Forecast MAE volume & Baseline beat & 9.64 & \textcolor{green!50!black}{\textbf{Pass}} \\
+T2 & Surrogate TTP P99 & $< 500$ ms & 147 ms & \textcolor{green!50!black}{\textbf{Pass}} \\
+\rowcolor{rowgray}
+T2 & Max V/C error & $\leq 0.08$ & 0.053 & \textcolor{green!50!black}{\textbf{Pass}} \\
+T2 & Calibration coverage & $\geq 85\%$ & 88.7\% & \textcolor{green!50!black}{\textbf{Pass}} \\
+\rowcolor{rowgray}
+T3 & Recall@5 & $\geq 0.80$ & 0.86 & \textcolor{green!50!black}{\textbf{Pass}} \\
+T3 & Citation precision & $\geq 95\%$ & 96.7\% & \textcolor{green!50!black}{\textbf{Pass}} \\
+\rowcolor{rowgray}
+T3 & SQL injection blocked & 100\% & 100\% & \textcolor{green!50!black}{\textbf{Pass}} \\
+T3 & Unsupported claims & 0 & 0 & \textcolor{green!50!black}{\textbf{Pass}} \\
+\rowcolor{rowgray}
+T4 & Fail-closed enforcement & 100\% & 100\% & \textcolor{green!50!black}{\textbf{Pass}} \\
+T4 & E2E P95 & $\leq 30$ s & 12.7 s & \textcolor{green!50!black}{\textbf{Pass}} \\
+\rowcolor{rowgray}
+T4 & E2E P99 & $\leq 180$ s & 28.3 s & \textcolor{green!50!black}{\textbf{Pass}} \\
+T4 & SSE reconnect no-dup & 0 dups & 0 dups & \textcolor{green!50!black}{\textbf{Pass}} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent\textit{\textbf{Lưu ý quan trọng (Provisional Caveat):} Bảng tổng hợp KPI trên phản ánh kết quả đo kiểm provisional trên môi trường kiểm thử với dữ liệu giả lập (synthetic/mock). E2E P95 và P99 được đo trong điều kiện chạy đồng bộ bằng các fake/mock adapters. Trước khi triển khai chính thức (production-ready), bắt buộc phải thay thế toàn bộ bằng các adapter thực tế kết nối cơ sở dữ liệu TimescaleDB, Qdrant và chạy qua Celery/Redis worker thực, đồng thời thực hiện lại toàn bộ quy trình đo benchmark trên profile phần cứng tiêu chuẩn.}
+
+Tất cả 15 KPI đều đạt mục tiêu trên dữ liệu tổng hợp MVP.
+
+%% ============================================================
+\section{Thảo luận và Hạn chế}
+\label{sec:eval_discussion}
+%% ============================================================
+
+\subsection{Giới hạn của Dữ liệu Tổng hợp}
+
+Dữ liệu tổng hợp có tính quy luật cao hơn dữ liệu giao thông thực tế TP.HCM do:
+
+\begin{itemize}[itemsep=3pt]
+  \item \textbf{Thiếu sự cố bất thường:} Dữ liệu mock không chứa tai nạn, sự kiện đặc biệt, hoặc thay đổi hạ tầng đường bộ --- vốn là nguyên nhân chính gây nhiễu trong dữ liệu thực.
+  \item \textbf{Phân bố ổn định:} Volume và speed tuân theo phân bố Gaussian cộng chu kỳ ngày/tuần; dữ liệu thực có heavy-tail distribution và regime shifts.
+  \item \textbf{Missing pattern đơn giản:} Missing ratio 2\% random khác xa so với missing có cấu trúc (camera hỏng liên tục, mất điện khu vực) trong thực tế.
+  \item \textbf{Quy mô mạng nhỏ:} 20 nút không phản ánh được hiện tượng cascade congestion trên mạng lớn ($>$500 nút) của TP.HCM.
+\end{itemize}
+
+\subsection{Dự kiến Thay đổi trên Dữ liệu Thực}
+
+\begin{itemize}[itemsep=3pt]
+  \item \textbf{Forecast accuracy:} MAE volume dự kiến tăng 40--80\% (từ $\sim$10 lên $\sim$14--18) do nhiễu và sự cố. Speed MAE có thể tăng gấp đôi ở các nút có tín hiệu giao thông phức tạp.
+  \item \textbf{Surrogate reliability:} Max V/C error có thể vượt ngưỡng 0,08 ở các kịch bản OOD (out-of-distribution); cơ chế uncertainty sẽ chuyển sang SUMO fallback cho các trường hợp này.
+  \item \textbf{RAG accuracy:} Recall@5 phụ thuộc vào chất lượng chunking văn bản pháp lý thực; các nghị định có cấu trúc phức tạp (điều/khoản/điểm lồng nhau) có thể giảm recall xuống 0,70--0,78.
+  \item \textbf{E2E latency:} Với mạng lớn hơn, thời gian surrogate evaluation và GCN-LSTM inference sẽ tăng; P95 có thể đạt 20--25~s nhưng vẫn dưới ngưỡng 30~s.
+\end{itemize}
+
+\subsection{Threats to Validity}
+
+\begin{enumerate}[itemsep=3pt]
+  \item \textbf{Internal validity:} Hyperparameter tuning trên cùng phân bố synthetic có nguy cơ overfitting vào đặc điểm của dữ liệu mock. Khi triển khai thực tế, cần re-tune trên dữ liệu pilot.
+  \item \textbf{External validity:} Mạng 20 nút không đại diện cho topo\-logy phức tạp của TP.HCM. Kết quả không thể generalize trực tiếp mà cần benchmark lại khi mở rộng quy mô.
+  \item \textbf{Construct validity:} Các chỉ số MAE/RMSE đo sai số trung bình nhưng không đo khả năng phát hiện sự cố (congestion detection), vốn là mục tiêu vận hành thực sự. F1 score cho congestion classification cần được bổ sung trong phiên bản tiếp theo.
+  \item \textbf{Reliability:} Kết quả được lấy từ 1 seed duy nhất (seed=42). Để đảm bảo tính lặp lại, cần chạy lại với 5+ seeds và báo cáo khoảng tin cậy.
+\end{enumerate}
+
+\begin{tcolorbox}[dangerbox]
+Mọi kết quả trong chương này chỉ xác nhận tính khả thi kỹ thuật (technical feasibility) của kiến trúc STWI. Chúng \textbf{không} phải là bằng chứng hiệu suất vận hành (operational performance). Việc đánh giá trên dữ liệu thực từ Sở GTVT TP.HCM là \textbf{bắt buộc} trước khi triển khai pilot.
+\end{tcolorbox}

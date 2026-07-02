@@ -1,0 +1,34 @@
+name: stwi-phase4
+
+# Phase 4 provisional API server — What-If Orchestrator.
+# Uses InMemoryJobStore (no Redis/Celery yet — Phase 5 upgrade).
+#
+# Usage:
+#   docker compose -f infra/harness/compose.phase4.yaml up --build
+#   docker compose -f infra/harness/compose.phase4.yaml down
+#
+# API available at: http://localhost:8000
+# OpenAPI docs:     http://localhost:8000/docs
+#
+# WARNING: InMemoryJobStore loses all jobs on container restart.
+#          Replace with Redis-backed store before production.
+
+services:
+  stwi-api:
+    build:
+      context: ../..
+      dockerfile: infra/harness/Dockerfile.phase4
+    container_name: stwi-api-phase4
+    restart: unless-stopped
+    ports:
+      - "${STWI_API_PORT:-8000}:8000"
+    environment:
+      PYTHONIOENCODING: "utf-8"
+      LOG_LEVEL: "${LOG_LEVEL:-info}"
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

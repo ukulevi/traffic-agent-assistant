@@ -30,8 +30,8 @@ jobs:
       - name: Stage public slide assets
         run: |
           mkdir -p _site
-          cp index.html _site/
-          cp -R css js sections _site/
+          cp slides/index.html _site/
+          cp -R slides/css slides/js slides/sections _site/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0.0",
+  "dataset_id": "bdd100k_images_10k",
+  "inventory_at": "2026-06-22T05:35:52+00:00",
+  "source_url": "http://bdd-data.berkeley.edu/download.html",
+  "license_url": "http://bdd-data.berkeley.edu/download.html",
+  "license_decision": "approved_for_educational_research_not_for_profit_with_notice",
+  "data_origin": "external_public_images",
+  "storage_scope": "offline_perception_training_only",
+  "publish": false,
+  "role": "detector domain pretraining/ablation; never baseline forecasting input",
+  "contains_raw_video": false,
+  "contains_raw_images": true,
+  "extracted": false,
+  "labels_present": false,
+  "split_policy": "Treat as train-only until sampling provenance and labels are verified; do not place derivatives across multiple splits.",
+  "archive_path": "data/external/vision/bdd100k/images_10k.zip",
+  "archive_size_bytes": 1103797977,
+  "archive_sha256": "fd95e3ba04afeb89f724e080ea738185decaefe0250471a3a340c19f1f79a118",
+  "zip_integrity": "pass",
+  "image_count": 10000,
+  "uncompressed_size_bytes": 1124992026,
+  "sample_images": [
+    {
+      "path": "10k/train/3ccab566-c80e0000.jpg",
+      "width": 1280,
+      "height": 720,
+      "format": "JPEG"
+    },
+    {
+      "path": "10k/train/34eb51fe-89cb0bc8.jpg",
+      "width": 1280,
+      "height": 720,
+      "format": "JPEG"
+    },
+    {
+      "path": "10k/train/001c2a14-c7138401.jpg",
+      "width": 1280,
+      "height": 720,
+      "format": "JPEG"
+    }
+  ]
+}

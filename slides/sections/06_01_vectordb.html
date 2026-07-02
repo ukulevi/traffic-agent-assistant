@@ -1,0 +1,65 @@
+<div class="slide slide-container" style="justify-content:flex-start;padding-top:55px;">
+    <h2 style="font-size:2.4rem;font-weight:800;color:#10b981;margin-bottom:30px;text-align:center;width:100%;">
+        <i class="fa-solid fa-magnifying-glass"></i> Vector DB & RAG Pipeline
+    </h2>
+    <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:28px;width:90%;margin:0 auto;">
+        <div>
+            <h3 style="color:#10b981;font-size:1.15rem;margin-bottom:14px;">Nguồn Tri Thức Pháp Lý</h3>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+                <div style="background:rgba(16,185,129,0.07);border:1px solid rgba(16,185,129,0.2);border-radius:10px;padding:12px 16px;display:flex;gap:12px;align-items:center;">
+                    <span style="font-size:1.3rem;">📋</span>
+                    <div><b style="font-size:0.95rem;color:#065f46;">Luật & Nghị Định</b><br><span style="font-size:0.85rem;color:#475569;">Luật 35/2024/QH15 và 36/2024/QH15 · hiệu lực 01/01/2025</span></div>
+                </div>
+                <div style="background:rgba(14,165,233,0.07);border:1px solid rgba(14,165,233,0.22);border-radius:10px;padding:12px 16px;display:flex;gap:12px;align-items:center;">
+                    <span style="font-size:1.3rem;">🔎</span>
+                    <div><b style="font-size:0.95rem;color:#075985;">Firecrawl Snapshot Gate</b><br><span style="font-size:0.85rem;color:#475569;">HTTPS allowlist · hash · review trước khi index</span></div>
+                </div>
+                <div style="background:rgba(16,185,129,0.07);border:1px solid rgba(16,185,129,0.2);border-radius:10px;padding:12px 16px;display:flex;gap:12px;align-items:center;">
+                    <span style="font-size:1.3rem;">📖</span>
+                    <div><b style="font-size:0.95rem;color:#065f46;">SOP Vận Hành</b><br><span style="font-size:0.85rem;color:#475569;">Quy trình điều tiết, phân luồng, xử lý sự cố</span></div>
+                </div>
+                <div style="background:rgba(16,185,129,0.07);border:1px solid rgba(16,185,129,0.2);border-radius:10px;padding:12px 16px;display:flex;gap:12px;align-items:center;">
+                    <span style="font-size:1.3rem;">🗺</span>
+                    <div><b style="font-size:0.95rem;color:#065f46;">Bản Đồ Hạ Tầng</b><br><span style="font-size:0.85rem;color:#475569;">Metadata nút giao, làn đường, đèn tín hiệu</span></div>
+                </div>
+            </div>
+            <div style="margin-top:16px;background:white;border-radius:12px;padding:16px;border:1px solid #e2e8f0;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <b style="color:#334155;">BGE-M3 Embedding</b>
+                    <span style="font-size:0.85rem;color:#10b981;background:rgba(16,185,129,0.1);padding:2px 8px;border-radius:10px;">dim=1024</span>
+                </div>
+                <div style="font-size:0.9rem;color:#475569;">Đa ngôn ngữ Tiếng Việt · chunk theo điều/khoản · metadata hiệu lực</div>
+            </div>
+        </div>
+        <div>
+            <h3 style="color:#10b981;font-size:1.15rem;margin-bottom:14px;">RAG Query Flow</h3>
+            <div style="display:flex;flex-direction:column;gap:8px;font-size:0.9rem;">
+                <div style="background:rgba(16,185,129,0.06);border-left:4px solid #10b981;padding:10px 14px;border-radius:0 8px 8px 0;">
+                    <b>1. Query Embedding</b> → BGE-M3(query) → vector q
+                </div>
+                <div style="background:rgba(16,185,129,0.06);border-left:4px solid #10b981;padding:10px 14px;border-radius:0 8px 8px 0;">
+                    <b>2. Qdrant Hybrid Search</b> → Top-K=10 candidates
+                </div>
+                <div style="background:rgba(16,185,129,0.06);border-left:4px solid #10b981;padding:10px 14px;border-radius:0 8px 8px 0;">
+                    <b>3. Reranking (BGE-Reranker)</b> → Top-3 chunks
+                </div>
+                <div style="background:rgba(16,185,129,0.06);border-left:4px solid #10b981;padding:10px 14px;border-radius:0 8px 8px 0;">
+                    <b>4. Effective-date Filter</b> · thiếu căn cứ hợp lệ → từ chối
+                </div>
+                <div style="background:rgba(16,185,129,0.15);border-left:4px solid #10b981;padding:10px 14px;border-radius:0 8px 8px 0;font-weight:700;color:#065f46;">
+                    ✓ Response kèm <code>citations[]</code> đã validate
+                </div>
+            </div>
+            <div style="margin-top:14px;display:flex;gap:10px;">
+                <div style="flex:1;background:white;border-radius:10px;padding:12px;border-top:3px solid #10b981;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,0.06);">
+                    <div style="font-size:1.2rem;font-weight:800;color:#10b981;">Citation precision</div>
+                    <div style="font-size:0.9rem;font-weight:700;color:#1e293b;">≥ 95%</div>
+                </div>
+                <div style="flex:1;background:white;border-radius:10px;padding:12px;border-top:3px solid #0ea5e9;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,0.06);">
+                    <div style="font-size:1.2rem;font-weight:800;color:#0ea5e9;">Văn bản hiệu lực</div>
+                    <div style="font-size:0.9rem;font-weight:700;color:#1e293b;">100%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

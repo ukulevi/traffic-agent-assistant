@@ -30,7 +30,7 @@ STWI là hệ thống **hỗ trợ ra quyết định**, chuyển câu hỏi Wha
 ```mermaid
 flowchart TB
     subgraph T1["Tầng 1 — Thu thập và chuẩn hóa"]
-        CAM["Camera demo ≤ 20\nYOLOv8 + ByteTrack"]
+        CAM["Camera demo ≤ 20\nLocal YOLOv8 + ByteTrack"]
         SENSOR["Cảm biến MQTT"]
         BUILD["Đồng bộ node/time\nX[B,12,N,16] + M[B,12,N,16]"]
         CAM --> BUILD

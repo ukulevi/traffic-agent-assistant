@@ -27,7 +27,22 @@
 | SOP vận hành | Có cơ quan ban hành, phiên bản, ngày duyệt và phạm vi áp dụng |
 | Case lịch sử | Đã ẩn danh, có outcome và xác nhận của operator |
 
-### 1.2. Chunk và metadata
+### 1.2. Firecrawl source registry và snapshot gate
+
+Firecrawl được dùng để discovery/scrape nguồn luật, văn bản hướng dẫn và tài liệu vận hành; kết quả crawl không được đưa thẳng vào Qdrant. Mọi bản ghi Firecrawl phải đi qua `source_registry` và được lưu thành snapshot ứng viên dưới `data/derived/private/phase3_knowledge/firecrawl_snapshots/` bằng `scripts/infra/build_firecrawl_snapshot.py`.
+
+| Nhóm nguồn | Vai trò | Chính sách promotion |
+|---|---|---|
+| `vanban.chinhphu.vn`, `datafiles.chinhphu.vn` | Nguồn nội dung pháp lý chính thức | Có thể tạo ứng viên corpus nhưng vẫn cần reviewer pháp lý duyệt trước khi index |
+| `vbpl.vn` | Đối soát hiệu lực, văn bản liên quan, trạng thái thay thế | Không làm nguồn nội dung canonical; chỉ hỗ trợ kiểm tra metadata |
+| Cổng TP.HCM/Sở/CSGT công khai | Ngữ cảnh vận hành, kế hoạch điều tiết, tin chỉ đạo | Không được coi là SOP nếu thiếu số hiệu, cơ quan ban hành, ngày duyệt, phiên bản và phạm vi |
+| Kho SOP nội bộ | SOP vận hành đã phê duyệt | Chỉ được index khi có owner, version, ngày duyệt và scope áp dụng |
+
+Snapshot Firecrawl phải ghi `firecrawl_job_id`, `source_url`, `source_id`, `source_tier`, `content_hash`, `retrieved_at`, `review_status`, `review_owner`, `eligible_for_promotion` và `approved_for_index=false` mặc định. Chỉ bản ghi đã được legal/SOP owner chuyển sang trạng thái approved mới được chunk và index. URL không dùng HTTPS hoặc không thuộc allowlist phải bị loại và ghi vào trường `rejected` của manifest.
+
+Promotion phải đi qua `scripts/infra/review_firecrawl_snapshot.py --reviewer <owner> --approve <snapshot_id>` hoặc `--reject <snapshot_id>`. Script này chỉ ghi manifest đã review, không gọi Qdrant; approval thất bại nếu thiếu reviewer, `snapshot_id` không tồn tại, hoặc bản ghi không có `eligible_for_promotion=true`.
+
+### 1.3. Chunk và metadata
 
 Không chunk thuần theo câu. Mỗi chunk phải giữ nguyên điều/khoản hoặc một đơn vị SOP hoàn chỉnh.
 
@@ -48,7 +63,7 @@ Không chunk thuần theo câu. Mỗi chunk phải giữ nguyên điều/khoản
 
 Qdrant dùng dense embedding BGE-m3 và sparse/keyword signal cho hybrid retrieval. Query phải filter `effective_from <= scenario_time`, `effective_to` null hoặc lớn hơn scenario time, và `superseded=false`.
 
-### 1.3. Retrieval pipeline
+### 1.4. Retrieval pipeline
 
 ```mermaid
 flowchart LR
@@ -131,6 +146,8 @@ Case lịch sử/corner case là collection riêng có scenario features, outcom
 | Văn bản hết hiệu lực | Effective-date filter + review định kỳ + superseded flag |
 | SQL injection | Typed QuerySpec + parameterized builder + read-only role |
 | Citation giả | Source allowlist + provision/content hash |
+| Firecrawl ingest nhầm nguồn | HTTPS + source registry allowlist + snapshot manifest; mặc định `approved_for_index=false`; promotion yêu cầu reviewer và `snapshot_id` explicit |
+| Tin công khai bị nâng thành SOP | Bắt buộc owner, số hiệu/version, ngày duyệt và phạm vi trước khi promotion |
 | Rò rỉ case vận hành | RBAC, tenant filter, audit log và ẩn danh |
 | Corpus lỗi thời | Owner pháp lý và lịch kiểm tra hàng tháng trong MVP |
 
@@ -138,6 +155,7 @@ Case lịch sử/corner case là collection riêng có scenario features, outcom
 
 - Bộ test retrieval có tối thiểu 50 câu hỏi, gồm câu không trả lời được và văn bản hết hiệu lực.
 - Citation precision ≥ 95% trên bộ test; unsupported claim phải bằng 0 sau validator/abstention.
+- Firecrawl snapshot/review test phải chứng minh URL ngoài allowlist bị reject, nguồn công khai không tự thành SOP, mọi candidate mặc định chưa được index, và chỉ `snapshot_id` đủ điều kiện mới được reviewer approve.
 - QuerySpec test bao phủ metric, filter, limit, tenant isolation và payload độc hại.
 - Không có đường thực thi SQL thô từ output LLM.
 - Mọi failure của retrieval/query được truyền thành trạng thái có cấu trúc, không bị che bởi câu trả lời tự do.

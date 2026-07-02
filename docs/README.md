@@ -9,6 +9,7 @@
 | DOC-03 | [Knowledge & Query](./03_Knowledge_Base_and_RAG_Design.md) | Qdrant, pháp lý, QuerySpec và citations |
 | DOC-04 | [Orchestrator & Safety](./04_AI_Agent_Orchestrator_CF_VLA.md) | Async API, SSE và Counterfactual Safety Loop |
 | DOC-05 | [Implementation Plan](./05_Implementation_Plan.md) | Timeline và phase gates 13 tuần |
+| Runbook | [Local Vision Training](./guides/vision_local_training_runbook.md) | Roboflow export, manifest, validation và train YOLOv8 local |
 
 ## Quy tắc thay đổi
 
