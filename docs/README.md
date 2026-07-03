@@ -15,5 +15,5 @@
 
 - Cập nhật `project_contract.json` trước khi đổi shape, SLA, status hoặc công nghệ lõi.
 - Cập nhật DOC tương ứng, changelog, báo cáo và slides trong cùng pull request.
-- Chạy `python scripts/validate_docs.py` và contract tests trước khi merge.
+- Chạy `python scripts/validation/validate_docs.py` và `python -m unittest tests.contracts.test_project_contract` trước khi merge.
 - Nội dung trong [`archive/`](./archive/) không được dùng làm yêu cầu triển khai.

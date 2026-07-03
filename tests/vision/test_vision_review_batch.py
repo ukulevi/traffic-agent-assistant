@@ -13,10 +13,12 @@ from scripts.validation.evaluate_vision_roi_ap import (
     PredictionRecord,
     evaluate_class_ap50,
     filter_targets,
+)
+from scripts.data_prep.prepare_vision_review_batch import prepare_review_batch
+from stwi.tooling.vision_training.external_models import (
     normalize_class_aliases,
     normalize_prompt_classes,
 )
-from scripts.data_prep.prepare_vision_review_batch import prepare_review_batch
 
 
 def write_csv(path: Path, rows: list[dict[str, str]]) -> None:

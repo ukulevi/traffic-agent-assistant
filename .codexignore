@@ -1,0 +1,71 @@
+# Best-effort Codex/Symphony scan exclusions for this STWI repository.
+# Keep canonical source files visible: AGENTS.md, README.md,
+# project_contract.json, WORKFLOW.md, src/, scripts/, tests/, docs/, report/,
+# and slides/ are intentionally not excluded as whole trees.
+
+# VCS and editor state
+.git/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Dependency and virtual environment directories
+node_modules/
+.venv/
+venv/
+env/
+ENV/
+
+# Python and JavaScript caches/build outputs
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+_site/
+web_deploy/
+
+# Generated render/build scratch
+render_tmp/
+docs/images/mermaid_*.png
+report/chapters/temp_*.md
+
+# Private or large STWI data/model artifacts
+data/external/
+data/quarantine/
+data/derived/private/
+runs/
+*.yolov8/
+*.yolov8 (*/
+*.pt
+*.pth
+*.onnx
+*.engine
+*.safetensors
+
+# Large media, archives, logs, and progress files
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+*.zip
+*.tar
+*.tgz
+*.gz
+*.7z
+*.log
+*.jsonl
+data/manifests/*_progress.jsonl
+data/manifests/*_dry_run.json
+data/manifests/*_delete_manifest.json
+
+# Local secrets and temporary environment files
+.env
+.env.local
+.env.*.local
+.env.symphony.local

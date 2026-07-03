@@ -11,6 +11,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import statistics
 import subprocess
@@ -26,6 +27,20 @@ from urllib.parse import urlsplit
 DEFAULT_OUTPUT_ROOT = Path("data/quarantine/rtsp_frames")
 SAFE_SOURCE_CHARACTERS = frozenset(
     "abcdefghijklmnopqrstuvwxyz0123456789-_"
+)
+RTSP_URL_PATTERN = re.compile(r"\brtsps?://[^\s'\"<>]+", re.IGNORECASE)
+IMAGE_BASE64_PATTERN = re.compile(
+    r"\bdata:image/[^;\s]+;base64,[A-Za-z0-9+/=\r\n]+",
+    re.IGNORECASE,
+)
+LONG_BASE64_PATTERN = re.compile(r"\b[A-Za-z0-9+/]{80,}={0,2}\b")
+STREAM_METADATA_FIELDS = (
+    "codec_name",
+    "codec_type",
+    "width",
+    "height",
+    "avg_frame_rate",
+    "pix_fmt",
 )
 
 
@@ -77,10 +92,18 @@ def run_media_command(
     except subprocess.TimeoutExpired as exc:
         raise CaptureError("media command timed out") from exc
     except subprocess.CalledProcessError as exc:
-        detail = (exc.stderr or "unknown media error").strip()[-500:]
+        detail = redact_sensitive_text(exc.stderr or "unknown media error")
+        detail = detail.strip()[-500:] or "unknown media error"
         raise CaptureError(f"media command failed: {detail}") from exc
     except OSError as exc:
         raise CaptureError("could not start ffmpeg/ffprobe") from exc
+
+
+def redact_sensitive_text(text: str) -> str:
+    """Remove RTSP endpoints and image payloads from operator-facing errors."""
+    redacted = IMAGE_BASE64_PATTERN.sub("[redacted-image-base64]", text)
+    redacted = RTSP_URL_PATTERN.sub("[redacted-rtsp-url]", redacted)
+    return LONG_BASE64_PATTERN.sub("[redacted-base64]", redacted)
 
 
 def validate_rtsp_url(rtsp_url: str) -> None:
@@ -88,6 +111,15 @@ def validate_rtsp_url(rtsp_url: str) -> None:
     parsed = urlsplit(rtsp_url)
     if parsed.scheme not in {"rtsp", "rtsps"} or not parsed.hostname:
         raise ValueError("STWI_RTSP_URL must be a valid rtsp:// or rtsps:// URL")
+
+
+def sanitize_stream_metadata(stream: dict[str, Any]) -> dict[str, Any]:
+    """Keep only non-sensitive ffprobe fields needed for capture review."""
+    return {
+        field: stream[field]
+        for field in STREAM_METADATA_FIELDS
+        if field in stream
+    }
 
 
 def probe_stream(rtsp_url: str) -> dict[str, Any]:
@@ -269,7 +301,7 @@ def capture(config: CaptureConfig, rtsp_url: str) -> Path:
             "raw_video_retained": False,
             "quality_rejects_removed": quality_reject_count,
             "exact_duplicates_removed": duplicate_count,
-            "stream": stream,
+            "stream": sanitize_stream_metadata(stream),
             "frames": [
                 {
                     "path": frame.name,
@@ -329,7 +361,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         session_dir = capture(config, rtsp_url)
     except (CaptureError, ValueError) as exc:
-        print(f"capture failed: {exc}", file=sys.stderr)
+        redacted_msg = redact_sensitive_text(str(exc))
+        print(f"capture failed: {redacted_msg}", file=sys.stderr)
         return 1
     print(session_dir)
     return 0

@@ -780,6 +780,31 @@ The runtime loader reads only:
 data/derived/private/vision_models/official/model_artifact.json
 ```
 
+## Edge RTSP Capture Guardrails
+
+Use `edge_camera_1` as the reviewed source id for the first edge RTSP capture
+slice. The id is intentionally lowercase and underscore-only so it passes the
+capture script allowlist while remaining stable for later manifest annotation.
+
+The RTSP endpoint must be supplied only through the local `STWI_RTSP_URL`
+environment variable. Do not paste the endpoint, credentials, signed URLs, image
+base64, raw video paths, or raw video references into repository files, issue
+trackers, logs, manifests, or command examples. The capture command should keep
+the endpoint out of argv-visible examples:
+
+```powershell
+python scripts/data_prep/capture_rtsp_frames.py --source-id edge_camera_1 --interval-seconds 5 --max-frames 24
+```
+
+`capture_rtsp_frames.py` writes sparse JPEG frames and a quarantine
+`manifest.json` under the configured output root. The manifest may include
+source id, session id, frame hashes, sampling interval, privacy status, and
+sanitized ffprobe stream metadata; it must not include the RTSP endpoint,
+credentials, image base64, or a raw video file reference. If the environment
+variable is missing, the URL is not `rtsp://` or `rtsps://`, ffmpeg/ffprobe
+fails, or no usable frames are produced, the command fails closed and removes
+the partial capture directory.
+
 ## Runtime Boundary
 
 The trained detector feeds only the Tier 1 CCTV aggregate path:

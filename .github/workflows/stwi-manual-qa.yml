@@ -1,0 +1,71 @@
+name: STWI Manual QA
+
+on:
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: "QA suite to run"
+        required: true
+        default: "core"
+        type: choice
+        options:
+          - core
+          - project-management
+          - tier3-offline
+          - tier4-contracts
+          - all-light
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stwi-manual-qa-${{ github.ref }}-${{ inputs.suite }}
+  cancel-in-progress: true
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Core repository guards
+        if: inputs.suite == 'core' || inputs.suite == 'all-light'
+        run: |
+          python scripts/validation/validate_docs.py
+          python scripts/validation/validate_ci_guardrails.py
+          python -m unittest tests.contracts.test_project_contract
+          node --check slides/js/presentation.js
+          node --check slides/js/presentation-tools.js
+          git diff --check
+
+      - name: Project management tooling tests
+        if: inputs.suite == 'project-management' || inputs.suite == 'all-light'
+        run: |
+          python -m unittest \
+            tests.project_management.test_symphony_budget_guard \
+            tests.project_management.test_sync_codex_claude_mcp \
+            tests.project_management.test_symphony_workspace_cleanup \
+            tests.validation.test_validate_ci_guardrails
+
+      - name: Tier 3 offline contract tests
+        if: inputs.suite == 'tier3-offline' || inputs.suite == 'all-light'
+        run: |
+          python -m unittest \
+            tests.t3_knowledge.test_t3_contracts \
+            tests.t3_knowledge.test_t3_firecrawl_review \
+            tests.t3_knowledge.test_t3_firecrawl_snapshot
+
+      - name: Tier 4 contract and safety tests
+        if: inputs.suite == 'tier4-contracts' || inputs.suite == 'all-light'
+        run: |
+          python -m unittest \
+            tests.t4_orchestrator.test_t4_contracts \
+            tests.t4_orchestrator.test_t4_safety \
+            tests.t4_orchestrator.test_t4_runtime_boundaries

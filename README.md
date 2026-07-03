@@ -20,11 +20,18 @@ STWI là MVP 13 tuần hỗ trợ người vận hành đánh giá kịch bản 
 ## Kiểm tra
 
 ```powershell
-python scripts/validate_docs.py
-python -m unittest tests.test_project_contract
+python scripts/validation/validate_docs.py
+python -m unittest tests.contracts.test_project_contract
 ```
 
 PDF được build từ `report/main.tex`; slides GitHub Pages được nạp từ `slides/sections/` qua `slides/js/presentation.js`.
+
+## Repository structure
+
+Reusable code lives under `src/stwi/`; command-line entrypoints under `scripts/`
+should stay thin wrappers around importable modules. See
+[`docs/guides/repository_structure.md`](./docs/guides/repository_structure.md)
+for the current layout and vision-tooling ownership rules.
 
 ## Local vision detector
 

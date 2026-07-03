@@ -8,82 +8,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from stwi.tooling.vision_training.external_models import (
+    build_external_verdict,
+    load_external_manifest,
+)
+
 try:
     from scripts.validation.evaluate_vision_roi_ap import evaluate_roi_ap
-    from scripts.training.promote_vision_model import REQUIRED_STWI_CLASSES
-    from scripts.training.train_vision_model import sha256_file
 except ModuleNotFoundError:
     from evaluate_vision_roi_ap import evaluate_roi_ap
-    from promote_vision_model import REQUIRED_STWI_CLASSES
-    from train_vision_model import sha256_file
-
-
-def load_external_manifest(manifest_path: Path) -> dict[str, Any]:
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if manifest.get("task") != "external_vision_model_candidate":
-        raise ValueError("manifest is not an external vision model candidate")
-    weights = Path(str(manifest.get("weights", "")))
-    if not weights.is_file():
-        raise FileNotFoundError(f"weights file is missing: {weights}")
-    expected_sha = manifest.get("weights_sha256")
-    if expected_sha != sha256_file(weights):
-        raise ValueError("weights sha256 does not match external manifest")
-    missing_classes = set(manifest.get("missing_stwi_classes", []))
-    if missing_classes:
-        raise ValueError(
-            "external model class map is incomplete: "
-            + ", ".join(sorted(missing_classes))
-        )
-    mapped_classes = set(manifest.get("stwi_class_map", {}).values())
-    missing_mapped = REQUIRED_STWI_CLASSES - mapped_classes
-    if missing_mapped:
-        raise ValueError(
-            "external model does not map all STWI classes: "
-            + ", ".join(sorted(missing_mapped))
-        )
-    return manifest
-
-
-def build_external_verdict(
-    *,
-    map50: float,
-    seconds_per_image: float,
-    min_map50: float,
-    splits: list[str],
-    max_images: int | None,
-    baseline_map50: float | None,
-) -> dict[str, Any]:
-    reasons: list[str] = []
-    is_sample = max_images is not None
-    has_test = "test" in splits
-    if is_sample:
-        reasons.append("sample_only_not_promotable")
-    if not has_test:
-        reasons.append("test_split_not_evaluated")
-    if baseline_map50 is not None and map50 < baseline_map50:
-        reasons.append("below_current_best_candidate")
-    if map50 < min_map50:
-        reasons.append("below_mvp_map50_gate")
-    if seconds_per_image <= 0:
-        reasons.append("latency_not_recorded")
-
-    if map50 >= min_map50 and not is_sample and has_test:
-        status = "metric_gate_passed_requires_privacy_and_human_review"
-    elif map50 >= min_map50:
-        status = "metric_promising_requires_full_gate"
-    elif baseline_map50 is not None and map50 > baseline_map50 and is_sample:
-        status = "sample_beats_current_best_run_full_validation"
-    else:
-        status = "not_promotable"
-
-    return {
-        "status": status,
-        "map50": map50,
-        "min_map50": min_map50,
-        "seconds_per_image": seconds_per_image,
-        "baseline_map50": baseline_map50,
-        "reasons": reasons,
-    }
 
 
 def benchmark_external_model(

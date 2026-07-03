@@ -2,15 +2,34 @@ name: Build LaTeX PDF -- STWI Technical Report v2.0
 
 on:
   push:
+    paths:
+      - "report/**"
+      - "docs/**"
+      - "project_contract.json"
+      - "scripts/validation/**"
+      - "tests/contracts/**"
+      - ".github/workflows/build.yml"
   pull_request:
+    paths:
+      - "report/**"
+      - "docs/**"
+      - "project_contract.json"
+      - "scripts/validation/**"
+      - "tests/contracts/**"
+      - ".github/workflows/build.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: stwi-report-build-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-pdf:
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -96,7 +115,7 @@ jobs:
         with:
           name: stwi-technical-report-pdf
           path: "*.pdf"
-          retention-days: 30
+          retention-days: 14
 
       - name: Upload LaTeX Logs (always, for debugging)
         if: always()
@@ -110,7 +129,7 @@ jobs:
             report/main.lof
             report/main.lot
             latex_errors.md
-          retention-days: 7
+          retention-days: 3
 
   release:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

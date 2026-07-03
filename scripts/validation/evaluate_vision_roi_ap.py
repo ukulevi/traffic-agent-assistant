@@ -13,6 +13,10 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from PIL import Image
+from stwi.tooling.vision_training.external_models import (
+    normalize_class_aliases,
+    normalize_prompt_classes,
+)
 
 try:
     from scripts.validation.analyze_vision_validation_errors import (
@@ -47,41 +51,6 @@ class PredictionRecord:
     box: Box
     confidence: float
     normalized_area: float
-
-
-def normalize_prompt_classes(values: list[str] | None) -> list[str]:
-    if not values:
-        return []
-    normalized: list[str] = []
-    seen: set[str] = set()
-    for value in values:
-        class_name = value.strip().lower()
-        if not class_name or class_name in seen:
-            continue
-        normalized.append(class_name)
-        seen.add(class_name)
-    return normalized
-
-
-def normalize_class_aliases(values: list[str] | None) -> dict[str, str]:
-    if not values:
-        return {}
-    aliases: dict[str, str] = {}
-    for value in values:
-        if ":" not in value:
-            raise ValueError(
-                "class aliases must use SOURCE:TARGET format, "
-                f"got {value!r}"
-            )
-        source, target = value.split(":", maxsplit=1)
-        source_name = source.strip().lower()
-        target_name = target.strip().lower()
-        if not source_name or not target_name:
-            raise ValueError(
-                "class aliases must include non-empty SOURCE and TARGET names"
-            )
-        aliases[source_name] = target_name
-    return aliases
 
 
 def load_ultralytics_detector(

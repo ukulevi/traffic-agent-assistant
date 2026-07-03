@@ -1,0 +1,59 @@
+name: STWI Fast CI
+
+on:
+  pull_request:
+    paths-ignore:
+      - "report/**"
+      - "slides/**"
+      - "docs/archive/**"
+      - "*.pdf"
+  push:
+    branches: [main]
+    paths-ignore:
+      - "report/**"
+      - "slides/**"
+      - "docs/archive/**"
+      - "*.pdf"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stwi-fast-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fast-guards:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate docs, contract, and CI guardrails
+        run: |
+          python scripts/validation/validate_docs.py
+          python scripts/validation/validate_ci_guardrails.py
+          python -m unittest tests.contracts.test_project_contract
+
+      - name: Run lightweight management tests
+        run: |
+          python -m unittest \
+            tests.project_management.test_symphony_budget_guard \
+            tests.project_management.test_sync_codex_claude_mcp \
+            tests.project_management.test_symphony_workspace_cleanup \
+            tests.validation.test_validate_ci_guardrails
+
+      - name: Check slide JavaScript syntax
+        run: |
+          node --check slides/js/presentation.js
+          node --check slides/js/presentation-tools.js
+
+      - name: Check diff whitespace
+        run: git diff --check

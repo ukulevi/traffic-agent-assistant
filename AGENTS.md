@@ -150,8 +150,8 @@ Không đưa ADE, XiYanSQL, RealGen, FAISS, Weaviate, InfluxDB, LangChain hoặc
 Chạy tối thiểu sau thay đổi contract, docs hoặc slides:
 
 ```powershell
-python scripts/validate_docs.py
-python -m unittest tests.test_project_contract
+python scripts/validation/validate_docs.py
+python -m unittest tests.contracts.test_project_contract
 node --check slides/js/presentation.js
 node --check slides/js/presentation-tools.js
 git diff --check
