@@ -24,12 +24,24 @@
     "Canceled",
     "Duplicate"
   ],
+  "automation": {
+    "report_command": "python scripts/project_management/symphony_report.py",
+    "daily_agent_update": true,
+    "requires_human_review_for": [
+      "contract changes",
+      "dashboard scope changes",
+      "legal/SOP source approval",
+      "vision promotion threshold changes",
+      "production credentials or external services"
+    ],
+    "done_policy": "A task can move to Done only after acceptance criteria and tests/evidence are recorded."
+  },
   "lanes": [
     {
       "id": "lane-data-vision",
       "name": "Data/Vision",
       "owner_agent": "DataVisionAgent",
-      "completion_estimate_pct": 72,
+      "completion_estimate_pct": 40,
       "health": "yellow",
       "summary": "Phase 1 mock/tensor gate is strong; vision tooling is useful, but detector promotion criteria, metadata, and real camera evidence still need reconciliation."
     },
@@ -37,7 +49,7 @@
       "id": "lane-ml-simulation",
       "name": "ML/Simulation",
       "owner_agent": "MLSimulationAgent",
-      "completion_estimate_pct": 60,
+      "completion_estimate_pct": 20,
       "health": "yellow",
       "summary": "Baseline, SUMO, surrogate, and benchmarks have provisional artifacts; real aggregate data and standard-profile calibration remain open."
     },
@@ -45,7 +57,7 @@
       "id": "lane-knowledge-rag",
       "name": "Knowledge/RAG",
       "owner_agent": "KnowledgeRagAgent",
-      "completion_estimate_pct": 65,
+      "completion_estimate_pct": 25,
       "health": "yellow",
       "summary": "Contracts and validators are strong, while real retrieval quality, SOP corpus, and service-backed tests need hardening."
     },
@@ -53,7 +65,7 @@
       "id": "lane-orchestrator-release",
       "name": "Orchestrator/API/Release",
       "owner_agent": "OrchestratorReleaseAgent",
-      "completion_estimate_pct": 55,
+      "completion_estimate_pct": 30,
       "health": "red",
       "summary": "API and safety loop are demo-capable, but production Celery/Redis persistence, dashboard, and full release QA are not complete."
     }
@@ -369,8 +381,9 @@
       "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-12/reconcile-readiness-scoring-and-progress-evidence",
       "lane": "Orchestrator/API/Release",
       "owner_agent": "LeadCoordinator",
-      "status": "Todo",
-      "priority": "P1",
+      "status": "Rework",
+      "priority": "P2",
+      "acceptance_summary": "Readiness scoring is derived from board state, gate criteria, and verified checks; stale test counts are replaced or explicitly marked stale.",
       "evidence": [
         "docs/project_management/symphony/board.json",
         "docs/project_management/symphony/roadmap_intelligence_2026-07-03.md",
@@ -432,7 +445,7 @@
       "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-15/define-project-native-model-registry-evidence-format",
       "lane": "ML/Simulation",
       "owner_agent": "MLSimulationAgent",
-      "status": "Todo",
+      "status": "Done",
       "priority": "P1",
       "evidence": [
         "project_contract.json",
@@ -445,7 +458,14 @@
         "The format works for vision, baseline forecast, and surrogate artifacts without requiring MLflow.",
         "Existing promotion and validation paths either produce or validate the required fields."
       ],
-      "next_action": "Specify the project-native evidence format and map current provisional artifacts to it."
+      "next_action": "Specify the project-native evidence format and map current provisional artifacts to it.",
+      "checks": [
+        "python scripts/validation/validate_docs.py -> pass",
+        "python -m unittest tests.contracts.test_project_contract -> pass, 4 tests",
+        "node --check slides/js/presentation.js -> pass",
+        "node --check slides/js/presentation-tools.js -> pass",
+        "git diff --check -> pass"
+      ]
     },
     {
       "id": "STWI-SYM-020",
@@ -562,17 +582,5 @@
       ],
       "next_action": "Keep in Human Review; do not add `symphony-approved` because this requires live external service access and human supervision."
     }
-  ],
-  "automation": {
-    "report_command": "python scripts/project_management/symphony_report.py",
-    "daily_agent_update": true,
-    "requires_human_review_for": [
-      "contract changes",
-      "dashboard scope changes",
-      "legal/SOP source approval",
-      "vision promotion threshold changes",
-      "production credentials or external services"
-    ],
-    "done_policy": "A task can move to Done only after acceptance criteria and tests/evidence are recorded."
-  }
+  ]
 }
