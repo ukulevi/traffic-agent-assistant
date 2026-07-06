@@ -474,7 +474,7 @@
       "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-16/document-fail-closed-resilience-policy-for-dependency-failures",
       "lane": "Orchestrator/API/Release",
       "owner_agent": "OrchestratorReleaseAgent",
-      "status": "Todo",
+      "status": "Done",
       "priority": "P1",
       "evidence": [
         "project_contract.json",
@@ -487,7 +487,12 @@
         "No runtime path returns an executable action after tool, RAG, TimescaleDB, Qdrant, Celery, Redis, or model failure.",
         "The rejected fail-open wording is replaced with an explicit fail-closed policy and focused tests are identified."
       ],
-      "next_action": "Write the policy and identify the smallest tests needed before any runtime hardening issue."
+      "next_action": "Write the policy and identify the smallest tests needed before any runtime hardening issue.",
+      "checks": [
+        "python scripts/validation/validate_docs.py -> pass",
+        "python -m unittest discover -s tests/t4_orchestrator -> pass, 96 tests",
+        "git diff --check -> pass"
+      ]
     },
     {
       "id": "STWI-SYM-021",

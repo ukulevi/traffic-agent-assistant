@@ -74,6 +74,20 @@ Ngưỡng V/C mặc định `0.9` là cấu hình MVP, không phải luật. Saf
 
 MVP không có actuator. Ngay cả `succeeded` vẫn cần operator phê duyệt và quyết định được ghi vào audit log.
 
+### 2.3. Resilience Policy for Dependency Failures
+
+Để đảm bảo an toàn hệ thống, STWI áp dụng chính sách **fail-closed tuyệt đối** (từ chối mọi cơ chế fail-open hoặc fallback phỏng đoán) đối với lỗi từ các hệ thống phụ thuộc (TimescaleDB, Qdrant, Celery, Redis, model inference, LLM call, tool execution).
+
+- **Retry, Timeout và Circuit-breaker**: Các lỗi mạng hoặc lỗi dịch vụ tạm thời được phép retry có giới hạn (exponential backoff) nhưng bị ràng buộc bởi hard deadline P99 (180 giây). Nếu vượt quá deadline hoặc gặp lỗi hệ thống nghiêm trọng (connection refused, auth failure, schema mismatch), dependency client không được retry vô hạn mà phải ngắt mạch (circuit-break) ngay lập tức.
+- **Fail-closed bắt buộc**:
+  - Mọi sự cố phụ thuộc (timeout, sập dịch vụ, lỗi truy vấn) đều bắt buộc map về trạng thái `needs_review`, `failed`, hoặc `expired`.
+  - Tuyệt đối không có bất kỳ đường chạy (runtime path) nào được trả về một `recommended_action` có khả năng thực thi (executable action) sau khi tool, RAG, TimescaleDB, Qdrant, Celery, Redis, hoặc model dự báo gặp sự cố. Bất kỳ ngôn từ hay ý định nào về việc "bỏ qua bước nếu lỗi" hay "dùng giá trị dự phòng để tiếp tục" đều bị loại bỏ.
+- **Các kịch bản kiểm thử trọng tâm (focused tests)** cần được phát triển để xác nhận hành vi này trước mọi hoạt động hardening trên môi trường production:
+  - `test_timescaledb_timeout_yields_expired`
+  - `test_qdrant_unreachable_yields_failed`
+  - `test_surrogate_model_crash_yields_failed`
+  - `test_celery_redis_outage_fails_closed`
+
 ## 3. API bất đồng bộ
 
 ### 3.1. Tạo job
@@ -295,13 +309,13 @@ MVP không có actuator. Ngay cả `succeeded` vẫn cần operator phê duyệt
 Error codes tối thiểu: `INVALID_SCENARIO`, `UNKNOWN_NODE`, `SIMULATION_UNAVAILABLE`, `KNOWLEDGE_UNAVAILABLE`, `QUERY_INVALID`, `POLICY_ERROR`, `INTERNAL_ERROR`.
 
 ## 4. Runtime và observability
-
 - FastAPI tiếp nhận request; Celery chạy job; Redis làm broker/progress store.
-- Mỗi transition LangGraph phát SSE event và OpenTelemetry span.
+- Mỗi transition LangGraph phát SSE event và ánh xạ sang minimum trace/log/metric trong `docs/guides/observability_minimum.md`.
 - Retry chỉ áp dụng tool idempotent, có backoff và giới hạn.
 - Hard deadline 180 giây được truyền xuống mọi tool.
 - Lưu scenario hash, input/model/policy/corpus version, citations, iterations và operator decision.
 - E2E target P95 ≤ 30 giây; P99/hard deadline ≤ 180 giây.
+- Prometheus, OpenTelemetry, hoặc managed monitoring stack là future deployment choice; không chọn backend trong TRA-14.
 
 ## 5. Acceptance gates
 

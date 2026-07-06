@@ -5,7 +5,7 @@ Last reviewed: 2026-07-04
 ## Readiness Handoff Summary
 
 - Evidence base: project_contract.json
-- Todo: 6 | In Progress: 1 | Human Review: 4 | Rework: 1 | Done: 4
+- Todo: 5 | In Progress: 1 | Human Review: 4 | Rework: 1 | Done: 5
 - Requires human review for: contract changes, dashboard scope changes, legal/SOP source approval, vision promotion threshold changes, production credentials or external services
 - Report command: python scripts/project_management/symphony_report.py
 - Daily agent update: enabled
@@ -16,12 +16,12 @@ Last reviewed: 2026-07-04
 | Status | Count |
 |---|---:|
 | Backlog | 8 |
-| Todo | 6 |
+| Todo | 5 |
 | In Progress | 1 |
 | Human Review | 4 |
 | Rework | 1 |
 | Merging | 0 |
-| Done | 4 |
+| Done | 5 |
 | Canceled | 0 |
 | Duplicate | 0 |
 
@@ -93,10 +93,6 @@ Last reviewed: 2026-07-04
   Evidence: project_contract.json, docs/04_AI_Agent_Orchestrator_CF_VLA.md, docs/05_Implementation_Plan.md
   Acceptance: Required trace_id, job timing, model/data/policy version, status transition, and safety reason fields are listed.; Metric names are specified for job counts, job latency, safety loop outcomes, retrieval latency, and surrogate latency.; Prometheus, OpenTelemetry, or other observability services remain optional future deployment choices until explicitly approved.
   Next: Write the observability minimum as a docs/testable contract proposal before adding tooling.
-- `STWI-SYM-020` / TRA-16 [P1] Document fail-closed resilience policy for dependency failures (Orchestrator/API/Release, OrchestratorReleaseAgent)
-  Evidence: project_contract.json, docs/04_AI_Agent_Orchestrator_CF_VLA.md, docs/project_management/symphony/roadmap_intelligence_2026-07-03.md, tests/t4_orchestrator
-  Acceptance: Retries, timeout, circuit-breaker-style behavior, and dependency failure classes map to `needs_review`, `failed`, or `expired`.; No runtime path returns an executable action after tool, RAG, TimescaleDB, Qdrant, Celery, Redis, or model failure.; The rejected fail-open wording is replaced with an explicit fail-closed policy and focused tests are identified.
-  Next: Write the policy and identify the smallest tests needed before any runtime hardening issue.
 
 ### In Progress
 
@@ -152,6 +148,11 @@ Last reviewed: 2026-07-04
   Acceptance: Evidence schema covers model version, dataset version, checksum, metrics, calibration, benchmark profile, thresholds, and promotion decision.; The format works for vision, baseline forecast, and surrogate artifacts without requiring MLflow.; Existing promotion and validation paths either produce or validate the required fields.
   Next: Specify the project-native evidence format and map current provisional artifacts to it.
   Checks: python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests; node --check slides/js/presentation.js -> pass; node --check slides/js/presentation-tools.js -> pass; git diff --check -> pass
+- `STWI-SYM-020` / TRA-16 [P1] Document fail-closed resilience policy for dependency failures (Orchestrator/API/Release, OrchestratorReleaseAgent)
+  Evidence: project_contract.json, docs/04_AI_Agent_Orchestrator_CF_VLA.md, docs/project_management/symphony/roadmap_intelligence_2026-07-03.md, tests/t4_orchestrator
+  Acceptance: Retries, timeout, circuit-breaker-style behavior, and dependency failure classes map to `needs_review`, `failed`, or `expired`.; No runtime path returns an executable action after tool, RAG, TimescaleDB, Qdrant, Celery, Redis, or model failure.; The rejected fail-open wording is replaced with an explicit fail-closed policy and focused tests are identified.
+  Next: Write the policy and identify the smallest tests needed before any runtime hardening issue.
+  Checks: python scripts/validation/validate_docs.py -> pass; python -m unittest discover -s tests/t4_orchestrator -> pass, 96 tests; git diff --check -> pass
 - `STWI-RTSP-001` / TRA-9 [P1] Prepare RTSP source alias and capture guardrails for edge_camera_1 (Data/Vision, DataVisionAgent)
   Evidence: scripts/data_prep/capture_rtsp_frames.py, tests/t1_pipeline/test_capture_rtsp_frames.py, docs/guides/vision_local_training_runbook.md, https://linear.app/traffic-agent-assistant/issue/TRA-9/prepare-rtsp-source-alias-and-capture-guardrails-for-edge-camera-1
   Acceptance: `edge_camera_1` is accepted as a safe source id and unsafe source ids remain rejected.; Capture path continues reading the endpoint only from `STWI_RTSP_URL`.; Command output and manifests do not include the RTSP endpoint, credentials, image base64, or raw video references.; Focused tests cover missing env handling, safe source id, redaction, and fail-closed behavior without opening a live stream.
