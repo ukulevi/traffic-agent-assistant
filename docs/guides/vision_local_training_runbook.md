@@ -780,6 +780,18 @@ The runtime loader reads only:
 data/derived/private/vision_models/official/model_artifact.json
 ```
 
+For the project-native evidence schema that promotion and audit should record
+before and after promotion, see:
+
+- `docs/guides/model_registry_evidence.md` — vision detector evidence fields,
+  including model/version provenance, dataset/split evidence, metrics,
+  calibration, benchmark profile, promotion decision, reviewer, and privacy
+  status
+
+This schema is documentation only; if runtime validation of the schema is
+needed later, treat it as a separate follow-up implementation issue rather than
+changing production promotion behavior in this change.
+
 ## Edge RTSP Capture Guardrails
 
 Use `edge_camera_1` as the reviewed source id for the first edge RTSP capture

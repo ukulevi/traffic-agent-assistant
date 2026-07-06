@@ -135,3 +135,15 @@ Benchmark chuẩn: 8 CPU cores, 32 GB RAM, NVIDIA GPU 12–16 GB, warm-up cố �
 | 1.2 | 20/06/2026 | Nhóm STWI | Baseline và surrogate ensemble |
 | 1.3 | 20/06/2026 | Nhóm STWI | Cập nhật 16 feature |
 | 1.4 | 21/06/2026 | Nhóm STWI | Đổi thành GCN–LSTM, tensor 4D, output hai target, bổ sung SUMO dataset, calibration và OOD fail-closed |
+
+## Phụ lục: Model registry evidence
+
+For the project-native evidence schema covering model version, dataset version,
+checksum, metrics, calibration, benchmark profile, threshold, and promotion
+decision, see:
+
+- `docs/guides/model_registry_evidence.md` — vision detector, baseline
+  forecaster, and surrogate ensemble registry format
+
+This documents the evidence fields STWI should record before promotion or audit;
+it does not add MLflow or another registry backend.
