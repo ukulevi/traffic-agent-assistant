@@ -55,6 +55,26 @@ def _validate_board(board: dict[str, Any]) -> list[str]:
     return errors
 
 
+def _lane_readiness_evidence(lane: dict[str, Any]) -> str:
+    parts: list[str] = []
+
+    summary = (lane.get("summary") or "").strip()
+    if summary:
+        parts.append(summary)
+
+    readiness = lane.get("readiness_evidence") or []
+    if readiness:
+        evidence_items = "; ".join(str(item) for item in readiness if str(item).strip())
+        parts.append(f"Evidence: {evidence_items}")
+
+    blockers = lane.get("blockers") or []
+    if blockers:
+        blocker_items = "; ".join(str(item) for item in blockers if str(item).strip())
+        parts.append(f"Blockers: {blocker_items}")
+
+    return " | ".join(parts) if parts else "No lane readiness evidence recorded."
+
+
 def _render_markdown(board: dict[str, Any]) -> str:
     tasks = board.get("tasks", [])
     by_status: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -62,24 +82,56 @@ def _render_markdown(board: dict[str, Any]) -> str:
         by_status[task["status"]].append(task)
 
     counts = Counter(task["status"] for task in tasks)
-    lines = [
+
+    lines: list[str] = [
         f"# {board['board_name']}",
         "",
         f"Last reviewed: {board['last_reviewed_at']}",
         "",
-        "## Summary",
+        "## Readiness Handoff Summary",
         "",
-        "| Status | Count |",
-        "|---|---:|",
+        f"- Evidence base: {board.get('source_of_truth', ['Unset'])[0]}",
+        f"- Todo: {counts.get('Todo', 0)} | In Progress: {counts.get('In Progress', 0)} | "
+        f"Human Review: {counts.get('Human Review', 0)} | Rework: {counts.get('Rework', 0)} | "
+        f"Done: {counts.get('Done', 0)}",
     ]
+
+    automation = board.get("automation") or {}
+    if automation:
+        requires = automation.get("requires_human_review_for", [])
+        lines.append(f"- Requires human review for: {', '.join(requires) or 'none listed'}")
+        report_command = automation.get("report_command")
+        if report_command:
+            lines.append(f"- Report command: {report_command}")
+        if automation.get("daily_agent_update"):
+            lines.append("- Daily agent update: enabled")
+    lines.extend(
+        [
+            "- Handoff note: readiness is derived from board/state, gate acceptance criteria, and verified checks; not raw agentReport percentages.",
+            "",
+            "## Summary",
+            "",
+            "| Status | Count |",
+            "|---|---:|",
+        ]
+    )
     for column in board["columns"]:
         lines.append(f"| {column} | {counts.get(column, 0)} |")
 
-    lines.extend(["", "## Lane Health", "", "| Lane | Owner | Completion | Health |", "|---|---|---:|---|"])
-    for lane in board["lanes"]:
+    lines.extend(
+        [
+            "",
+            "## Lane Readiness Evidence",
+            "",
+            "| Lane | Owner | Completion | Health | Readiness Evidence |",
+            "|---|---|---:|---|---|",
+        ]
+    )
+    for lane in board.get("lanes", []):
         lines.append(
-            f"| {lane['name']} | {lane['owner_agent']} | "
-            f"{lane['completion_estimate_pct']}% | {lane['health']} |"
+            f"| {lane.get('name', 'Unknown')} | {lane.get('owner_agent', 'Unassigned')} | "
+            f"{lane.get('completion_estimate_pct', '?')}% | {lane.get('health', '?')} | "
+            f"{_lane_readiness_evidence(lane)} |"
         )
 
     lines.extend(["", "## Tasks"])
@@ -99,7 +151,17 @@ def _render_markdown(board: dict[str, Any]) -> str:
                 f"- `{task['id']}`{linear_ref} [{task['priority']}] {task['title']} "
                 f"({task['lane']}, {task['owner_agent']})"
             )
+            if task.get("evidence"):
+                evidence_items = ", ".join(str(item) for item in task["evidence"])
+                lines.append(f"  Evidence: {evidence_items}")
+            if task.get("acceptance_criteria"):
+                criteria_items = "; ".join(
+                    str(item) for item in task["acceptance_criteria"]
+                )
+                lines.append(f"  Acceptance: {criteria_items}")
             lines.append(f"  Next: {task['next_action']}")
+            if task.get("checks"):
+                lines.append(f"  Checks: {'; '.join(str(item) for item in task['checks'])}")
 
     return "\n".join(lines) + "\n"
 
