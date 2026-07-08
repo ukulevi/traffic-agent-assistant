@@ -41,7 +41,7 @@ agent:
     in progress: 1
     rework: 1
 codex:
-  command: '"/c/Users/PC/AppData/Local/OpenAI/Codex/bin/ea1c60319a1dcb19/codex.exe" app-server -c model_reasoning_effort="low" -c model_reasoning_summary="auto"'
+  command: '"/c/Users/PC/AppData/Local/OpenAI/Codex/bin/ea1c60319a1dcb19/codex.exe" app-server -c model="stepfun/step-3.7-flash-free" -c model_reasoning_effort="low" -c model_reasoning_summary="auto"'
   approval_policy: never
   thread_sandbox: workspace-write
   turn_sandbox_policy:
@@ -266,6 +266,42 @@ If an OpenAI API key is used by a provider adapter or future Symphony runtime,
 the hard daily spend cap must be set in the OpenAI API dashboard or organization
 billing controls. The repository guard only observes local dashboard usage and
 cannot enforce provider-side billing limits.
+
+## Free-tier model override policy
+
+This workflow must run on the free Step 3.7 Flash model to avoid paid quota burn.
+Symphony therefore launches Codex app-server with:
+
+```text
+-c model="stepfun/step-3.7-flash-free"
+```
+
+The global `~/.codex/config.toml` may still default to a paid model; the workflow
+command override takes precedence for unattended Symphony runs only.
+
+1. Before starting Symphony, confirm the active workflow file still contains the
+   free-tier model override in `codex.command`.
+2. If the active run shows the paid model in use again, pause dispatch, restore
+   the nearest backup workflow file with the free-tier override, and restart
+   Symphony.
+3. Keep the nearest backup workflow file available for fast rollback:
+   - repo: `WORKFLOW.md.bak.stepfun_override.<timestamp>`
+   - runtime: `~/.codex/symphony/workflows/WORKFLOW.stwi.md.bak.stepfun_override.<timestamp>`
+4. If the free-tier endpoint is unavailable, rate-limited, or returns a model
+   error, record the exact error line and move the issue to `Human Review` rather
+   than silently fallback to a paid model.
+5. Do not claim paid-model fallback from inside the agent. Only the coordinator
+   may switch provider assumptions, and only after explicit human approval.
+
+6. During or after a batch, inspect progress by issue diff and focused test
+   evidence rather than fixed token ceilings.
+7. If an issue is clearly blocked or repeating without progress, stop
+   dispatching new work for that issue and report `Human Review`.
+8. Prefer two agents only when issues are narrow, independent, and edit
+   different directories. Prefer pairing implementation with review/QA rather
+   than two implementation tasks.
+9. Record the guard action and decisive reason in the coordinator handoff when
+   stopping, throttling, or choosing not to dispatch a second issue.
 
 ## Workspace cleanup policy
 

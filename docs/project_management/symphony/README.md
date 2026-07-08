@@ -36,6 +36,40 @@ Use `--dry-run` first when checking project/team/label resolution.
 7. Do not mark a task `Done` unless its acceptance criteria and required
    checks are recorded in `board.json`.
 
+For the Codex Desktop + Hermes Desktop operating model, use
+[multi_agent_operating_model.md](./multi_agent_operating_model.md),
+[agent_routing.json](./agent_routing.json), and
+[hermes_worker_prompts.md](./hermes_worker_prompts.md). Hermes MCP is currently
+treated as a messaging/session bridge, not a worker runner; use
+[hermes_orchestrator_handoff.md](./hermes_orchestrator_handoff.md) when Hermes
+orchestrates Step workers through its native tools.
+
+## Hermes runner bridge
+
+Use the repository bridge to validate a Codex-authored dispatch packet and
+prepare a bounded Hermes prompt:
+
+```powershell
+python scripts/project_management/hermes_runner_bridge.py --no-write
+python scripts/project_management/hermes_runner_bridge.py
+```
+
+The first command validates the current packet without writing artifacts. The
+second command writes a prompt and manifest under
+`docs/project_management/symphony/hermes_runs/`, which is ignored by git because
+run prompts are per-session evidence. Attach or paste the prompt into Hermes
+Desktop when running manually.
+
+When a stable Hermes CLI entrypoint is confirmed, pass it explicitly:
+
+```powershell
+python scripts/project_management/hermes_runner_bridge.py --runner-command hermes --oneshot {prompt_file}
+```
+
+The bridge does not change Linear state, restart Symphony, stage, commit, push,
+or decide Done/Rework. Hermes must still return the required report fields and
+stop at Human Review for Codex review.
+
 ## Local Symphony checks
 
 The local MCP adapter is configured in `C:\Users\PC\.codex\config.toml` as

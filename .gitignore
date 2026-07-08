@@ -55,3 +55,6 @@ node_modules/
 
 # Local site build
 _site/
+
+# Local Hermes runner bridge artifacts
+docs/project_management/symphony/hermes_runs/
