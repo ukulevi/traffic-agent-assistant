@@ -574,12 +574,14 @@
       "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-10/document-supervised-rtsp-to-quarantine-smoke-test-procedure",
       "lane": "Data/Vision",
       "owner_agent": "DataVisionAgent",
-      "status": "Backlog",
+      "status": "In Progress",
       "priority": "P1",
       "evidence": [
         "docs/guides/vision_local_training_runbook.md",
         "docs/01_System_Architecture_Data_Pipeline.md",
-        "README.md"
+        "README.md",
+        "docs/guides/rtsp_smoke_test_runbook.md",
+        "scripts/data_prep/capture_rtsp_frames.py"
       ],
       "acceptance_criteria": [
         "Runbook explains how an operator sets `STWI_RTSP_URL` locally without writing it to repo, Linear, logs, or manifests.",
@@ -587,7 +589,14 @@
         "Procedure lists privacy review, retention, cleanup, and aggregate-only next steps before any frame leaves quarantine.",
         "Procedure includes exact offline verification commands that can run after supervised capture."
       ],
-      "next_action": "Keep in Backlog until the next RTSP documentation pass is intentionally dispatched."
+      "next_action": "Review the RTSP smoke-test runbook and advance to Human Review before live execution.",
+      "checks": [
+        "python scripts/validation/validate_docs.py -> pass",
+        "python -m unittest tests.contracts.test_project_contract -> pass, 4 tests",
+        "node --check slides/js/presentation.js -> pass",
+        "node --check slides/js/presentation-tools.js -> pass",
+        "git diff --check -> pass"
+      ]
     },
     {
       "id": "STWI-RTSP-003",

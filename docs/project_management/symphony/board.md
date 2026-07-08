@@ -5,7 +5,7 @@ Last reviewed: 2026-07-06
 ## Readiness Handoff Summary
 
 - Evidence base: project_contract.json
-- Todo: 5 | In Progress: 2 | Human Review: 4 | Rework: 0 | Done: 7
+- Todo: 5 | In Progress: 3 | Human Review: 4 | Rework: 0 | Done: 7
 - Requires human review for: contract changes, dashboard scope changes, legal/SOP source approval, vision promotion threshold changes, production credentials or external services
 - Report command: python scripts/project_management/symphony_report.py
 - Daily agent update: enabled
@@ -15,9 +15,9 @@ Last reviewed: 2026-07-06
 
 | Status | Count |
 |---|---:|
-| Backlog | 7 |
+| Backlog | 6 |
 | Todo | 5 |
-| In Progress | 2 |
+| In Progress | 3 |
 | Human Review | 4 |
 | Rework | 0 |
 | Merging | 0 |
@@ -62,10 +62,6 @@ Last reviewed: 2026-07-06
   Evidence: project_contract.json, infra/harness, docs/05_Implementation_Plan.md, docs/project_management/symphony/roadmap_intelligence_2026-07-03.md
   Acceptance: Docker Compose production, Kubernetes, and managed-service options are compared as deployment options only.; No Kubernetes, secrets manager, tracing, or model-serving framework is added to active architecture.; The recommendation lists cost, complexity, safety, rollback, and Human Review requirements for a later decision.
   Next: Prepare an options review after MVP gate gaps are stable; keep implementation blocked pending user approval.
-- `STWI-RTSP-002` / TRA-10 [P1] Document supervised RTSP-to-quarantine smoke test procedure (Data/Vision, DataVisionAgent)
-  Evidence: docs/guides/vision_local_training_runbook.md, docs/01_System_Architecture_Data_Pipeline.md, README.md
-  Acceptance: Runbook explains how an operator sets `STWI_RTSP_URL` locally without writing it to repo, Linear, logs, or manifests.; Procedure captures only sparse frames into `data/quarantine/rtsp_frames` and never stores a raw video container.; Procedure lists privacy review, retention, cleanup, and aggregate-only next steps before any frame leaves quarantine.; Procedure includes exact offline verification commands that can run after supervised capture.
-  Next: Keep in Backlog until the next RTSP documentation pass is intentionally dispatched.
 
 ### Todo
 
@@ -101,6 +97,11 @@ Last reviewed: 2026-07-06
   Evidence: project_contract.json, docs/04_AI_Agent_Orchestrator_CF_VLA.md, src/stwi/t4_orchestrator/contracts.py, src/stwi/t4_orchestrator/api.py, src/stwi/t4_orchestrator/orchestrator.py, src/stwi/t3_knowledge/query_builder.py, docs/design/auth_rbac_tenant_boundary.md
   Acceptance: Design derives operator identity and tenant context server-side instead of trusting request body fields.; Role boundaries for operator, analyst, admin, and readonly are specified without choosing a new identity provider.; No auth dependency, external IdP, credential storage, or runtime implementation is introduced in TRA-13.
   Next: Review the auth/RBAC/tenant-boundary design and advance to Human Review before implementation.
+  Checks: python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests; node --check slides/js/presentation.js -> pass; node --check slides/js/presentation-tools.js -> pass; git diff --check -> pass
+- `STWI-RTSP-002` / TRA-10 [P1] Document supervised RTSP-to-quarantine smoke test procedure (Data/Vision, DataVisionAgent)
+  Evidence: docs/guides/vision_local_training_runbook.md, docs/01_System_Architecture_Data_Pipeline.md, README.md, docs/guides/rtsp_smoke_test_runbook.md, scripts/data_prep/capture_rtsp_frames.py
+  Acceptance: Runbook explains how an operator sets `STWI_RTSP_URL` locally without writing it to repo, Linear, logs, or manifests.; Procedure captures only sparse frames into `data/quarantine/rtsp_frames` and never stores a raw video container.; Procedure lists privacy review, retention, cleanup, and aggregate-only next steps before any frame leaves quarantine.; Procedure includes exact offline verification commands that can run after supervised capture.
+  Next: Review the RTSP smoke-test runbook and advance to Human Review before live execution.
   Checks: python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests; node --check slides/js/presentation.js -> pass; node --check slides/js/presentation-tools.js -> pass; git diff --check -> pass
 
 ### Human Review
