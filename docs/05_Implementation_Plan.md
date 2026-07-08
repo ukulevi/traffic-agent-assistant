@@ -33,7 +33,7 @@ Trong 13 tuần, nhóm xây dựng MVP hỗ trợ operator đánh giá What-if t
 | 0.3 | Pydantic contracts: tensor, mask, graph, IncidentVector, SimulationResult, Citation, SimulationQuery, Job API | Contract package |
 | 0.4 | Fake interfaces và fixtures cho bốn tầng | Test độc lập |
 | 0.5 | Mock network 20 node; camera/sensor/case/legal generators | Reproducible seed |
-| 0.6 | Logging, trace_id, model/data/policy version fields | Trace mẫu |
+| 0.6 | Logging, trace_id, model/data/policy version fields | Minimum proposal in `docs/guides/observability_minimum.md`; backend selection deferred |
 | 0.7 | Privacy/security baseline: secret handling, RBAC skeleton, không lưu video thô | Checklist pass |
 
 **Gate P0:** `project_contract.json`, contract tests, Docker health checks và fake E2E đều pass.
