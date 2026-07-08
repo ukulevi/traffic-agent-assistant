@@ -331,19 +331,29 @@
       "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-5/complete-vision-artifact-metadata-for-latency-thresholds-roi-policy",
       "lane": "Data/Vision",
       "owner_agent": "DataVisionAgent",
-      "status": "Human Review",
+      "status": "In Progress",
       "priority": "P1",
       "evidence": [
-        "data/derived/private/vision_models/official/model_artifact.json",
+        "src/stwi/tooling/vision_training/promotion.py",
+        "docs/guides/model_registry_evidence.md",
         "docs/guides/vision_local_training_runbook.md",
         "docs/01_System_Architecture_Data_Pipeline.md"
       ],
       "acceptance_criteria": [
         "Official or candidate artifact records latency and threshold evidence.",
         "ROI policy and source/license review are present.",
-        "Privacy review remains aggregate-only and does not publish raw images/video."
+        "Privacy review remains aggregate-only and does not publish raw images/video.",
+        "Promotion validator requires calibration, benchmark, and legal/privacy metadata."
       ],
-      "next_action": "Resolve review findings: promotion validator does not yet require latency, thresholds, ROI policy, or source/license metadata."
+      "next_action": "Review the updated promotion validator and model-registry evidence guide before marking Done.",
+      "checks": [
+        "python scripts/validation/validate_docs.py -> pass",
+        "python -m unittest tests.contracts.test_project_contract -> pass, 4 tests",
+        "python -m unittest tests.vision.test_vision_relabel_and_promotion -> pass",
+        "node --check slides/js/presentation.js -> pass",
+        "node --check slides/js/presentation-tools.js -> pass",
+        "git diff --check -> pass"
+      ]
     },
     {
       "id": "STWI-SYM-014",

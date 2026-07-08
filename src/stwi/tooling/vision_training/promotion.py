@@ -56,6 +56,27 @@ def validate_artifact_for_promotion(
             errors.append("could not find mAP50 metric")
         elif map50 < min_map50:
             errors.append(f"mAP50 {map50:.4f} is below threshold {min_map50:.4f}")
+    calibration = artifact.get("calibration")
+    if not isinstance(calibration, dict):
+        errors.append("missing calibration evidence")
+    else:
+        for field in ("confidence_threshold", "iou_threshold", "image_size", "roi_policy"):
+            if field not in calibration:
+                errors.append(f"missing calibration.{field}")
+    benchmark = artifact.get("benchmark")
+    if not isinstance(benchmark, dict):
+        errors.append("missing benchmark evidence")
+    else:
+        for field in ("profile", "seconds_per_image_p50", "seconds_per_image_p99"):
+            if field not in benchmark:
+                errors.append(f"missing benchmark.{field}")
+    legal_and_privacy = artifact.get("legal_and_privacy")
+    if not isinstance(legal_and_privacy, dict):
+        errors.append("missing legal_and_privacy evidence")
+    else:
+        for field in ("source_license", "privacy_status"):
+            if field not in legal_and_privacy:
+                errors.append(f"missing legal_and_privacy.{field}")
     if errors:
         raise ValueError("model promotion failed:\n- " + "\n- ".join(errors))
 

@@ -5,7 +5,7 @@ Last reviewed: 2026-07-06
 ## Readiness Handoff Summary
 
 - Evidence base: project_contract.json
-- Todo: 5 | In Progress: 4 | Human Review: 4 | Rework: 0 | Done: 7
+- Todo: 5 | In Progress: 5 | Human Review: 3 | Rework: 0 | Done: 7
 - Requires human review for: contract changes, dashboard scope changes, legal/SOP source approval, vision promotion threshold changes, production credentials or external services
 - Report command: python scripts/project_management/symphony_report.py
 - Daily agent update: enabled
@@ -17,8 +17,8 @@ Last reviewed: 2026-07-06
 |---|---:|
 | Backlog | 5 |
 | Todo | 5 |
-| In Progress | 4 |
-| Human Review | 4 |
+| In Progress | 5 |
+| Human Review | 3 |
 | Rework | 0 |
 | Merging | 0 |
 | Done | 7 |
@@ -94,6 +94,11 @@ Last reviewed: 2026-07-06
   Evidence: git status --short, python scripts/project_management/worktree_intake.py, docs/guides/repository_structure.md, src/stwi/tooling, tests/vision
   Acceptance: Unrelated generated manifests are kept separate from source changes.; Refactor files are reviewed as one coherent change set.; A read-only intake report groups dirty worktree changes before staging.; No user changes are reverted.
   Next: Review diff grouping before any staging or commit.
+- `STWI-SYM-013` / TRA-5 [P1] Complete vision artifact metadata for latency, thresholds, ROI policy, and license/source (Data/Vision, DataVisionAgent)
+  Evidence: src/stwi/tooling/vision_training/promotion.py, docs/guides/model_registry_evidence.md, docs/guides/vision_local_training_runbook.md, docs/01_System_Architecture_Data_Pipeline.md
+  Acceptance: Official or candidate artifact records latency and threshold evidence.; ROI policy and source/license review are present.; Privacy review remains aggregate-only and does not publish raw images/video.; Promotion validator requires calibration, benchmark, and legal/privacy metadata.
+  Next: Review the updated promotion validator and model-registry evidence guide before marking Done.
+  Checks: python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests; python -m unittest tests.vision.test_vision_relabel_and_promotion -> pass; node --check slides/js/presentation.js -> pass; node --check slides/js/presentation-tools.js -> pass; git diff --check -> pass
 - `STWI-SYM-017` / TRA-13 [P2] Draft auth, RBAC, and tenant-boundary design (Orchestrator/API/Release, OrchestratorReleaseAgent)
   Evidence: project_contract.json, docs/04_AI_Agent_Orchestrator_CF_VLA.md, src/stwi/t4_orchestrator/contracts.py, src/stwi/t4_orchestrator/api.py, src/stwi/t4_orchestrator/orchestrator.py, src/stwi/t3_knowledge/query_builder.py, docs/design/auth_rbac_tenant_boundary.md
   Acceptance: Design derives operator identity and tenant context server-side instead of trusting request body fields.; Role boundaries for operator, analyst, admin, and readonly are specified without choosing a new identity provider.; No auth dependency, external IdP, credential storage, or runtime implementation is introduced in TRA-13.
@@ -115,10 +120,6 @@ Last reviewed: 2026-07-06
   Evidence: docs/05_Implementation_Plan.md, slides/sections/07_01_multiagent.html, slides/sections/09_01_kpi.html
   Acceptance: Dashboard scope is approved by user.; If implemented, UI shows job status, citations, warnings, versions, trace_id, and approval state.; If deferred, docs and demo script clearly state the limitation.
   Next: User decides whether to build a minimal dashboard or keep API/slides demo.
-- `STWI-SYM-013` / TRA-5 [P1] Complete vision artifact metadata for latency, thresholds, ROI policy, and license/source (Data/Vision, DataVisionAgent)
-  Evidence: data/derived/private/vision_models/official/model_artifact.json, docs/guides/vision_local_training_runbook.md, docs/01_System_Architecture_Data_Pipeline.md
-  Acceptance: Official or candidate artifact records latency and threshold evidence.; ROI policy and source/license review are present.; Privacy review remains aggregate-only and does not publish raw images/video.
-  Next: Resolve review findings: promotion validator does not yet require latency, thresholds, ROI policy, or source/license metadata.
 - `STWI-RTSP-003` / TRA-11 [P1] Run supervised live RTSP smoke test for edge_camera_1 (Data/Vision, DataVisionAgent with human supervision)
   Evidence: STWI_RTSP_URL local environment variable, data/quarantine/rtsp_frames, https://linear.app/traffic-agent-assistant/issue/TRA-11/run-supervised-live-rtsp-smoke-test-for-edge-camera-1
   Acceptance: Human operator confirms the RTSP endpoint is approved for STWI testing and sets it only in `STWI_RTSP_URL`.; Live capture is bounded to a small sample, stores sparse frames only in quarantine, and retains no raw video.; Manifest is reviewed to confirm no endpoint, credentials, image base64, or raw video reference is present.; Resulting evidence is deleted, kept in quarantine for privacy review, or converted into approved aggregate-only evidence by a follow-up issue.
