@@ -156,18 +156,20 @@
       "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-6/prove-surrogate-p99-under-contract-benchmark-profile",
       "lane": "ML/Simulation",
       "owner_agent": "MLSimulationAgent",
-      "status": "Backlog",
+      "status": "In Progress",
       "priority": "P1",
       "evidence": [
         "project_contract.json",
-        "data/derived/private/phase2_surrogate/v3/benchmark_report.json"
+        "data/derived/private/phase2_surrogate/v3/benchmark_report.json",
+        "docs/guides/surrogate_benchmark_evidence.md"
       ],
       "acceptance_criteria": [
         "Benchmark machine profile matches 8 CPU, 32 GB RAM, 12-16 GB GPU VRAM.",
         "Surrogate P99 is below 500 ms.",
-        "Raw benchmark result is retained as private artifact."
+        "Raw benchmark result is retained as private artifact.",
+        "E2E P95 target is recorded as required future evidence; no claim is made without measurement."
       ],
-      "next_action": "Rerun benchmark on approved profile or mark KPI claim provisional."
+      "next_action": "Archive the recorded private benchmark artifact and extend runbook with E2E measurement plan."
     },
     {
       "id": "STWI-SYM-006",
