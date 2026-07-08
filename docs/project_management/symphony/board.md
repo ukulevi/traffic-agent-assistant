@@ -5,7 +5,7 @@ Last reviewed: 2026-07-06
 ## Readiness Handoff Summary
 
 - Evidence base: project_contract.json
-- Todo: 5 | In Progress: 1 | Human Review: 4 | Rework: 0 | Done: 7
+- Todo: 5 | In Progress: 2 | Human Review: 4 | Rework: 0 | Done: 7
 - Requires human review for: contract changes, dashboard scope changes, legal/SOP source approval, vision promotion threshold changes, production credentials or external services
 - Report command: python scripts/project_management/symphony_report.py
 - Daily agent update: enabled
@@ -15,9 +15,9 @@ Last reviewed: 2026-07-06
 
 | Status | Count |
 |---|---:|
-| Backlog | 8 |
+| Backlog | 7 |
 | Todo | 5 |
-| In Progress | 1 |
+| In Progress | 2 |
 | Human Review | 4 |
 | Rework | 0 |
 | Merging | 0 |
@@ -58,10 +58,6 @@ Last reviewed: 2026-07-06
   Evidence: src/stwi/config/runtime.py, src/stwi/t4_orchestrator/orchestrator.py, src/stwi/t3_knowledge/tier3_facade.py
   Acceptance: `STWI_RUNTIME_MODE=production` rejects fake adapters.; Real adapters have documented required environment variables.; Production startup fails closed when services are missing.
   Next: Audit adapter wiring and add integration test around production mode.
-- `STWI-SYM-017` / TRA-13 [P2] Draft auth, RBAC, and tenant-boundary design (Orchestrator/API/Release, OrchestratorReleaseAgent)
-  Evidence: project_contract.json, docs/04_AI_Agent_Orchestrator_CF_VLA.md, src/stwi/t4_orchestrator/contracts.py
-  Acceptance: Design derives operator identity and tenant context server-side instead of trusting request body fields.; Role boundaries for operator, analyst, admin, and readonly are specified without choosing a new identity provider.; No auth dependency, external IdP, or API schema change is implemented before Human Review approval.
-  Next: Draft a minimal production-boundary proposal and keep it in Human Review before implementation.
 - `STWI-SYM-021` / TRA-17 [P2] Review production deployment options without changing the approved stack (Orchestrator/API/Release, ReleaseQaAgent)
   Evidence: project_contract.json, infra/harness, docs/05_Implementation_Plan.md, docs/project_management/symphony/roadmap_intelligence_2026-07-03.md
   Acceptance: Docker Compose production, Kubernetes, and managed-service options are compared as deployment options only.; No Kubernetes, secrets manager, tracing, or model-serving framework is added to active architecture.; The recommendation lists cost, complexity, safety, rollback, and Human Review requirements for a later decision.
@@ -101,6 +97,11 @@ Last reviewed: 2026-07-06
   Evidence: git status --short, python scripts/project_management/worktree_intake.py, docs/guides/repository_structure.md, src/stwi/tooling, tests/vision
   Acceptance: Unrelated generated manifests are kept separate from source changes.; Refactor files are reviewed as one coherent change set.; A read-only intake report groups dirty worktree changes before staging.; No user changes are reverted.
   Next: Review diff grouping before any staging or commit.
+- `STWI-SYM-017` / TRA-13 [P2] Draft auth, RBAC, and tenant-boundary design (Orchestrator/API/Release, OrchestratorReleaseAgent)
+  Evidence: project_contract.json, docs/04_AI_Agent_Orchestrator_CF_VLA.md, src/stwi/t4_orchestrator/contracts.py, src/stwi/t4_orchestrator/api.py, src/stwi/t4_orchestrator/orchestrator.py, src/stwi/t3_knowledge/query_builder.py, docs/design/auth_rbac_tenant_boundary.md
+  Acceptance: Design derives operator identity and tenant context server-side instead of trusting request body fields.; Role boundaries for operator, analyst, admin, and readonly are specified without choosing a new identity provider.; No auth dependency, external IdP, credential storage, or runtime implementation is introduced in TRA-13.
+  Next: Review the auth/RBAC/tenant-boundary design and advance to Human Review before implementation.
+  Checks: python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests; node --check slides/js/presentation.js -> pass; node --check slides/js/presentation-tools.js -> pass; git diff --check -> pass
 
 ### Human Review
 

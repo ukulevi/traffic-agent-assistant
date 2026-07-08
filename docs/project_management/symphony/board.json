@@ -408,19 +408,30 @@
       "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-13/draft-auth-rbac-and-tenant-boundary-design",
       "lane": "Orchestrator/API/Release",
       "owner_agent": "OrchestratorReleaseAgent",
-      "status": "Backlog",
+      "status": "In Progress",
       "priority": "P2",
       "evidence": [
         "project_contract.json",
         "docs/04_AI_Agent_Orchestrator_CF_VLA.md",
-        "src/stwi/t4_orchestrator/contracts.py"
+        "src/stwi/t4_orchestrator/contracts.py",
+        "src/stwi/t4_orchestrator/api.py",
+        "src/stwi/t4_orchestrator/orchestrator.py",
+        "src/stwi/t3_knowledge/query_builder.py",
+        "docs/design/auth_rbac_tenant_boundary.md"
       ],
       "acceptance_criteria": [
         "Design derives operator identity and tenant context server-side instead of trusting request body fields.",
         "Role boundaries for operator, analyst, admin, and readonly are specified without choosing a new identity provider.",
-        "No auth dependency, external IdP, or API schema change is implemented before Human Review approval."
+        "No auth dependency, external IdP, credential storage, or runtime implementation is introduced in TRA-13."
       ],
-      "next_action": "Draft a minimal production-boundary proposal and keep it in Human Review before implementation."
+      "next_action": "Review the auth/RBAC/tenant-boundary design and advance to Human Review before implementation.",
+      "checks": [
+        "python scripts/validation/validate_docs.py -> pass",
+        "python -m unittest tests.contracts.test_project_contract -> pass, 4 tests",
+        "node --check slides/js/presentation.js -> pass",
+        "node --check slides/js/presentation-tools.js -> pass",
+        "git diff --check -> pass"
+      ]
     },
     {
       "id": "STWI-SYM-018",
