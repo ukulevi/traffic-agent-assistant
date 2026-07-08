@@ -1,0 +1,19 @@
+{
+  "identifier": "STWI-SYM-022",
+  "title": "SYM-022 / TRA-18 - Finalize Symphony automation evidence and release QA snapshot",
+  "packet_file": "C:\\Users\\PC\\Downloads\\DADN\\traffic-agent-assistant\\docs\\project_management\\symphony\\current_dispatch_packet.md",
+  "prompt_file": "C:\\Users\\PC\\Downloads\\DADN\\traffic-agent-assistant\\docs\\project_management\\symphony\\hermes_runs\\STWI-SYM-022_20260706T095946Z_prompt.md",
+  "allowed_files": [
+    "`docs/project_management/symphony/**`",
+    "`scripts/project_management/symphony_report.py`",
+    "`scripts/project_management/hermes_runner_bridge.py`",
+    "Do not edit files outside this list for this ticket."
+  ],
+  "runner_command": [
+    "C:\\Users\\PC\\AppData\\Local\\hermes\\hermes-agent\\venv\\Scripts\\hermes.exe",
+    "--oneshot",
+    "docs/project_management/symphony/hermes_runs/tra_18_prompt.md"
+  ],
+  "state": "prepared",
+  "created_at": "20260706T095946Z"
+}

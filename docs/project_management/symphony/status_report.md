@@ -1,11 +1,11 @@
 # STWI MVP Readiness Symphony
 
-Last reviewed: 2026-07-04
+Last reviewed: 2026-07-06
 
 ## Readiness Handoff Summary
 
 - Evidence base: project_contract.json
-- Todo: 5 | In Progress: 1 | Human Review: 4 | Rework: 1 | Done: 5
+- Todo: 5 | In Progress: 1 | Human Review: 4 | Rework: 0 | Done: 7
 - Requires human review for: contract changes, dashboard scope changes, legal/SOP source approval, vision promotion threshold changes, production credentials or external services
 - Report command: python scripts/project_management/symphony_report.py
 - Daily agent update: enabled
@@ -19,9 +19,9 @@ Last reviewed: 2026-07-04
 | Todo | 5 |
 | In Progress | 1 |
 | Human Review | 4 |
-| Rework | 1 |
+| Rework | 0 |
 | Merging | 0 |
-| Done | 5 |
+| Done | 7 |
 | Canceled | 0 |
 | Duplicate | 0 |
 
@@ -89,10 +89,11 @@ Last reviewed: 2026-07-04
   Evidence: data/derived/private/vision_evals/motoann_best_val_minarea003/roi_ap50_summary.json, scripts/training/train_vision_model.py, tests/vision
   Acceptance: Validation/test evaluation is rerun after label/model improvements.; Motorcycle and transport classes meet the accepted MVP evidence threshold or are explicitly scoped down.; Promotion decision is consistent with STWI-SYM-001.
   Next: Analyze low-precision classes and select retraining or class-scope adjustment.
-- `STWI-SYM-018` / TRA-14 [P2] Specify observability minimum for trace, logs, and metrics (Orchestrator/API/Release, OrchestratorReleaseAgent)
-  Evidence: project_contract.json, docs/04_AI_Agent_Orchestrator_CF_VLA.md, docs/05_Implementation_Plan.md
-  Acceptance: Required trace_id, job timing, model/data/policy version, status transition, and safety reason fields are listed.; Metric names are specified for job counts, job latency, safety loop outcomes, retrieval latency, and surrogate latency.; Prometheus, OpenTelemetry, or other observability services remain optional future deployment choices until explicitly approved.
-  Next: Write the observability minimum as a docs/testable contract proposal before adding tooling.
+- `STWI-SYM-022` / TRA-18 [P2] Finalize Symphony automation evidence and release QA snapshot (Orchestrator/API/Release, ReleaseQaAgent / LeadCoordinator)
+  Evidence: docs/project_management/symphony/board.json, docs/project_management/symphony/board.md, docs/project_management/symphony/status_report.md, docs/project_management/symphony/current_dispatch_packet.md, docs/project_management/symphony/hermes_orchestrator_handoff.md, docs/project_management/symphony/agent_routing.json, docs/project_management/symphony/hermes_worker_prompts.md, scripts/project_management/symphony_report.py, scripts/project_management/hermes_runner_bridge.py
+  Acceptance: All modified/untracked workflow artifacts under `docs/project_management/symphony/**` are reviewed, grouped, and committed as a single coherent change set.; Generated `board.md`, `status_report.md`, and Hermes runner artifacts are regenerated and verified against current Linear state.; No secrets, `.env`, raw video, private weights, or private data are committed.; The ticket includes a final report with Result, Changed files, Checks, Contract/artifact impact, Risks/blockers, and Recommended next state.
+  Next: Package existing automation evidence into one reviewable commit and snapshot before dispatching the next implementation ticket.
+  Checks: python scripts/project_management/symphony_report.py -> pass; python scripts/project_management/symphony_report.py --write-markdown docs/project_management/symphony/board.md -> pass; python scripts/project_management/symphony_report.py --write-markdown docs/project_management/symphony/status_report.md -> pass; python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass; node --check slides/js/presentation.js -> pass; node --check slides/js/presentation-tools.js -> pass; git diff --check -> pass
 
 ### In Progress
 
@@ -122,10 +123,7 @@ Last reviewed: 2026-07-04
 
 ### Rework
 
-- `STWI-SYM-016` / TRA-12 [P2] Reconcile readiness scoring and progress evidence (Orchestrator/API/Release, LeadCoordinator)
-  Evidence: docs/project_management/symphony/board.json, docs/project_management/symphony/roadmap_intelligence_2026-07-03.md, docs/project_management/symphony/status_report.md
-  Acceptance: Progress estimates are derived from board state, gate criteria, and verified checks instead of raw agent-report percentages.; Stale test counts are replaced or explicitly marked stale.; A single readiness summary is available for Symphony/Linear handoff.
-  Next: Define one gate-backed readiness score and update the status report without changing contract invariants.
+- None
 
 ### Merging
 
@@ -142,6 +140,16 @@ Last reviewed: 2026-07-04
   Evidence: AGENTS.md, .agents/skills/stwi-release-qa/SKILL.md, git status --short
   Acceptance: Docs validator, contract tests, JS checks, slide static check, and git diff check pass.; Skipped tests and unverified service paths are listed.; No cache/build artifact is staged.
   Next: Keep QA evidence attached to Linear and rerun release QA after the remaining staged batch changes.
+  Checks: python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests; node --check slides/js/presentation.js -> pass; node --check slides/js/presentation-tools.js -> pass; git diff --check -> pass
+- `STWI-SYM-016` / TRA-12 [P2] Reconcile readiness scoring and progress evidence (Orchestrator/API/Release, LeadCoordinator)
+  Evidence: docs/project_management/symphony/board.json, docs/project_management/symphony/roadmap_intelligence_2026-07-03.md, docs/project_management/symphony/status_report.md
+  Acceptance: Progress estimates are derived from board state, gate criteria, and verified checks instead of raw agent-report percentages.; Stale test counts are replaced or explicitly marked stale.; A single readiness summary is available for Symphony/Linear handoff.
+  Next: Keep gate-backed readiness scoring and status report current.
+  Checks: python scripts/project_management/symphony_report.py -> pass; docs/project_management/symphony/board.md -> regenerated; docs/project_management/symphony/status_report.md -> regenerated
+- `STWI-SYM-018` / TRA-14 [P2] Specify observability minimum for trace, logs, and metrics (Orchestrator/API/Release, OrchestratorReleaseAgent)
+  Evidence: project_contract.json, docs/04_AI_Agent_Orchestrator_CF_VLA.md, docs/05_Implementation_Plan.md, docs/guides/observability_minimum.md
+  Acceptance: Required trace_id, job timing, model/data/policy version, status transition, and safety reason fields are listed.; Metric names are specified for job counts, job latency, safety loop outcomes, retrieval latency, and surrogate latency.; Prometheus, OpenTelemetry, or other observability services remain optional future deployment choices until explicitly approved.
+  Next: Write the observability minimum as a docs/testable contract proposal before adding tooling.
   Checks: python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests; node --check slides/js/presentation.js -> pass; node --check slides/js/presentation-tools.js -> pass; git diff --check -> pass
 - `STWI-SYM-019` / TRA-15 [P1] Define project-native model registry evidence format (ML/Simulation, MLSimulationAgent)
   Evidence: project_contract.json, docs/02_ML_and_Simulation_Specification.md, docs/guides/vision_local_training_runbook.md, src/stwi/tooling/vision_training/promotion.py

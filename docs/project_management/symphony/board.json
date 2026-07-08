@@ -3,7 +3,7 @@
   "project": "SmartTraffic What-If",
   "short_name": "STWI",
   "board_name": "STWI MVP Readiness Symphony",
-  "last_reviewed_at": "2026-07-04",
+  "last_reviewed_at": "2026-07-06",
   "source_of_truth": [
     "project_contract.json",
     "docs/00_STWI_Summary_and_Guidelines.md",
@@ -381,7 +381,7 @@
       "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-12/reconcile-readiness-scoring-and-progress-evidence",
       "lane": "Orchestrator/API/Release",
       "owner_agent": "LeadCoordinator",
-      "status": "Rework",
+      "status": "Done",
       "priority": "P2",
       "acceptance_summary": "Readiness scoring is derived from board state, gate criteria, and verified checks; stale test counts are replaced or explicitly marked stale.",
       "evidence": [
@@ -394,7 +394,12 @@
         "Stale test counts are replaced or explicitly marked stale.",
         "A single readiness summary is available for Symphony/Linear handoff."
       ],
-      "next_action": "Define one gate-backed readiness score and update the status report without changing contract invariants."
+      "next_action": "Keep gate-backed readiness scoring and status report current.",
+      "checks": [
+        "python scripts/project_management/symphony_report.py -> pass",
+        "docs/project_management/symphony/board.md -> regenerated",
+        "docs/project_management/symphony/status_report.md -> regenerated"
+      ]
     },
     {
       "id": "STWI-SYM-017",
@@ -424,19 +429,27 @@
       "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-14/specify-observability-minimum-for-trace-logs-and-metrics",
       "lane": "Orchestrator/API/Release",
       "owner_agent": "OrchestratorReleaseAgent",
-      "status": "Todo",
+      "status": "Done",
       "priority": "P2",
       "evidence": [
         "project_contract.json",
         "docs/04_AI_Agent_Orchestrator_CF_VLA.md",
-        "docs/05_Implementation_Plan.md"
+        "docs/05_Implementation_Plan.md",
+        "docs/guides/observability_minimum.md"
       ],
       "acceptance_criteria": [
         "Required trace_id, job timing, model/data/policy version, status transition, and safety reason fields are listed.",
         "Metric names are specified for job counts, job latency, safety loop outcomes, retrieval latency, and surrogate latency.",
         "Prometheus, OpenTelemetry, or other observability services remain optional future deployment choices until explicitly approved."
       ],
-      "next_action": "Write the observability minimum as a docs/testable contract proposal before adding tooling."
+      "next_action": "Write the observability minimum as a docs/testable contract proposal before adding tooling.",
+      "checks": [
+        "python scripts/validation/validate_docs.py -> pass",
+        "python -m unittest tests.contracts.test_project_contract -> pass, 4 tests",
+        "node --check slides/js/presentation.js -> pass",
+        "node --check slides/js/presentation-tools.js -> pass",
+        "git diff --check -> pass"
+      ]
     },
     {
       "id": "STWI-SYM-019",
@@ -586,6 +599,44 @@
         "Resulting evidence is deleted, kept in quarantine for privacy review, or converted into approved aggregate-only evidence by a follow-up issue."
       ],
       "next_action": "Keep in Human Review; do not add `symphony-approved` because this requires live external service access and human supervision."
+    },
+    {
+      "id": "STWI-SYM-022",
+      "title": "Finalize Symphony automation evidence and release QA snapshot",
+      "linear_identifier": "TRA-18",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-18/finalize-symphony-automation-evidence-and-release-qa-snapshot",
+      "lane": "Orchestrator/API/Release",
+      "owner_agent": "ReleaseQaAgent / LeadCoordinator",
+      "status": "Todo",
+      "priority": "P2",
+      "evidence": [
+        "docs/project_management/symphony/board.json",
+        "docs/project_management/symphony/board.md",
+        "docs/project_management/symphony/status_report.md",
+        "docs/project_management/symphony/current_dispatch_packet.md",
+        "docs/project_management/symphony/hermes_orchestrator_handoff.md",
+        "docs/project_management/symphony/agent_routing.json",
+        "docs/project_management/symphony/hermes_worker_prompts.md",
+        "scripts/project_management/symphony_report.py",
+        "scripts/project_management/hermes_runner_bridge.py"
+      ],
+      "acceptance_criteria": [
+        "All modified/untracked workflow artifacts under `docs/project_management/symphony/**` are reviewed, grouped, and committed as a single coherent change set.",
+        "Generated `board.md`, `status_report.md`, and Hermes runner artifacts are regenerated and verified against current Linear state.",
+        "No secrets, `.env`, raw video, private weights, or private data are committed.",
+        "The ticket includes a final report with Result, Changed files, Checks, Contract/artifact impact, Risks/blockers, and Recommended next state."
+      ],
+      "next_action": "Package existing automation evidence into one reviewable commit and snapshot before dispatching the next implementation ticket.",
+      "checks": [
+        "python scripts/project_management/symphony_report.py -> pass",
+        "python scripts/project_management/symphony_report.py --write-markdown docs/project_management/symphony/board.md -> pass",
+        "python scripts/project_management/symphony_report.py --write-markdown docs/project_management/symphony/status_report.md -> pass",
+        "python scripts/validation/validate_docs.py -> pass",
+        "python -m unittest tests.contracts.test_project_contract -> pass",
+        "node --check slides/js/presentation.js -> pass",
+        "node --check slides/js/presentation-tools.js -> pass",
+        "git diff --check -> pass"
+      ]
     }
   ]
 }
