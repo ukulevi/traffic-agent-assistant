@@ -16,6 +16,42 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+import numpy as np  # noqa: E402
+
+BENCHMARK_PROFILE = {
+    "cpu_cores": 8,
+    "ram_gb": 32,
+    "gpu_vram_gb_min": 12,
+    "gpu_vram_gb_max": 16,
+}
+
+
+def _check_benchmark_profile(benchmark: dict) -> list[str]:
+    errors: list[str] = []
+    recorded = {
+        "cpu_cores": benchmark.get("cpu_cores", benchmark.get("cpu_threads")),
+        "ram_gb": benchmark.get("ram_gb"),
+        "gpu_vram_gb_min": benchmark.get("gpu_vram_gb_min"),
+        "gpu_vram_gb_max": benchmark.get("gpu_vram_gb_max"),
+    }
+    missing_fields = [key for key, target in BENCHMARK_PROFILE.items() if target is not None and recorded.get(key) is None]
+    if missing_fields:
+        errors.append(
+            "benchmark report is missing profile fields: " + ", ".join(missing_fields)
+        )
+
+    unmatched = [
+        key for key, target in BENCHMARK_PROFILE.items()
+        if target is not None and recorded.get(key) is not None and recorded.get(key) != target
+    ]
+    if unmatched:
+        recorded_text = ", ".join(f"{key}={recorded.get(key)}" for key in unmatched)
+        expected_text = ", ".join(f"{key}={BENCHMARK_PROFILE[key]}" for key in unmatched)
+        errors.append(
+            "benchmark profile does not match contract: " + recorded_text + "; expected: " + expected_text
+        )
+    return errors
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -75,6 +111,11 @@ def main() -> int:
         errors.append("uncertainty/OOD thresholds were not fixed before test")
     if benchmark.get("status") != "pass" or benchmark.get("p99_ms", 9999) >= 500:
         errors.append("surrogate P99 benchmark failed")
+
+    benchmark_profile_errors = _check_benchmark_profile(benchmark)
+    if benchmark_profile_errors:
+        errors.extend(benchmark_profile_errors)
+
     for split, metrics in surrogate.get("splits", {}).items():
         numeric = [
             metrics["mae"], metrics["rmse"], metrics["max_vc_mae"],
@@ -168,7 +209,7 @@ def main() -> int:
                 "validation_coverage"
             ],
             "p99_ms": benchmark["p99_ms"],
-            "benchmark_profile_match": False,
+            "benchmark_profile_match": not benchmark_profile_errors,
             "checkpoint_load": "pass",
             "status": "provisional_pass",
         },
