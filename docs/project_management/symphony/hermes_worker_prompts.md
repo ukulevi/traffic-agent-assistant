@@ -24,9 +24,13 @@ Follow STWI invariants:
 - do not commit, push, create PRs, stage files, delete workspaces, or change
   Linear state.
 
-If the issue brief is ambiguous, allowed_files are missing, files overlap with
-unrelated dirty changes, or the task requires forbidden work, stop and report
-Human Review.
+Issue brief intent check:
+- If the brief does not retain the original request or interpretation notes,
+  treat intent as ambiguous and recommend Human Review.
+- Do not execute when scope/safety/contract/legal fields were inferred and
+  remain unconfirmed by the human lead.
+- When in doubt, stop and report Human Review instead of broadening or
+  narrowing the request silently.
 ```
 
 ## Step Executor Prompt
@@ -37,6 +41,8 @@ Role: executor only. Do not reason beyond the issue brief.
 
 linear_identifier: [TRA-XX]
 goal: [one concrete outcome]
+branch: ticket/[TRA-XX]-[short-slug]
+workspace: isolated ticket branch checkout only
 allowed_files:
 - [path]
 - [path]
@@ -46,6 +52,7 @@ forbidden_changes:
 - API/status/safety/legal semantics
 - new dependency/service/framework
 - secrets/private/live data/raw video
+- direct push to main or reuse of dirty workspaces
 acceptance_criteria:
 - [checkable criterion]
 - [checkable criterion]
@@ -55,11 +62,14 @@ exact_checks:
 expected_final_state: Human Review
 
 Work steps:
-1. Run git status --short and confirm only allowed files will be touched.
-2. Make the smallest coherent change.
-3. Run the exact checks once.
-4. Stop and report result, changed files, checks, contract/artifact impact,
-   risks/blockers, and recommended next state.
+1. Confirm current branch matches ticket branch and working tree is clean or
+   contains only issue-related changes. If not, stop and report Human Review.
+2. Run git status --short and confirm only allowed files will be touched.
+3. Make the smallest coherent change.
+4. Run the exact checks once.
+5. Stop and report result, changed files, checks, contract/artifact impact,
+   risks/blockers, and recommended next state. Do not commit, push, create
+   PRs, change branches, or update Linear state.
 ```
 
 ## Step QA Runner Prompt

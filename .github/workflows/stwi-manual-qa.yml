@@ -14,6 +14,10 @@ on:
           - tier3-offline
           - tier4-contracts
           - all-light
+      ticket_branch:
+        description: "Related ticket branch for audit context"
+        required: false
+        default: ""
 
 permissions:
   contents: read

@@ -144,12 +144,66 @@ clear `Human Review` blocker.
    `Human Review`.
 6. On Windows, avoid `conda run` for verification. If `python` is missing or
    resolves to a broken Conda environment, use the bundled runtime:
-   `C:\Users\PC\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe`.
+   `C:\\Users\\PC\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe`.
 7. Keep command output summaries concise. Report failing command names and the
    decisive error lines instead of pasting long logs.
 8. If an issue remains active after a successful turn only because tracker
    state was not changed, do not continue doing more work. Report the suggested
    next tracker state (`Done`, `Human Review`, or `Rework`) and stop.
+
+## Ticket isolation and branch policy
+
+Use branch/PR isolation as the primary protection against bad commits
+affecting the whole codespace.
+
+### Isolation rules
+- One ticket gets one feature branch named from its issue seed, for example
+  `ticket/<linear-seed>-<short-slug>` or `ticket/<seed>`.
+- Do not commit or push directly to `main`.
+- Each ticket workspace must be isolated; prefer fresh clone or shared-clone
+  workspace created for that ticket. Do not reuse dirty workspaces across
+  unrelated tickets.
+- Keep each ticket’s diff scoped to its `Allowed Files`. If unrelated dirty
+  files appear, stop for `Human Review` instead of staging mixed changes.
+- When a pushed commit is later found bad, revert or fix it in a follow-up PR
+  on the same ticket branch or a dedicated fix branch. Do not let one ticket’s
+  bad commit block other tickets’ clean history.
+
+### CI/CD posture
+- CI should verify each PR branch, not only `main`.
+- Branch protection should require passing checks before merge and should block
+  direct push to `main`.
+- Reuse the same verification commands from this workflow for PR checks:
+  `validate_docs.py`, focused unit tests, and relevant lane tests.
+- Jobs that need private data, live services, large model training, benchmark
+  hardware, release actions, or production credentials must remain out of
+  unattended CI and stay in `Human Review`.
+
+### Recovery pattern
+- To remove a bad PR’s effect from `main`: revert or fix-forward on `main`,
+  then backport or re-dispatch remaining clean tickets.
+- To keep working on other tickets while one is broken: keep their branches/PRs
+  independent. CI isolation means one bad ticket does not fail unrelated PRs
+  unless shared protected files or protected branches are touched.
+
+## Parallelizm cấu hình và ngân sách chi phí
+
+Treat parallelism as a cost control setting, not just a speed knob.
+
+- Mặc định: một implementation issue active tại một thời điểm.
+- Chỉ cho phép song song khi đều đủ: workspace riêng, `Allowed Files` không
+  chồng nhau, không đụng contract/API/safety/legal, và mỗi ticket dừng lại ở
+ Human Review` để reviewer xem diff trước khi merge.
+- Giữ prompt prefix ổn định giữa các lượt: cùng thứ tự đọc startup files, đừng
+  chèn bản tóm tắt lớn hay dashboard dump vào trước phần invariants.
+- Giới hạn initial read budget: sau startup files, đọc không quá 3 files hoặc
+  ~600 lines trước khi quyết định edit / review / thu hẹp scope.
+- Giới hạn checks: mỗi lệnh kiểm tra không đổi chỉ chạy tối đa một lần trừ
+  phi input/environment thay đổi.
+- Nếu một issue vượt ngưỡng ngữ cảnh/diff không hữu ích, dừng dispatch mới và
+  chuyển về `Human Review` thay vì retry mù.
+- Dùng `check` thay vì `apply` khi có thể trong parallel batch: kiểm tra độc
+  lập trên từng PR branch trước khi merge, tránh merge conflict lớn.
 
 ## Reasoning and context budget
 
@@ -531,6 +585,36 @@ At the end of each turn, report in Vietnamese using this shape:
 7. **Next status:** recommended tracker state.
 8. **Improvement proposals:** optional follow-up issue candidates using the
    proposal schema above. Write `None` if there are no high-value follow-ups.
+
+## Gói nhận yêu cầu vấn đề có cấu trúc
+
+Phần này không yêu cầu bạn phải điền một biểu mẫu cố định. Mục đích là giúp
+yêu cầu của bạn được chuyển thành brief nhỏ gọn trước khi tạo/điều chỉnh issue
+cho Codex/Symphony, từ đó giảm chi phí ngữ cảnh khởi động. Tuy nhiên, brief
+không được dùng để thay thế yêu cầu gốc: phải giữ lại nội dung gốc và ghi rõ
+các giả định khi chuyển đổi.
+
+Nếu bạn nhập prompt dài tự do hoặc yêu cầu ngắn chung chung, trước khi dispatch
+hãy đảm bảo có ít nhất các mục:
+- yêu cầu gốc hoặc bản ghi yêu cầu gốc
+- ticket seed và tiêu đề
+- mục tiêu 1 đoạn ngắn
+- interpretation notes nếu có suy luận thêm
+- acceptance criteria dạng checklist có thể kiểm tra được
+- phạm file/cảnh được phép chỉnh
+- lệnh kiểm tra cụ thể
+- gap check: `complete`, `inferred`, hoặc `blocked`
+
+Hướng dẫn chuyển đổi nằm ở
+`docs/project_management/symphony/issue_request_brief_template.md`. Nếu muốn,
+bạn có thể:
+- tự viết brief trước khi tạo issue,
+- hoặc nhập prompt tự do và để coordinator/Hermes chuẩn hóa brief trước khi
+  dispatch cho Codex.
+
+Không cần form cứng; quan trọng là executor nhận được packet có giới hạn phạm
+vi **và người dùng xác nhận lại** khi có suy luận thêm, chứ không phải một
+đoạn mô tả dài chung chung bị hiểu nhầm ý.
 
 ## Default verification matrix
 

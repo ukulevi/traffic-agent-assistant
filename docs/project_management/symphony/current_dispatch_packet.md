@@ -14,9 +14,36 @@ python scripts/project_management/hermes_runner_bridge.py --runner-command "C:\U
 
 Do not use Antigravity in this workflow.
 
+## Original Request
+
+<long free-form prompt or short note from user>
+
+## Interpretation Notes
+
+- <assumption 1>
+- <assumption 2>
+- ...
+
 ## Ticket
 
 STWI-SYM-022 / TRA-18 - Finalize Symphony automation evidence and release QA snapshot
+
+## Branch
+
+Expected ticket branch:
+`ticket/TRA-18-finalize-symphony-automation-evidence-and-release-qa-snapshot`
+
+## Worktree Expectation
+
+Run this ticket in an isolated workspace/branch checkout. Do not reuse a
+dirty workspace from another ticket. If the working tree already has unrelated
+changes, stop for `Human Review` instead of staging mixed changes.
+
+## Phụ trách: Hermes Desktop
+
+Hermes không được phép commit/push hay cập nhật Linear state. Nếu dispatch
+gói tin này yêu cầu commit/push, phải là Codex/Step 3.7 Flash hoặc người
+dùng trực tiếp thực thi.
 
 ## Goal
 
