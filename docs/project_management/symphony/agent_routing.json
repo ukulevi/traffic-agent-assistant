@@ -1,0 +1,168 @@
+{
+  "version": "2026-07-04",
+  "purpose": "Model and role routing for STWI multi-desktop-agent coordination.",
+  "source_of_truth": {
+    "tracker": "Linear",
+    "runtime_control_plane": "Symphony",
+    "repo_contract": "project_contract.json",
+    "local_board_mirror": "docs/project_management/symphony/board.json"
+  },
+  "desktop_surfaces": {
+    "codex_desktop": {
+      "role": "lead_engineer_and_review_gate",
+      "default_model_class": "high_reasoning",
+      "responsibilities": [
+        "issue planning",
+        "acceptance criteria",
+        "contract and safety review",
+        "diff review",
+        "release QA decision",
+        "stage commit push only when the user explicitly asks"
+      ],
+      "must_not_delegate": [
+        "project_contract.json changes",
+        "API status semantics",
+        "fail-closed safety semantics",
+        "release actions",
+        "secret or private-data handling decisions"
+      ]
+    },
+    "hermes_desktop": {
+      "role": "step_orchestrator_and_worker_ui",
+      "default_model_class": "executor",
+      "responsibilities": [
+        "bounded implementation from a Codex-authored plan",
+        "documentation synchronization",
+        "generated artifact refresh",
+        "focused test execution",
+        "evidence collection",
+        "orchestrate Step workers through Hermes native tools when MCP server tools are messaging-only"
+      ],
+      "mcp_server_status": {
+        "status": "conversation_bridge_only",
+        "transport": "stdio",
+        "tools": [
+          "conversations_list",
+          "conversation_get",
+          "messages_read",
+          "attachments_fetch",
+          "events_poll",
+          "events_wait",
+          "messages_send",
+          "channels_list",
+          "permissions_list_open",
+          "permissions_respond"
+        ],
+        "runner_gaps": [
+          "no create agent run tool",
+          "no workspace or cwd parameter",
+          "no model override parameter",
+          "no structured run result contract"
+        ]
+      },
+      "must_stop_for_human_review": [
+        "missing allowed_files",
+        "ambiguous acceptance criteria",
+        "contract API safety or legal policy changes",
+        "secret private live-service or raw-video access",
+        "new dependency service framework or provider assumption",
+        "destructive action",
+        "commit push PR release deployment"
+      ]
+    },
+    "symphony": {
+      "role": "queue_and_workspace_control_plane",
+      "responsibilities": [
+        "keep Linear state aligned",
+        "create or reuse isolated issue workspaces",
+        "prepare one bounded issue at a time by default",
+        "stop retry loops when a reviewable diff exists",
+        "never make final merge decisions"
+      ]
+    }
+  },
+  "integration_direction": {
+    "selected": "hermes_orchestrates_step_workers_codex_reviews",
+    "reason": "Hermes MCP server exposes conversation and messaging tools only, not a worker-runner contract with workspace, prompt, model, and structured result.",
+    "codex_to_hermes_mcp": "Use only for messaging, session observation, or handoff notes.",
+    "hermes_execution": "Use Hermes native terminal/file/browser/delegate_task/chat or oneshot surfaces when available.",
+    "codex_role": "Create plans and prompts, review diffs, decide Rework/Human Review/Done recommendation."
+  },
+  "model_routes": [
+    {
+      "route": "step_3_7_flash_free",
+      "provider": "Nous Portal",
+      "owner_surface": "Hermes Desktop",
+      "use_for": [
+        "small implementation from exact plan",
+        "single-file or narrow multi-file docs update",
+        "renderer or generated-report sync",
+        "simple focused test fix",
+        "running checks and summarizing evidence",
+        "mechanical refactor inside allowed files"
+      ],
+      "do_not_use_for": [
+        "scope decisions",
+        "architecture tradeoffs",
+        "contract changes",
+        "safety or legal semantics",
+        "root cause across multiple subsystems",
+        "final Done or Rework decision"
+      ]
+    },
+    {
+      "route": "gpt_5_5_high_reasoning",
+      "provider": "Codex Desktop GPT Plus subscription",
+      "owner_surface": "Codex Desktop only",
+      "use_for": [
+        "planning",
+        "diff review",
+        "root-cause analysis",
+        "cross-artifact release decisions",
+        "contract API safety legal or RAG policy",
+        "model routing decisions",
+        "Human Review resolution recommendation"
+      ],
+      "do_not_use_for": [
+        "large mechanical edits that can be executed from a complete plan",
+        "repeated test runs with unchanged inputs",
+        "unbounded repository scanning",
+        "Hermes Desktop worker execution"
+      ]
+    }
+  ],
+  "concurrency_policy": {
+    "default_active_implementation_issues": 1,
+    "parallel_allowed_only_when": [
+      "each issue has an isolated workspace",
+      "allowed_files do not overlap",
+      "no task touches project_contract.json API status safety legal private data or live services",
+      "each worker stops at reviewable diff",
+      "Codex or human lead reviews before any merge action"
+    ],
+    "current_recommended_mode": "one active implementation issue until TRA-12 is reviewed and leaves Human Review"
+  },
+  "handoff_contract": {
+    "required_issue_brief_fields": [
+      "linear_identifier",
+      "goal",
+      "allowed_files",
+      "forbidden_changes",
+      "acceptance_criteria",
+      "exact_checks",
+      "expected_final_state"
+    ],
+    "required_worker_report_fields": [
+      "result",
+      "changed_files",
+      "checks",
+      "contract_artifact_impact",
+      "risks_or_blockers",
+      "recommended_next_state"
+    ],
+    "final_states_for_workers": [
+      "Human Review",
+      "Rework"
+    ]
+  }
+}
