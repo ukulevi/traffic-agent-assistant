@@ -5,7 +5,7 @@ Last reviewed: 2026-07-06
 ## Readiness Handoff Summary
 
 - Evidence base: project_contract.json
-- Todo: 5 | In Progress: 5 | Human Review: 3 | Rework: 0 | Done: 7
+- Todo: 5 | In Progress: 6 | Human Review: 3 | Rework: 0 | Done: 7
 - Requires human review for: contract changes, dashboard scope changes, legal/SOP source approval, vision promotion threshold changes, production credentials or external services
 - Report command: python scripts/project_management/symphony_report.py
 - Daily agent update: enabled
@@ -15,9 +15,9 @@ Last reviewed: 2026-07-06
 
 | Status | Count |
 |---|---:|
-| Backlog | 5 |
+| Backlog | 4 |
 | Todo | 5 |
-| In Progress | 5 |
+| In Progress | 6 |
 | Human Review | 3 |
 | Rework | 0 |
 | Merging | 0 |
@@ -42,10 +42,6 @@ Last reviewed: 2026-07-06
   Evidence: data/derived/private/phase2_forecast/phase2_readiness_report.json, docs/02_ML_and_Simulation_Specification.md
   Acceptance: Chronological split is recorded.; Scaler is fit only on training split.; Forecast metrics are reported by horizon/node/missing bucket.
   Next: Select approved aggregate dataset and run Phase 2 start readiness again.
-- `STWI-SYM-005` / TRA-6 [P1] Prove surrogate P99 under the contract benchmark profile (ML/Simulation, MLSimulationAgent)
-  Evidence: project_contract.json, data/derived/private/phase2_surrogate/v3/benchmark_report.json
-  Acceptance: Benchmark machine profile matches 8 CPU, 32 GB RAM, 12-16 GB GPU VRAM.; Surrogate P99 is below 500 ms.; Raw benchmark result is retained as private artifact.
-  Next: Rerun benchmark on approved profile or mark KPI claim provisional.
 - `STWI-SYM-006` [P1] Ingest approved SOP corpus and validate citation coverage (Knowledge/RAG, KnowledgeRagAgent)
   Evidence: docs/03_Knowledge_Base_and_RAG_Design.md, data/derived/private/phase3_knowledge/gate_p3_report.json
   Acceptance: SOP corpus has source registry, effective date, and content hash.; Unsupported claim rate is zero after validator/abstention.; Citation precision target is measured against the evaluation set.
@@ -85,6 +81,10 @@ Last reviewed: 2026-07-06
 
 ### In Progress
 
+- `STWI-SYM-005` / TRA-6 [P1] Prove surrogate P99 under the contract benchmark profile (ML/Simulation, MLSimulationAgent)
+  Evidence: project_contract.json, data/derived/private/phase2_surrogate/v3/benchmark_report.json, docs/guides/surrogate_benchmark_evidence.md
+  Acceptance: Benchmark machine profile matches 8 CPU, 32 GB RAM, 12-16 GB GPU VRAM.; Surrogate P99 is below 500 ms.; Raw benchmark result is retained as private artifact.; E2E P95 target is recorded as required future evidence; no claim is made without measurement.
+  Next: Archive the recorded private benchmark artifact and extend runbook with E2E measurement plan.
 - `STWI-SYM-009` / TRA-7 [P1] Replace provisional fake adapters in production runtime (Orchestrator/API/Release, OrchestratorReleaseAgent)
   Evidence: src/stwi/config/runtime.py, src/stwi/t4_orchestrator/orchestrator.py, src/stwi/t3_knowledge/tier3_facade.py, docs/guides/production_adapter_replacement_runbook.md
   Acceptance: `STWI_RUNTIME_MODE=production` rejects fake adapters.; Real adapters have documented required environment variables.; Production startup fails closed when services are missing.; No new dependency or external service is added beyond the approved stack.
@@ -121,9 +121,10 @@ Last reviewed: 2026-07-06
   Acceptance: Dashboard scope is approved by user.; If implemented, UI shows job status, citations, warnings, versions, trace_id, and approval state.; If deferred, docs and demo script clearly state the limitation.
   Next: User decides whether to build a minimal dashboard or keep API/slides demo.
 - `STWI-RTSP-003` / TRA-11 [P1] Run supervised live RTSP smoke test for edge_camera_1 (Data/Vision, DataVisionAgent with human supervision)
-  Evidence: STWI_RTSP_URL local environment variable, data/quarantine/rtsp_frames, https://linear.app/traffic-agent-assistant/issue/TRA-11/run-supervised-live-rtsp-smoke-test-for-edge-camera-1
-  Acceptance: Human operator confirms the RTSP endpoint is approved for STWI testing and sets it only in `STWI_RTSP_URL`.; Live capture is bounded to a small sample, stores sparse frames only in quarantine, and retains no raw video.; Manifest is reviewed to confirm no endpoint, credentials, image base64, or raw video reference is present.; Resulting evidence is deleted, kept in quarantine for privacy review, or converted into approved aggregate-only evidence by a follow-up issue.
+  Evidence: STWI_RTSP_URL local environment variable, .env.local.example, data/quarantine/rtsp_frames, docs/guides/rtsp_smoke_test_runbook.md, https://linear.app/traffic-agent-assistant/issue/TRA-11/run-supervised-live-rtsp-smoke-test-for-edge-camera-1
+  Acceptance: Human operator confirms the RTSP endpoint is approved for STWI testing and sets it only in `STWI_RTSP_URL`.; Local environment uses `.env.local.example` as the template; `.env.local` is not committed.; Live capture is bounded to a small sample, stores sparse frames only in quarantine, and retains no raw video.; Manifest is reviewed to confirm no endpoint, credentials, image base64, or raw video reference is present.; Resulting evidence is deleted, kept in quarantine for privacy review, or converted into approved aggregate-only evidence by a follow-up issue.
   Next: Keep in Human Review; do not add `symphony-approved` because this requires live external service access and human supervision.
+  Checks: python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests; node --check slides/js/presentation.js -> pass; node --check slides/js/presentation-tools.js -> pass; git diff --check -> pass
 
 ### Rework
 

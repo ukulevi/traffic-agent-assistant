@@ -156,18 +156,20 @@
       "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-6/prove-surrogate-p99-under-contract-benchmark-profile",
       "lane": "ML/Simulation",
       "owner_agent": "MLSimulationAgent",
-      "status": "Backlog",
+      "status": "In Progress",
       "priority": "P1",
       "evidence": [
         "project_contract.json",
-        "data/derived/private/phase2_surrogate/v3/benchmark_report.json"
+        "data/derived/private/phase2_surrogate/v3/benchmark_report.json",
+        "docs/guides/surrogate_benchmark_evidence.md"
       ],
       "acceptance_criteria": [
         "Benchmark machine profile matches 8 CPU, 32 GB RAM, 12-16 GB GPU VRAM.",
         "Surrogate P99 is below 500 ms.",
-        "Raw benchmark result is retained as private artifact."
+        "Raw benchmark result is retained as private artifact.",
+        "E2E P95 target is recorded as required future evidence; no claim is made without measurement."
       ],
-      "next_action": "Rerun benchmark on approved profile or mark KPI claim provisional."
+      "next_action": "Archive the recorded private benchmark artifact and extend runbook with E2E measurement plan."
     },
     {
       "id": "STWI-SYM-006",
@@ -628,16 +630,26 @@
       "priority": "P1",
       "evidence": [
         "STWI_RTSP_URL local environment variable",
+        ".env.local.example",
         "data/quarantine/rtsp_frames",
+        "docs/guides/rtsp_smoke_test_runbook.md",
         "https://linear.app/traffic-agent-assistant/issue/TRA-11/run-supervised-live-rtsp-smoke-test-for-edge-camera-1"
       ],
       "acceptance_criteria": [
         "Human operator confirms the RTSP endpoint is approved for STWI testing and sets it only in `STWI_RTSP_URL`.",
+        "Local environment uses `.env.local.example` as the template; `.env.local` is not committed.",
         "Live capture is bounded to a small sample, stores sparse frames only in quarantine, and retains no raw video.",
         "Manifest is reviewed to confirm no endpoint, credentials, image base64, or raw video reference is present.",
         "Resulting evidence is deleted, kept in quarantine for privacy review, or converted into approved aggregate-only evidence by a follow-up issue."
       ],
-      "next_action": "Keep in Human Review; do not add `symphony-approved` because this requires live external service access and human supervision."
+      "next_action": "Keep in Human Review; do not add `symphony-approved` because this requires live external service access and human supervision.",
+      "checks": [
+        "python scripts/validation/validate_docs.py -> pass",
+        "python -m unittest tests.contracts.test_project_contract -> pass, 4 tests",
+        "node --check slides/js/presentation.js -> pass",
+        "node --check slides/js/presentation-tools.js -> pass",
+        "git diff --check -> pass"
+      ]
     },
     {
       "id": "STWI-SYM-022",
