@@ -58,3 +58,4 @@ _site/
 
 # Local Hermes runner bridge artifacts
 docs/project_management/symphony/hermes_runs/
+.env.local.example

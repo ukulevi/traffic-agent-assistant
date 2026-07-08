@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 FORBIDDEN_TRACKED_PATTERNS = [
     re.compile(r"(^|/)\.env($|[./])"),
+    re.compile(r"(^|/)\.env\.[^/]*$"),  # .env.local, .env.symphony.local, etc.
     re.compile(r"(^|/)data/(external|quarantine|derived/private)(/|$)"),
     re.compile(r"(^|/)render_tmp(/|$)"),
     re.compile(r".*\.(mp4|mov|avi|mkv|webm|pt|pth|onnx|engine|safetensors|log|jsonl)$", re.I),
