@@ -59,15 +59,19 @@ class SQLQueryBuilder:
             raise ValueError(f"OrderBy not in allowlist: {query.order_by}")
 
         # Build query
+        # Always include identification columns so callers can interpret rows
+        # without depending on metric names alone.
+        identifier_cols = ["node_id", "horizon_minutes"]
         if query.aggregation:
-            # Each metric gets its own aggregation alias: AVG(col) AS avg_col
             agg_fn = query.aggregation.value.upper()
-            select_clause = ", ".join(
+            metric_cols = [
                 f"{agg_fn}({m.value}) AS {query.aggregation.value}_{m.value}"
                 for m in query.metrics
-            )
+            ]
+            select_clause = ", ".join(identifier_cols + metric_cols)
         else:
-            select_clause = ", ".join(m.value for m in query.metrics)
+            metric_cols = [m.value for m in query.metrics]
+            select_clause = ", ".join(identifier_cols + metric_cols)
 
         params: list[Any] = []
         where_clauses = ["job_id = %s"]
