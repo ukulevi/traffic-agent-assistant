@@ -232,19 +232,28 @@
       "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-7/replace-provisional-fake-adapters-in-production-runtime",
       "lane": "Orchestrator/API/Release",
       "owner_agent": "OrchestratorReleaseAgent",
-      "status": "Backlog",
+      "status": "In Progress",
       "priority": "P1",
       "evidence": [
         "src/stwi/config/runtime.py",
         "src/stwi/t4_orchestrator/orchestrator.py",
-        "src/stwi/t3_knowledge/tier3_facade.py"
+        "src/stwi/t3_knowledge/tier3_facade.py",
+        "docs/guides/production_adapter_replacement_runbook.md"
       ],
       "acceptance_criteria": [
         "`STWI_RUNTIME_MODE=production` rejects fake adapters.",
         "Real adapters have documented required environment variables.",
-        "Production startup fails closed when services are missing."
+        "Production startup fails closed when services are missing.",
+        "No new dependency or external service is added beyond the approved stack."
       ],
-      "next_action": "Audit adapter wiring and add integration test around production mode."
+      "next_action": "Review the adapter replacement runbook and advance to Human Review before live service wiring.",
+      "checks": [
+        "python scripts/validation/validate_docs.py -> pass",
+        "python -m unittest tests.contracts.test_project_contract -> pass, 4 tests",
+        "node --check slides/js/presentation.js -> pass",
+        "node --check slides/js/presentation-tools.js -> pass",
+        "git diff --check -> pass"
+      ]
     },
     {
       "id": "STWI-SYM-010",

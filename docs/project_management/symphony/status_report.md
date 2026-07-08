@@ -5,7 +5,7 @@ Last reviewed: 2026-07-06
 ## Readiness Handoff Summary
 
 - Evidence base: project_contract.json
-- Todo: 5 | In Progress: 3 | Human Review: 4 | Rework: 0 | Done: 7
+- Todo: 5 | In Progress: 4 | Human Review: 4 | Rework: 0 | Done: 7
 - Requires human review for: contract changes, dashboard scope changes, legal/SOP source approval, vision promotion threshold changes, production credentials or external services
 - Report command: python scripts/project_management/symphony_report.py
 - Daily agent update: enabled
@@ -15,9 +15,9 @@ Last reviewed: 2026-07-06
 
 | Status | Count |
 |---|---:|
-| Backlog | 6 |
+| Backlog | 5 |
 | Todo | 5 |
-| In Progress | 3 |
+| In Progress | 4 |
 | Human Review | 4 |
 | Rework | 0 |
 | Merging | 0 |
@@ -54,10 +54,6 @@ Last reviewed: 2026-07-06
   Evidence: src/stwi/t4_orchestrator/job_store.py, src/stwi/t4_orchestrator/api.py, infra/harness/compose.phase4.yaml
   Acceptance: Jobs are queued and executed by Celery worker.; Progress and events are persisted in Redis.; SSE reconnect does not duplicate execution.
   Next: Design minimal Redis-backed job store and Celery worker slice.
-- `STWI-SYM-009` / TRA-7 [P1] Replace provisional fake adapters in production runtime (Orchestrator/API/Release, OrchestratorReleaseAgent)
-  Evidence: src/stwi/config/runtime.py, src/stwi/t4_orchestrator/orchestrator.py, src/stwi/t3_knowledge/tier3_facade.py
-  Acceptance: `STWI_RUNTIME_MODE=production` rejects fake adapters.; Real adapters have documented required environment variables.; Production startup fails closed when services are missing.
-  Next: Audit adapter wiring and add integration test around production mode.
 - `STWI-SYM-021` / TRA-17 [P2] Review production deployment options without changing the approved stack (Orchestrator/API/Release, ReleaseQaAgent)
   Evidence: project_contract.json, infra/harness, docs/05_Implementation_Plan.md, docs/project_management/symphony/roadmap_intelligence_2026-07-03.md
   Acceptance: Docker Compose production, Kubernetes, and managed-service options are compared as deployment options only.; No Kubernetes, secrets manager, tracing, or model-serving framework is added to active architecture.; The recommendation lists cost, complexity, safety, rollback, and Human Review requirements for a later decision.
@@ -89,6 +85,11 @@ Last reviewed: 2026-07-06
 
 ### In Progress
 
+- `STWI-SYM-009` / TRA-7 [P1] Replace provisional fake adapters in production runtime (Orchestrator/API/Release, OrchestratorReleaseAgent)
+  Evidence: src/stwi/config/runtime.py, src/stwi/t4_orchestrator/orchestrator.py, src/stwi/t3_knowledge/tier3_facade.py, docs/guides/production_adapter_replacement_runbook.md
+  Acceptance: `STWI_RUNTIME_MODE=production` rejects fake adapters.; Real adapters have documented required environment variables.; Production startup fails closed when services are missing.; No new dependency or external service is added beyond the approved stack.
+  Next: Review the adapter replacement runbook and advance to Human Review before live service wiring.
+  Checks: python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests; node --check slides/js/presentation.js -> pass; node --check slides/js/presentation-tools.js -> pass; git diff --check -> pass
 - `STWI-SYM-012` [P1] Resolve dirty working tree into reviewable change groups (Orchestrator/API/Release, LeadCoordinator)
   Evidence: git status --short, python scripts/project_management/worktree_intake.py, docs/guides/repository_structure.md, src/stwi/tooling, tests/vision
   Acceptance: Unrelated generated manifests are kept separate from source changes.; Refactor files are reviewed as one coherent change set.; A read-only intake report groups dirty worktree changes before staging.; No user changes are reverted.

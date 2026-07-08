@@ -102,11 +102,9 @@ class WhatIfOrchestrator:
                 "Production runtime requires explicit baseline, surrogate, and "
                 "T3 adapters; provisional fake defaults are disabled."
             )
-        self._baseline = baseline or FakeBaselineForecaster()
-        self._surrogate = surrogate or FakeSurrogateForecaster(
-            node_overrides=surrogate_node_overrides or {}
-        )
-        self._t3 = t3 or T3KnowledgeTier()
+        self._baseline = baseline
+        self._surrogate = surrogate
+        self._t3 = t3
         self._timeout_seconds = timeout_seconds
 
     def run(self, job_id: str, request: WhatIfJobRequest) -> WhatIfJobResult:
