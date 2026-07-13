@@ -16,41 +16,14 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-import numpy as np  # noqa: E402
-
-BENCHMARK_PROFILE = {
-    "cpu_cores": 8,
-    "ram_gb": 32,
-    "gpu_vram_gb_min": 12,
-    "gpu_vram_gb_max": 16,
-}
+from validation.validate_surrogate_benchmark_evidence import (  # noqa: E402
+    _load_contract_profile,
+    _validate,
+)
 
 
 def _check_benchmark_profile(benchmark: dict) -> list[str]:
-    errors: list[str] = []
-    recorded = {
-        "cpu_cores": benchmark.get("cpu_cores", benchmark.get("cpu_threads")),
-        "ram_gb": benchmark.get("ram_gb"),
-        "gpu_vram_gb_min": benchmark.get("gpu_vram_gb_min"),
-        "gpu_vram_gb_max": benchmark.get("gpu_vram_gb_max"),
-    }
-    missing_fields = [key for key, target in BENCHMARK_PROFILE.items() if target is not None and recorded.get(key) is None]
-    if missing_fields:
-        errors.append(
-            "benchmark report is missing profile fields: " + ", ".join(missing_fields)
-        )
-
-    unmatched = [
-        key for key, target in BENCHMARK_PROFILE.items()
-        if target is not None and recorded.get(key) is not None and recorded.get(key) != target
-    ]
-    if unmatched:
-        recorded_text = ", ".join(f"{key}={recorded.get(key)}" for key in unmatched)
-        expected_text = ", ".join(f"{key}={BENCHMARK_PROFILE[key]}" for key in unmatched)
-        errors.append(
-            "benchmark profile does not match contract: " + recorded_text + "; expected: " + expected_text
-        )
-    return errors
+    return _validate(benchmark, _load_contract_profile())
 
 
 def main() -> int:

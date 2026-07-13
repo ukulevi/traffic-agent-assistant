@@ -1,5 +1,6 @@
 import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -11,10 +12,13 @@ from validation.validate_provisional_phase2_gate import _check_benchmark_profile
 
 class ValidateProvisionalPhase2GateOfflineTest(unittest.TestCase):
     def _write_report(self, report):  # type: ignore[no-untyped-def]
-        path = Path("data/derived/private/phase2_surrogate/v3/benchmark_report.json")
-        path.parent.mkdir(parents=True, exist_ok=True)
+        self.addCleanup(self._temp_dir.cleanup)
+        path = Path(self._temp_dir.name) / "benchmark_report.json"
         path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
         return path
+
+    def setUp(self) -> None:
+        self._temp_dir = tempfile.TemporaryDirectory()
 
     def test_profile_mismatch_is_reported(self) -> None:
         report_path = self._write_report(
@@ -29,13 +33,10 @@ class ValidateProvisionalPhase2GateOfflineTest(unittest.TestCase):
                 "surrogate_p99_target_ms": 500,
             }
         )
-        try:
-            errors = _check_benchmark_profile(json.loads(report_path.read_text(encoding="utf-8")))
-            self.assertFalse(errors == [])
-            self.assertTrue(any("benchmark profile does not match contract" in error for error in errors))
-            self.assertTrue(any("missing profile fields" in error for error in errors))
-        finally:
-            report_path.unlink(missing_ok=True)
+        errors = _check_benchmark_profile(json.loads(report_path.read_text(encoding="utf-8")))
+        self.assertFalse(errors == [])
+        self.assertTrue(any("benchmark profile does not match contract" in error for error in errors))
+        self.assertTrue(any("missing profile fields" in error for error in errors))
 
     def test_pass_when_profile_matches(self) -> None:
         report_path = self._write_report(
@@ -43,21 +44,17 @@ class ValidateProvisionalPhase2GateOfflineTest(unittest.TestCase):
                 "status": "pass",
                 "p99_ms": 14.12,
                 "cpu_threads": 8,
-                "device": "cpu",
+                "device": "cuda:0 NVIDIA",
                 "payload_nodes": 20,
                 "warmup_runs": 20,
                 "measured_runs": 300,
                 "surrogate_p99_target_ms": 500,
                 "ram_gb": 32,
-                "gpu_vram_gb_min": 12,
-                "gpu_vram_gb_max": 16,
+                "gpu_vram_gb": 16,
             }
         )
-        try:
-            errors = _check_benchmark_profile(json.loads(report_path.read_text(encoding="utf-8")))
-            self.assertEqual(errors, [])
-        finally:
-            report_path.unlink(missing_ok=True)
+        errors = _check_benchmark_profile(json.loads(report_path.read_text(encoding="utf-8")))
+        self.assertEqual(errors, [])
 
 
 if __name__ == "__main__":

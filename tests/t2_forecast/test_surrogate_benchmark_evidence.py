@@ -1,5 +1,6 @@
 import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -11,8 +12,12 @@ from validation.validate_surrogate_benchmark_evidence import _validate, check_be
 
 
 class SurrogateBenchmarkEvidenceValidationTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self._temp_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(self._temp_dir.cleanup)
+
     def _write_compliant_report(self) -> Path:
-        path = ROOT / "data/derived/private/phase2_surrogate/v3/benchmark_report_compliant.json"
+        path = Path(self._temp_dir.name) / "benchmark_report_compliant.json"
         path.write_text(
             json.dumps(
                 {
@@ -20,8 +25,8 @@ class SurrogateBenchmarkEvidenceValidationTest(unittest.TestCase):
                     "p99_ms": 14.12,
                     "cpu_cores": 8,
                     "ram_gb": 32,
-                    "gpu_vram_gb_min": 12,
-                    "gpu_vram_gb_max": 16,
+                    "device": "cuda:0 NVIDIA",
+                    "gpu_vram_gb": 16,
                 },
                 indent=2,
             )
@@ -31,7 +36,7 @@ class SurrogateBenchmarkEvidenceValidationTest(unittest.TestCase):
         return path
 
     def _write_non_compliant_report(self) -> Path:
-        path = ROOT / "data/derived/private/phase2_surrogate/v3/benchmark_report_non_compliant.json"
+        path = Path(self._temp_dir.name) / "benchmark_report_non_compliant.json"
         path.write_text(
             json.dumps(
                 {
@@ -59,7 +64,7 @@ class SurrogateBenchmarkEvidenceValidationTest(unittest.TestCase):
             errors = _validate(benchmark, profile)
             self.assertFalse(errors == [])
             self.assertTrue(any("missing profile fields" in error for error in errors))
-            self.assertFalse(any("benchmark profile does not match contract" in error for error in errors))
+            self.assertTrue(any("not an NVIDIA GPU/CUDA device" in error for error in errors))
         finally:
             path.unlink(missing_ok=True)
 
@@ -69,12 +74,34 @@ class SurrogateBenchmarkEvidenceValidationTest(unittest.TestCase):
             "p99_ms": 600,
             "cpu_cores": 8,
             "ram_gb": 32,
-            "gpu_vram_gb_min": 12,
-            "gpu_vram_gb_max": 16,
+            "device": "cuda:0 NVIDIA",
+            "gpu_vram_gb": 16,
         }
         profile = {"cpu_cores": 8, "ram_gb": 32, "gpu_vram_gb_min": 12, "gpu_vram_gb_max": 16}
         errors = _validate(benchmark, profile)
         self.assertTrue(any("not below 500 ms" in error for error in errors))
+
+    def test_declared_contract_range_does_not_replace_measured_vram(self) -> None:
+        benchmark = {
+            "status": "pass",
+            "p99_ms": 14.12,
+            "cpu_cores": 8,
+            "ram_gb": 32,
+            "device": "cpu",
+            "gpu_vram_gb_min": 12,
+            "gpu_vram_gb_max": 16,
+        }
+        profile = {
+            "cpu_cores": 8,
+            "ram_gb": 32,
+            "gpu_vram_gb_min": 12,
+            "gpu_vram_gb_max": 16,
+        }
+
+        errors = _validate(benchmark, profile)
+
+        self.assertTrue(any("gpu_vram_gb" in error for error in errors))
+        self.assertTrue(any("not an NVIDIA GPU/CUDA device" in error for error in errors))
 
     def test_pass_when_profile_matches(self) -> None:
         path = self._write_compliant_report()
@@ -86,8 +113,7 @@ class SurrogateBenchmarkEvidenceValidationTest(unittest.TestCase):
             try:
                 result = module.check_benchmark_evidence()
                 self.assertEqual(result["status"], "pass")
-                self.assertEqual(result["recorded_profile"]["gpu_vram_gb_min"], 12)
-                self.assertEqual(result["recorded_profile"]["gpu_vram_gb_max"], 16)
+                self.assertEqual(result["recorded_profile"]["gpu_vram_gb"], 16)
             finally:
                 module.BENCHMARK_PATH = original_path
         finally:

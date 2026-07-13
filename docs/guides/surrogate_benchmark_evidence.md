@@ -96,9 +96,10 @@ The current benchmark artifact **does not match the contract benchmark profile**
 ### Compliance path
 1. **Short-term evidence:** The CPU benchmark with `p99_ms=14.12` provides strong evidence that the surrogate is fast enough to meet the 500 ms target even without GPU acceleration.
 2. **Full contract compliance:** Requires a benchmark rerun on the specified hardware profile (`8 CPU / 32 GB RAM / NVIDIA GPU 12–16 GB`) to generate a fully contract-compliant artifact.
-3. **Validator behavior:** `scripts/validation/validate_surrogate_benchmark_evidence.py` now fails closed when the benchmark profile does not match the contract. This prevents false claims of compliance.
+3. **Required measured fields:** The report records `cpu_cores`, `ram_gb`, `device`, and the measured numeric `gpu_vram_gb`. Contract range fields are expectations, not substitutes for measured hardware evidence.
+4. **Validator behavior:** `scripts/validation/validate_surrogate_benchmark_evidence.py` fails closed when the measured profile does not match the contract. This prevents false claims of compliance.
 
 ### Action
 - [ ] Schedule GPU benchmark run on the specified hardware profile
-- [ ] Update `benchmark_report.json` with GPU measurement
+- [ ] Update `benchmark_report.json` with `device` and measured `gpu_vram_gb`
 - [ ] Re-run validator to confirm `benchmark_profile_match: true`

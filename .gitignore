@@ -34,6 +34,9 @@ data/derived/private/
 Thumbs.db
 .vscode/
 .idea/
+.claude/
+src/.claude/
+.gh_bp.json
 
 # Python cache & build artifacts
 __pycache__/

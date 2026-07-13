@@ -113,12 +113,14 @@ def parse_allowed_files(section: str) -> list[str]:
 
 
 def parse_ticket(section: str) -> tuple[str, str]:
-    match = re.search(r"(?:^|[-–—]|>|\s)\s*(TRA-\d+|STWI-[A-Z]+-\d+)", section, flags=re.IGNORECASE)
+    match = re.search(r"\bTRA-\d+\b", section, flags=re.IGNORECASE)
+    if match is None:
+        match = re.search(r"\bSTWI-[A-Z]+-\d+\b", section, flags=re.IGNORECASE)
     if match:
-        identifier = match.group(1)
+        identifier = match.group(0).upper()
     else:
         raise ValueError("Ticket section must include a Linear identifier.")
-    title_match = re.search(r"[-–—:]\s*(.+)", section)
+    title_match = re.search(r"\s(?:-|:|\N{EN DASH}|\N{EM DASH})\s+(.+)$", section)
     if title_match:
         title = title_match.group(1).strip()
     else:

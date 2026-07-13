@@ -51,8 +51,7 @@ jobs:
             tests.project_management.test_symphony_workspace_cleanup \
             tests.validation.test_validate_ci_guardrails \
             tests.t3_knowledge.test_t3_contracts \
-            tests.t4_orchestrator.test_t4_runtime_boundaries || true
-        continue-on-error: true
+            tests.t4_orchestrator.test_t4_runtime_boundaries
 
       - name: Check slide JavaScript syntax
         run: |

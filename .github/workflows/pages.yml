@@ -6,12 +6,6 @@ on:
     paths:
       - "slides/**"
       - ".github/workflows/pages.yml"
-  pull_request:
-    branches: [ main ]
-    paths:
-      - "slides/**"
-      - ".github/workflows/pages.yml"
-    types: [ closed ]
   workflow_dispatch:
 
 permissions:
@@ -25,7 +19,6 @@ concurrency:
 
 jobs:
   deploy:
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
