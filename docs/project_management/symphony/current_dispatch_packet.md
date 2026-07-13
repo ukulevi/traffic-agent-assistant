@@ -26,12 +26,12 @@ Do not use Antigravity in this workflow.
 
 ## Ticket
 
-STWI-SYM-024 / TRA-20 - Synchronize Symphony board snapshot after PR #5 tracker backfill
+STWI-SYM-009 / TRA-7 - Replace provisional fake adapters in production runtime
 
 ## Branch
 
 Expected ticket branch:
-`codex/tra-20-sync-symphony-board-snapshot`
+`codex/tra-7-fail-closed-provisional-adapters`
 
 ## Worktree Expectation
 
@@ -47,23 +47,28 @@ dùng trực tiếp thực thi.
 
 ## Goal
 
-Synchronize the local Symphony board snapshot after PR #5 tracker backfill. Update only the bounded board artifacts for TRA-6, TRA-19, and TRA-20; regenerate the derived Markdown reports; and prepare evidence for Human Review. Do not commit, push, update Linear, or restart Symphony in this executor pass.
+Recover TRA-7 from its stale clean workspace on a fresh branch from current main. Inventory provisional adapters reachable from production startup and make only the smallest fail-closed guard changes needed to prevent implicit fake/in-memory defaults in production. Preserve all job-status and human-approval semantics. Do not wire live services or introduce dependencies.
 
 ## Allowed Files
 
 ```text
-docs/project_management/symphony/board.json
-docs/project_management/symphony/board.md
-docs/project_management/symphony/status_report.md
-docs/project_management/symphony/current_dispatch_packet.md
-scripts/project_management/symphony_report.py
+src/stwi/config/runtime.py
+src/stwi/t4_orchestrator/api.py
+src/stwi/t4_orchestrator/orchestrator.py
+src/stwi/t4_orchestrator/interfaces.py
+src/stwi/t4_orchestrator/fake_adapters.py
+src/stwi/t4_orchestrator/job_store.py
+tests/t4_orchestrator/test_t4_runtime_boundaries.py
+tests/t4_orchestrator/test_t4_api_http.py
+docs/04_AI_Agent_Orchestrator_CF_VLA.md
+docs/guides/production_adapter_replacement_runbook.md
 ```
 
 Do not edit files outside this list for this ticket.
 
 ## Forbidden Changes
 
-Do not commit, push, update Linear state, restart Symphony, change `project_contract.json`, or edit files outside `Allowed Files`. Do not add Kubernetes, secrets manager, tracing stack, model server, workflow, or CI deployment changes.
+Do not commit, push, update Linear state, restart Symphony, change `project_contract.json`, wire live Celery, Redis, TimescaleDB, Qdrant, or model services, or edit files outside `Allowed Files`. Do not add dependencies, Kubernetes, secrets manager, tracing stack, model server, workflow, or CI deployment changes.
 
 ## Authorization
 
@@ -88,10 +93,11 @@ Human review is supervisory and required for:
 
 ## Acceptance Criteria
 
-1. TRA-6 is recorded as `Todo` with the required 12-16 GB GPU benchmark blocker.
-2. TRA-19 is recorded as `Done` with the PR #5 retrospective evidence.
-3. TRA-20 is recorded as `In Progress`, and `board.md` plus `status_report.md` are regenerated from `board.json`.
-4. No secrets, `.env`, raw video, private weights, private data, or unrelated implementation files are changed.
+1. `STWI_RUNTIME_MODE=production` rejects implicit fake or in-memory adapters before a job can be accepted.
+2. Missing real service wiring fails closed with an actionable, non-secret error; no live service is contacted.
+3. Job statuses remain `queued`, `running`, `succeeded`, `needs_review`, `failed`, and `expired`; `recommended_action` remains limited to `succeeded`.
+4. Focused runtime-boundary and API tests, contract tests, and docs validation pass.
+5. No secrets, `.env`, raw video, private weights, private data, dependency, or unrelated implementation files are changed.
 
 ## Next Action
 
@@ -101,14 +107,13 @@ Run the bounded checks, then open a draft PR for Human Review before any merge.
 
 Run the following before claiming completion:
 ```powershell
-python scripts/validation/validate_docs.py
+python -m unittest tests.t4_orchestrator.test_t4_runtime_boundaries
+python -m unittest tests.t4_orchestrator.test_t4_api_http
 python -m unittest tests.contracts.test_project_contract
+python scripts/validation/validate_docs.py
 node --check slides/js/presentation.js
 node --check slides/js/presentation-tools.js
 git diff --check
-python scripts/project_management/symphony_report.py --write-markdown docs/project_management/symphony/board.md
-python scripts/project_management/symphony_report.py --write-markdown docs/project_management/symphony/status_report.md
-python scripts/project_management/symphony_report.py
 ```
 
 ## Required Final Report

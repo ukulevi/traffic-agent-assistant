@@ -658,7 +658,7 @@
       "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-18/finalize-symphony-automation-evidence-and-release-qa-snapshot",
       "lane": "Orchestrator/API/Release",
       "owner_agent": "ReleaseQaAgent / LeadCoordinator",
-      "status": "Todo",
+      "status": "Canceled",
       "priority": "P2",
       "evidence": [
         "docs/project_management/symphony/board.json",
@@ -677,7 +677,7 @@
         "No secrets, `.env`, raw video, private weights, or private data are committed.",
         "The ticket includes a final report with Result, Changed files, Checks, Contract/artifact impact, Risks/blockers, and Recommended next state."
       ],
-      "next_action": "Package existing automation evidence into one reviewable commit and snapshot before dispatching the next implementation ticket.",
+      "next_action": "Superseded by TRA-20 and TRA-21; do not dispatch a second tracker snapshot task.",
       "checks": [
         "python scripts/project_management/symphony_report.py -> pass",
         "python scripts/project_management/symphony_report.py --write-markdown docs/project_management/symphony/board.md -> pass",
@@ -722,12 +722,14 @@
       "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-20/synchronize-symphony-board-snapshot-after-pr-5-tracker-backfill",
       "lane": "Orchestrator/API/Release",
       "owner_agent": "LeadCoordinator",
-      "status": "Human Review",
+      "status": "Done",
       "priority": "P1",
       "evidence": [
         "docs/project_management/symphony/board.json",
         "docs/project_management/symphony/board.md",
         "docs/project_management/symphony/status_report.md",
+        "https://github.com/ukulevi/traffic-agent-assistant/pull/6",
+        "e405a8c",
         "TRA-6",
         "TRA-19",
         "TRA-20"
@@ -737,7 +739,38 @@
         "Generated Markdown reports are regenerated from board.json.",
         "No private artifacts, secrets, or unrelated implementation files are changed."
       ],
-      "next_action": "Await final user review and merge of PR #6; mark Done only after main is synchronized."
+      "next_action": "Keep the merge evidence; TRA-21 owns post-merge tracker synchronization.",
+      "checks": [
+        "GitHub fast-guards -> pass",
+        "GitHub build-pdf -> pass",
+        "PR #6 merged as e405a8c"
+      ]
+    },
+    {
+      "id": "STWI-SYM-025",
+      "title": "Synchronize Symphony tracker after PR #6 and prepare next dispatch",
+      "linear_identifier": "TRA-21",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-21/synchronize-symphony-tracker-after-pr-6-and-prepare-next-dispatch",
+      "lane": "Orchestrator/API/Release",
+      "owner_agent": "LeadCoordinator",
+      "status": "In Progress",
+      "priority": "P1",
+      "evidence": [
+        "docs/project_management/symphony/board.json",
+        "docs/project_management/symphony/board.md",
+        "docs/project_management/symphony/status_report.md",
+        "docs/project_management/symphony/current_dispatch_packet.md",
+        "TRA-18",
+        "TRA-20",
+        "TRA-21"
+      ],
+      "acceptance_criteria": [
+        "TRA-20 is recorded as Done with PR #6 merge evidence e405a8c.",
+        "TRA-18 is recorded as Canceled because its tracker scope was superseded.",
+        "Generated Markdown reports are regenerated from board.json.",
+        "The dispatch packet names only TRA-7 and its bounded runtime safety scope."
+      ],
+      "next_action": "Run bounded checks and open a draft PR for final user review."
     }
   ]
 }
