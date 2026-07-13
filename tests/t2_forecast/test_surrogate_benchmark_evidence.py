@@ -9,6 +9,9 @@ sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "scripts"))
 
 from validation.validate_surrogate_benchmark_evidence import _validate, check_benchmark_evidence  # noqa: E402
+from validation.generate_simulated_surrogate_benchmark import (  # noqa: E402
+    build_simulated_benchmark_report,
+)
 
 
 class SurrogateBenchmarkEvidenceValidationTest(unittest.TestCase):
@@ -21,6 +24,7 @@ class SurrogateBenchmarkEvidenceValidationTest(unittest.TestCase):
         path.write_text(
             json.dumps(
                 {
+                    "evidence_kind": "measured",
                     "status": "pass",
                     "p99_ms": 14.12,
                     "cpu_cores": 8,
@@ -40,6 +44,7 @@ class SurrogateBenchmarkEvidenceValidationTest(unittest.TestCase):
         path.write_text(
             json.dumps(
                 {
+                    "evidence_kind": "simulated",
                     "status": "pass",
                     "p99_ms": 14.12,
                     "cpu_threads": 8,
@@ -70,6 +75,7 @@ class SurrogateBenchmarkEvidenceValidationTest(unittest.TestCase):
 
     def test_p99_above_threshold_is_reported(self) -> None:
         benchmark = {
+            "evidence_kind": "measured",
             "status": "pass",
             "p99_ms": 600,
             "cpu_cores": 8,
@@ -83,6 +89,7 @@ class SurrogateBenchmarkEvidenceValidationTest(unittest.TestCase):
 
     def test_declared_contract_range_does_not_replace_measured_vram(self) -> None:
         benchmark = {
+            "evidence_kind": "measured",
             "status": "pass",
             "p99_ms": 14.12,
             "cpu_cores": 8,
@@ -129,11 +136,29 @@ class SurrogateBenchmarkEvidenceValidationTest(unittest.TestCase):
             try:
                 result = module.check_benchmark_evidence()
                 self.assertEqual(result["status"], "fail")
-                self.assertTrue(any("missing profile fields" in error for error in result["errors"]))
+                self.assertTrue(
+                    any("missing profile fields" in error for error in result["errors"])
+                )
             finally:
                 module.BENCHMARK_PATH = original_path
         finally:
             path.unlink(missing_ok=True)
+
+    def test_simulated_report_is_deterministic_and_non_qualifying(self) -> None:
+        report = build_simulated_benchmark_report(100.0)
+
+        self.assertEqual(report["evidence_kind"], "simulated")
+        self.assertEqual(report["status"], "simulated")
+        self.assertEqual(report["p99_ms"], 100.0)
+        errors = _validate(
+            report,
+            {"cpu_cores": 8, "ram_gb": 32, "gpu_vram_gb_min": 12, "gpu_vram_gb_max": 16},
+        )
+        self.assertTrue(any("simulated evidence" in error for error in errors))
+
+    def test_simulated_report_rejects_invalid_latency(self) -> None:
+        with self.assertRaisesRegex(ValueError, "finite non-negative"):
+            build_simulated_benchmark_report(-1.0)
 
 
 if __name__ == "__main__":

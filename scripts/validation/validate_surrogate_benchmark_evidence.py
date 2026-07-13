@@ -34,6 +34,12 @@ def _map_recorded_profile(benchmark: dict[str, Any]) -> dict[str, Any]:
 def _validate(benchmark: dict[str, Any], profile: dict[str, Any]) -> list[str]:
     errors: list[str] = []
 
+    if benchmark.get("evidence_kind") != "measured":
+        errors.append(
+            "benchmark evidence_kind must be 'measured'; simulated evidence is "
+            "not eligible for contract compliance"
+        )
+
     if str(benchmark.get("status")).lower() != "pass":
         errors.append("benchmark status is not 'pass'")
 
