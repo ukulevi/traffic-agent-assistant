@@ -22,6 +22,7 @@ import json
 import logging
 import threading
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import AsyncGenerator
 
 from stwi.config.runtime import RuntimeSettings, get_runtime_settings
@@ -74,6 +75,7 @@ def create_app(
     try:
         from fastapi import BackgroundTasks, FastAPI, Header, HTTPException
         from fastapi.responses import JSONResponse, StreamingResponse
+        from fastapi.staticfiles import StaticFiles
     except ImportError as exc:
         raise ImportError(
             "fastapi is required for the API. "
@@ -91,6 +93,11 @@ def create_app(
             "Human approval is required before applying any recommended action."
         ),
         version="0.4.0-provisional",
+    )
+    app.mount(
+        "/demo",
+        StaticFiles(directory=Path(__file__).with_name("static"), html=True),
+        name="demo",
     )
 
     # -----------------------------------------------------------------------
