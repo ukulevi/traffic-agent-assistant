@@ -218,7 +218,8 @@ must inject a trusted server-side resolver; app startup fails without one.
 Development, test, and demo may use an explicitly provisional resolver so
 offline evidence remains reproducible. That resolver is never production
 identity evidence and does not satisfy any future deployment authentication
-requirement.
+requirement. Production composition rejects both body-derived and static
+principal resolvers even when they are injected explicitly.
 
 ## 11. References
 

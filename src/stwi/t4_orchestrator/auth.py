@@ -53,9 +53,10 @@ class PrincipalResolver(Protocol):
 
 @dataclass(frozen=True)
 class StaticPrincipalResolver:
-    """Adapter for a trusted upstream integration or focused API test."""
+    """Deterministic principal adapter for focused tests only."""
 
     principal: ServerPrincipal
+    is_provisional_resolver = True
 
     def resolve(
         self,

@@ -15,6 +15,7 @@ except ImportError:
 from stwi.config.runtime import RuntimeMode, RuntimeSettings
 from stwi.t4_orchestrator.auth import (
     PrincipalRole,
+    ProvisionalBodyPrincipalResolver,
     ServerPrincipal,
     StaticPrincipalResolver,
 )
@@ -123,3 +124,28 @@ class TestAuthBoundary(unittest.TestCase):
         settings = RuntimeSettings(mode=RuntimeMode.PRODUCTION, job_concurrency=1)
         with self.assertRaisesRegex(RuntimeError, "PrincipalResolver"):
             create_app(store=object(), orchestrator=object(), settings=settings)
+
+    def test_production_rejects_provisional_principal_resolvers(self) -> None:
+        from stwi.t4_orchestrator.api import create_app
+
+        settings = RuntimeSettings(mode=RuntimeMode.PRODUCTION, job_concurrency=1)
+        provisional_resolvers = (
+            ProvisionalBodyPrincipalResolver(),
+            StaticPrincipalResolver(
+                ServerPrincipal(
+                    tenant_id=TENANT,
+                    operator_id="operator-a",
+                    roles=frozenset({PrincipalRole.OPERATOR}),
+                )
+            ),
+        )
+
+        for resolver in provisional_resolvers:
+            with self.subTest(resolver=type(resolver).__name__):
+                with self.assertRaisesRegex(RuntimeError, "rejects provisional"):
+                    create_app(
+                        store=object(),
+                        orchestrator=object(),
+                        settings=settings,
+                        principal_resolver=resolver,
+                    )

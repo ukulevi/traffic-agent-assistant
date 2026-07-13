@@ -86,6 +86,15 @@ def create_app(
                 "PrincipalResolver."
             )
         principal_resolver = ProvisionalBodyPrincipalResolver()
+    if not _settings.allow_provisional_adapters and getattr(
+        principal_resolver,
+        "is_provisional_resolver",
+        False,
+    ):
+        raise RuntimeError(
+            "Production runtime rejects provisional PrincipalResolver "
+            "implementations."
+        )
 
     try:
         from fastapi import BackgroundTasks, FastAPI, Header, HTTPException
