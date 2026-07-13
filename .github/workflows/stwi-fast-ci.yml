@@ -40,7 +40,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install project dependencies
-        run: python -m pip install -e .
+        run: python -m pip install -e ".[orchestrator]"
 
       - name: Validate docs, contract, and CI guardrails
         run: |
@@ -57,6 +57,9 @@ jobs:
             tests.validation.test_validate_ci_guardrails \
             tests.t3_knowledge.test_t3_contracts \
             tests.t4_orchestrator.test_t4_runtime_boundaries
+
+      - name: Run Tier-4 HTTP API tests
+        run: python -m unittest tests.t4_orchestrator.test_t4_api_http
 
       - name: Check slide JavaScript syntax
         run: |
