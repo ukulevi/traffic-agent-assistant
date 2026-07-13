@@ -128,6 +128,8 @@ class FakeT3Adapter(T3Adapter):
     Use this in all Phase 4 tests.
     """
 
+    is_provisional_adapter = True
+
     def __init__(self, corpus_dir: Any = None) -> None:
         from pathlib import Path
         if corpus_dir is None:
@@ -317,6 +319,11 @@ class T3KnowledgeTier:
 
     def __init__(self, adapter: T3Adapter | None = None) -> None:
         self._adapter = adapter or FakeT3Adapter()
+
+    @property
+    def uses_provisional_adapter(self) -> bool:
+        """Whether the wrapped adapter is safe only for test/demo composition."""
+        return bool(getattr(self._adapter, "is_provisional_adapter", False))
 
     def query_legal_evidence(
         self,

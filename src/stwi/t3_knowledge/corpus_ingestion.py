@@ -291,7 +291,9 @@ def ingest_minimal_corpus(corpus_dir: Path) -> tuple[list[LegalChunk], dict[str,
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         else:
             manifest = build_corpus_manifest(official)
-            manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2))
+            manifest_path.write_text(
+                json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
         return official, manifest
 
     # Fallback: synthetic fixtures
@@ -301,7 +303,9 @@ def ingest_minimal_corpus(corpus_dir: Path) -> tuple[list[LegalChunk], dict[str,
 
     manifest = build_corpus_manifest(all_chunks)
     manifest_path = corpus_dir / "corpus_manifest.json"
-    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2))
+    manifest_path.write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
 
     return all_chunks, manifest
 

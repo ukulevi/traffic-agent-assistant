@@ -5,10 +5,13 @@ from __future__ import annotations
 import ast
 import importlib.util
 import os
+import tempfile
 import unittest
 from pathlib import Path
 
 from stwi.config.runtime import RuntimeMode, get_runtime_settings
+from stwi.t3_knowledge.corpus_ingestion import ingest_minimal_corpus
+from stwi.t3_knowledge.tier3_facade import T3KnowledgeTier
 from stwi.t4_orchestrator.api import create_app
 from stwi.t4_orchestrator.fake_adapters import (
     FakeBaselineForecaster,
@@ -70,24 +73,50 @@ class TestProductionCompositionGuard(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "explicit job store"):
             create_app()
 
-    def test_orchestrator_allows_explicit_adapters_in_production(self):
-        orchestrator = WhatIfOrchestrator(
-            baseline=FakeBaselineForecaster(),
-            surrogate=FakeSurrogateForecaster(),
-            t3=object_with_legal_evidence(),
-        )
-        self.assertIsInstance(orchestrator, WhatIfOrchestrator)
+    def test_orchestrator_rejects_explicit_provisional_adapters_in_production(self):
+        with self.assertRaisesRegex(RuntimeError, "rejects provisional adapters"):
+            WhatIfOrchestrator(
+                baseline=FakeBaselineForecaster(),
+                surrogate=FakeSurrogateForecaster(),
+                t3=object_with_legal_evidence(),
+            )
 
-    def test_api_allows_explicit_store_and_orchestrator_in_production(self):
-        if importlib.util.find_spec("fastapi") is None:
-            self.skipTest("fastapi is not installed in the base test environment")
+    def test_api_rejects_explicit_in_memory_store_in_production(self):
+        with self.assertRaisesRegex(RuntimeError, "rejects provisional"):
+            create_app(store=InMemoryJobStore(), orchestrator=object())
+
+    def test_orchestrator_rejects_t3_facade_with_provisional_adapter(self):
+        with self.assertRaisesRegex(RuntimeError, "rejects provisional adapters"):
+            WhatIfOrchestrator(
+                baseline=object(),
+                surrogate=object(),
+                t3=T3KnowledgeTier(adapter=ProvisionalT3Adapter()),
+            )
+
+    def test_orchestrator_allows_nonprovisional_explicit_adapters_in_production(self):
         orchestrator = WhatIfOrchestrator(
-            baseline=FakeBaselineForecaster(),
-            surrogate=FakeSurrogateForecaster(),
+            baseline=object(),
+            surrogate=object(),
             t3=object_with_legal_evidence(),
         )
-        app = create_app(store=InMemoryJobStore(), orchestrator=orchestrator)
-        self.assertIsNotNone(app)
+        self.assertFalse(orchestrator.uses_provisional_adapters)
+
+
+class TestNonProductionComposition(unittest.TestCase):
+    def test_test_mode_auto_wires_provisional_adapters(self):
+        settings = get_runtime_settings({"STWI_RUNTIME_MODE": "test"})
+        orchestrator = WhatIfOrchestrator(settings=settings)
+
+        self.assertTrue(orchestrator.uses_provisional_adapters)
+
+
+class TestCorpusManifestEncoding(unittest.TestCase):
+    def test_manifest_is_written_as_utf8(self):
+        with tempfile.TemporaryDirectory() as directory:
+            manifest_path = Path(directory) / "corpus_manifest.json"
+            ingest_minimal_corpus(Path(directory))
+
+            self.assertIn("Điều", manifest_path.read_text(encoding="utf-8"))
 
 
 class TestArchitectureDirection(unittest.TestCase):
@@ -118,6 +147,12 @@ class object_with_legal_evidence:
 
     def query_legal_evidence(self, query_text, scenario_time, jurisdiction="VN"):
         raise AssertionError("composition test should not execute T3")
+
+
+class ProvisionalT3Adapter:
+    """Marker-only adapter for production composition tests."""
+
+    is_provisional_adapter = True
 
 
 if __name__ == "__main__":

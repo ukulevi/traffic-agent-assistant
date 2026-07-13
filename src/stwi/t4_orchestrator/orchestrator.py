@@ -55,6 +55,13 @@ MODEL_VERSION = "provisional_mock_v1"
 DATA_VERSION = "synthetic_mock_phase4"
 
 
+def _is_provisional_adapter(adapter: object | None) -> bool:
+    return bool(
+        getattr(adapter, "is_provisional_adapter", False)
+        or getattr(adapter, "uses_provisional_adapter", False)
+    )
+
+
 @dataclass
 class OrchestratorState:
     """Mutable state passed through the workflow graph."""
@@ -102,10 +109,33 @@ class WhatIfOrchestrator:
                 "Production runtime requires explicit baseline, surrogate, and "
                 "T3 adapters; provisional fake defaults are disabled."
             )
-        self._baseline = baseline
-        self._surrogate = surrogate
-        self._t3 = t3
+        if not self._settings.allow_provisional_adapters and any(
+            _is_provisional_adapter(adapter)
+            for adapter in (baseline, surrogate, t3)
+        ):
+            raise RuntimeError(
+                "Production runtime rejects provisional adapters; inject "
+                "real baseline, surrogate, and T3 adapters."
+            )
+        if self._settings.allow_provisional_adapters:
+            self._baseline = baseline or FakeBaselineForecaster()
+            self._surrogate = surrogate or FakeSurrogateForecaster(
+                node_overrides=surrogate_node_overrides
+            )
+            self._t3 = t3 or T3KnowledgeTier()
+        else:
+            self._baseline = baseline
+            self._surrogate = surrogate
+            self._t3 = t3
         self._timeout_seconds = timeout_seconds
+
+    @property
+    def uses_provisional_adapters(self) -> bool:
+        """Whether this composition contains test-only adapter implementations."""
+        return any(
+            _is_provisional_adapter(adapter)
+            for adapter in (self._baseline, self._surrogate, self._t3)
+        )
 
     def run(self, job_id: str, request: WhatIfJobRequest) -> WhatIfJobResult:
         """Execute the full what-if workflow and return the job result."""

@@ -57,6 +57,8 @@ class FakeBaselineForecaster:
     Returns configurable synthetic predictions for each node/horizon pair.
     """
 
+    is_provisional_adapter = True
+
     def __init__(
         self,
         default_volume: float = 120.0,
@@ -117,6 +119,8 @@ class FakeSurrogateForecaster:
     - Fail on OOD
     - Fail on uncertainty
     """
+
+    is_provisional_adapter = True
 
     def __init__(
         self,

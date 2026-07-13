@@ -311,6 +311,7 @@ Error codes tối thiểu: `INVALID_SCENARIO`, `UNKNOWN_NODE`, `SIMULATION_UNAVA
 ## 4. Runtime và observability
 - FastAPI tiếp nhận request; Celery chạy job; Redis làm broker/progress store.
 - Ở provisional API (trước khi thay Celery/Redis), `STWI_JOB_CONCURRENCY=auto` tự chọn số job được chạy đồng thời bằng một nửa số CPU phát hiện được (ít nhất 1, tối đa 4). Job vượt mức giữ `queued`; người vận hành có thể đặt số nguyên dương sau khi benchmark. Cơ chế này không thay đổi deadline 180 giây hay safety gate.
+- Khi `STWI_RUNTIME_MODE=production`, API từ chối cả fake adapter, kể cả `T3KnowledgeTier` bọc fake adapter, và `InMemoryJobStore` được inject tường minh; chỉ adapter/store production thực mới được phép nhận job. Guard này không tự khởi động hay truy cập dịch vụ bên ngoài.
 - Mỗi transition LangGraph phát SSE event và ánh xạ sang minimum trace/log/metric trong `docs/guides/observability_minimum.md`.
 - Retry chỉ áp dụng tool idempotent, có backoff và giới hạn.
 - Hard deadline 180 giây được truyền xuống mọi tool.
