@@ -497,8 +497,8 @@ class TestJobTimeoutAndExpiration(unittest.TestCase):
     def test_orchestrator_timeout_marks_expired(self):
         from stwi.t4_orchestrator.api import create_app
         store = InMemoryJobStore()
-        # Set a very low timeout so it immediately expires
-        orchestrator = WhatIfOrchestrator(timeout_seconds=0.000001)
+        # A zero-second test deadline is deterministic even under concurrent QA.
+        orchestrator = WhatIfOrchestrator(timeout_seconds=0.0)
         app = create_app(store=store, orchestrator=orchestrator)
         client = TestClient(app)
 
