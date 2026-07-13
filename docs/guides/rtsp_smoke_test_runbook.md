@@ -57,7 +57,7 @@ other camera paths without another human review.
 
 ```bash
 python scripts/data_prep/capture_rtsp_frames.py \
-  --source-id edge_camera 1 \
+  --source-id edge_camera_1 \
   --interval-seconds 5 \
   --max-frames 60 \
   --max-width 1344
