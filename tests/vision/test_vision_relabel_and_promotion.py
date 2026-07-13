@@ -52,12 +52,63 @@ from stwi.tooling.vision_training.external_models import (
     require_https_url,
     write_stream_with_sha256,
 )
-from stwi.tooling.vision_training.promotion import promote_artifact
+from stwi.tooling.vision_training.promotion import (
+    promote_artifact,
+    validate_artifact_for_promotion,
+)
 from stwi.utils.file_hash import sha256_file
 
 
 
 class VisionRelabelAndPromotionTest(unittest.TestCase):
+
+    def _promotion_artifact(self, weights: Path) -> dict[str, object]:
+        return {
+            "model_version": "unit",
+            "weights": str(weights),
+            "weights_sha256": sha256_file(weights),
+            "dataset_version": "unit_v001",
+            "stwi_class_map": {
+                "bus": "bus",
+                "car": "car",
+                "motorbike": "motorcycle",
+                "truck": "truck",
+            },
+            "privacy_status": "visual_spot_reviewed_agent",
+            "metrics": {"metrics/mAP50(B)": 0.99},
+            "calibration": {
+                "confidence_threshold": 0.25,
+                "iou_threshold": 0.5,
+                "image_size": 640,
+                "roi_policy": "reviewed_camera_roi_v1",
+            },
+            "benchmark": {
+                "profile": "unit_cpu",
+                "seconds_per_image_p50": 0.01,
+                "seconds_per_image_p99": 0.02,
+            },
+            "legal_and_privacy": {
+                "source_license": "MIT",
+                "privacy_status": "visual_spot_reviewed_agent",
+            },
+        }
+
+    def test_promotion_rejects_invalid_required_metadata_values(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            weights = Path(directory) / "best.pt"
+            weights.write_bytes(b"weights")
+            cases = (
+                ("calibration", "confidence_threshold", "0.25"),
+                ("calibration", "roi_policy", "   "),
+                ("benchmark", "seconds_per_image_p99", -0.01),
+                ("legal_and_privacy", "source_license", ""),
+            )
+            for section, field, value in cases:
+                with self.subTest(section=section, field=field):
+                    artifact = self._promotion_artifact(weights)
+                    artifact[section][field] = value
+                    with self.assertRaisesRegex(ValueError, f"invalid {section}.{field}"):
+                        validate_artifact_for_promotion(artifact, min_map50=0.85)
 
     def _write_export(self, root: Path) -> None:
         (root / "data.yaml").write_text(

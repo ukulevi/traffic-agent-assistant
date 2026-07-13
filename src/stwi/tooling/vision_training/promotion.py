@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
@@ -12,6 +13,23 @@ from stwi.utils.file_hash import sha256_file
 
 
 REQUIRED_STWI_CLASSES = {"car", "motorcycle", "bus", "truck"}
+
+
+def is_finite_number(value: Any, *, minimum: float = 0.0, maximum: float | None = None) -> bool:
+    """Return whether an artifact number is usable as promotion evidence."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return False
+    number = float(value)
+    return math.isfinite(number) and number >= minimum and (
+        maximum is None or number <= maximum
+    )
+
+
+def has_value(value: Any) -> bool:
+    """Reject blank scalar metadata and empty structured metadata."""
+    if isinstance(value, str):
+        return bool(value.strip())
+    return bool(value)
 
 
 def metric_value(metrics: dict[str, Any], preferred_names: tuple[str, ...]) -> float | None:
@@ -60,23 +78,34 @@ def validate_artifact_for_promotion(
     if not isinstance(calibration, dict):
         errors.append("missing calibration evidence")
     else:
-        for field in ("confidence_threshold", "iou_threshold", "image_size", "roi_policy"):
-            if field not in calibration:
-                errors.append(f"missing calibration.{field}")
+        for field in ("confidence_threshold", "iou_threshold"):
+            if not is_finite_number(calibration.get(field), maximum=1.0):
+                errors.append(f"invalid calibration.{field}")
+        if not is_finite_number(calibration.get("image_size"), minimum=1.0):
+            errors.append("invalid calibration.image_size")
+        if not has_value(calibration.get("roi_policy")):
+            errors.append("invalid calibration.roi_policy")
     benchmark = artifact.get("benchmark")
     if not isinstance(benchmark, dict):
         errors.append("missing benchmark evidence")
     else:
-        for field in ("profile", "seconds_per_image_p50", "seconds_per_image_p99"):
-            if field not in benchmark:
-                errors.append(f"missing benchmark.{field}")
+        if not has_value(benchmark.get("profile")):
+            errors.append("invalid benchmark.profile")
+        p50 = benchmark.get("seconds_per_image_p50")
+        p99 = benchmark.get("seconds_per_image_p99")
+        if not is_finite_number(p50):
+            errors.append("invalid benchmark.seconds_per_image_p50")
+        if not is_finite_number(p99):
+            errors.append("invalid benchmark.seconds_per_image_p99")
+        elif is_finite_number(p50) and float(p99) < float(p50):
+            errors.append("benchmark.seconds_per_image_p99 is below p50")
     legal_and_privacy = artifact.get("legal_and_privacy")
     if not isinstance(legal_and_privacy, dict):
         errors.append("missing legal_and_privacy evidence")
     else:
         for field in ("source_license", "privacy_status"):
-            if field not in legal_and_privacy:
-                errors.append(f"missing legal_and_privacy.{field}")
+            if not has_value(legal_and_privacy.get(field)):
+                errors.append(f"invalid legal_and_privacy.{field}")
     if errors:
         raise ValueError("model promotion failed:\n- " + "\n- ".join(errors))
 
