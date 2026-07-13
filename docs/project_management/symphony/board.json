@@ -3,7 +3,7 @@
   "project": "SmartTraffic What-If",
   "short_name": "STWI",
   "board_name": "STWI MVP Readiness Symphony",
-  "last_reviewed_at": "2026-07-06",
+  "last_reviewed_at": "2026-07-13",
   "source_of_truth": [
     "project_contract.json",
     "docs/00_STWI_Summary_and_Guidelines.md",
@@ -156,7 +156,7 @@
       "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-6/prove-surrogate-p99-under-contract-benchmark-profile",
       "lane": "ML/Simulation",
       "owner_agent": "MLSimulationAgent",
-      "status": "In Progress",
+      "status": "Todo",
       "priority": "P1",
       "evidence": [
         "project_contract.json",
@@ -169,7 +169,7 @@
         "Raw benchmark result is retained as private artifact.",
         "E2E P95 target is recorded as required future evidence; no claim is made without measurement."
       ],
-      "next_action": "Archive the recorded private benchmark artifact and extend runbook with E2E measurement plan."
+      "next_action": "Run the benchmark on the 8 CPU / 32 GB RAM / NVIDIA GPU 12-16 GB profile and retain the new private artifact; this workstation's 4 GB GPU cannot satisfy the gate."
     },
     {
       "id": "STWI-SYM-006",
@@ -688,6 +688,56 @@
         "node --check slides/js/presentation-tools.js -> pass",
         "git diff --check -> pass"
       ]
+    },
+    {
+      "id": "STWI-SYM-023",
+      "title": "Backfill audit for PR #5 automation and CI stabilization",
+      "linear_identifier": "TRA-19",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-19/backfill-audit-pr-5-automation-and-ci-stabilization",
+      "lane": "Orchestrator/API/Release",
+      "owner_agent": "LeadCoordinator",
+      "status": "Done",
+      "priority": "P1",
+      "evidence": [
+        "https://github.com/ukulevi/traffic-agent-assistant/pull/5",
+        "4557064",
+        "TRA-19"
+      ],
+      "acceptance_criteria": [
+        "Merged PR #5 scope, checks, and residual benchmark blocker are recorded.",
+        "The ticket explicitly identifies its post-merge backfill status.",
+        "No private benchmark artifact is published."
+      ],
+      "next_action": "Keep the audit record; future implementation must start from a Linear ticket before any code changes.",
+      "checks": [
+        "GitHub fast-guards -> pass",
+        "GitHub build-pdf -> pass",
+        "PR #5 merged as 4557064"
+      ]
+    },
+    {
+      "id": "STWI-SYM-024",
+      "title": "Synchronize Symphony board snapshot after PR #5 tracker backfill",
+      "linear_identifier": "TRA-20",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-20/synchronize-symphony-board-snapshot-after-pr-5-tracker-backfill",
+      "lane": "Orchestrator/API/Release",
+      "owner_agent": "LeadCoordinator",
+      "status": "Human Review",
+      "priority": "P1",
+      "evidence": [
+        "docs/project_management/symphony/board.json",
+        "docs/project_management/symphony/board.md",
+        "docs/project_management/symphony/status_report.md",
+        "TRA-6",
+        "TRA-19",
+        "TRA-20"
+      ],
+      "acceptance_criteria": [
+        "Board state matches the current Linear state for TRA-6, TRA-19, and TRA-20.",
+        "Generated Markdown reports are regenerated from board.json.",
+        "No private artifacts, secrets, or unrelated implementation files are changed."
+      ],
+      "next_action": "Await final user review and merge of PR #6; mark Done only after main is synchronized."
     }
   ]
 }
