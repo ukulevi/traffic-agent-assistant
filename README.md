@@ -110,6 +110,10 @@ Only use workflow detections as camera evidence for five-minute aggregates such
 as `traffic_volume_5m` and `heavy_vehicle_ratio`. Do not log raw image payloads
 or base64 visualization outputs.
 
+## MVP Demo Smoke
+
+See [docs/guides/mvp_demo_runbook.md](./docs/guides/mvp_demo_runbook.md) for the deterministic offline demo flow and aggregate-only evidence boundary.
+
 ## AI agent
 
 Quy tắc làm việc bền vững nằm trong [AGENTS.md](./AGENTS.md). Các workflow Codex project-local nằm trong [.agents/skills](./.agents/skills): triển khai, review và release QA.
