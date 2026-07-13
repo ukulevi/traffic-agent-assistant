@@ -234,13 +234,16 @@
       "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-7/replace-provisional-fake-adapters-in-production-runtime",
       "lane": "Orchestrator/API/Release",
       "owner_agent": "OrchestratorReleaseAgent",
-      "status": "In Progress",
+      "status": "Done",
       "priority": "P1",
       "evidence": [
         "src/stwi/config/runtime.py",
         "src/stwi/t4_orchestrator/orchestrator.py",
         "src/stwi/t3_knowledge/tier3_facade.py",
-        "docs/guides/production_adapter_replacement_runbook.md"
+        "docs/guides/production_adapter_replacement_runbook.md",
+        "https://github.com/ukulevi/traffic-agent-assistant/pull/8",
+        "751bdd4",
+        "TRA-7"
       ],
       "acceptance_criteria": [
         "`STWI_RUNTIME_MODE=production` rejects fake adapters.",
@@ -248,7 +251,7 @@
         "Production startup fails closed when services are missing.",
         "No new dependency or external service is added beyond the approved stack."
       ],
-      "next_action": "Review the adapter replacement runbook and advance to Human Review before live service wiring.",
+      "next_action": "Keep the PR #8 merge evidence; TRA-27 owns subsequent Symphony runtime changes.",
       "checks": [
         "python scripts/validation/validate_docs.py -> pass",
         "python -m unittest tests.contracts.test_project_contract -> pass, 4 tests",
@@ -753,15 +756,15 @@
       "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-21/synchronize-symphony-tracker-after-pr-6-and-prepare-next-dispatch",
       "lane": "Orchestrator/API/Release",
       "owner_agent": "LeadCoordinator",
-      "status": "In Progress",
+      "status": "Done",
       "priority": "P1",
       "evidence": [
         "docs/project_management/symphony/board.json",
         "docs/project_management/symphony/board.md",
         "docs/project_management/symphony/status_report.md",
         "docs/project_management/symphony/current_dispatch_packet.md",
-        "TRA-18",
-        "TRA-20",
+        "https://github.com/ukulevi/traffic-agent-assistant/pull/7",
+        "e9cfc6b",
         "TRA-21"
       ],
       "acceptance_criteria": [
@@ -770,7 +773,140 @@
         "Generated Markdown reports are regenerated from board.json.",
         "The dispatch packet names only TRA-7 and its bounded runtime safety scope."
       ],
-      "next_action": "Run bounded checks and open a draft PR for final user review."
+      "next_action": "Preserve the PR #7 merge evidence and keep the tracker snapshot current for the next bounded dispatch.",
+      "checks": [
+        "python scripts/project_management/symphony_report.py -> pass",
+        "python scripts/validation/validate_docs.py -> pass",
+        "python -m unittest tests.contracts.test_project_contract -> pass, 4 tests",
+        "node --check slides/js/presentation.js -> pass",
+        "node --check slides/js/presentation-tools.js -> pass",
+        "git diff --check -> pass"
+      ]
+    },
+    {
+      "id": "STWI-SYM-026",
+      "title": "Make Tier-4 HTTP API tests mandatory for MVP demo CI",
+      "linear_identifier": "TRA-23",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-23/make-tier-4-http-api-tests-mandatory-for-mvp-demo-ci",
+      "lane": "Orchestrator/API/Release",
+      "owner_agent": "ReleaseQaAgent",
+      "status": "Todo",
+      "priority": "P1",
+      "evidence": [
+        "tests/t4_orchestrator/test_t4_api_http.py",
+        ".github/workflows/stwi-fast-ci.yml",
+        ".github/workflows/stwi-manual-qa.yml",
+        "project_contract.json"
+      ],
+      "acceptance_criteria": [
+        "Fast CI installs the existing orchestrator extra and runs tests.t4_orchestrator.test_t4_api_http.",
+        "The 36 HTTP tests run with no dependency-only skips.",
+        "No API/runtime/contract/dependency/deployment contract is weakened."
+      ],
+      "next_action": "Review CI workflow changes and validate the HTTP test gate before merge.",
+      "checks": [
+        "python scripts/validation/validate_ci_guardrails.py -> pass",
+        "python scripts/validation/validate_docs.py -> pass",
+        "python -m unittest tests.contracts.test_project_contract -> pass, 4 tests",
+        "python -m unittest tests.t4_orchestrator.test_t4_api_http -> 36 tests",
+        "git diff --check -> pass"
+      ]
+    },
+    {
+      "id": "STWI-SYM-027",
+      "title": "Build minimal operator review dashboard for MVP demo",
+      "linear_identifier": "TRA-24",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-24/build-minimal-operator-review-dashboard-for-mvp-demo",
+      "lane": "Orchestrator/API/Release",
+      "owner_agent": "FrontendAgent",
+      "status": "Todo",
+      "priority": "P1",
+      "dependencies": ["STWI-SYM-026"],
+      "evidence": [
+        "src/stwi/t4_orchestrator/api.py",
+        "src/stwi/t4_orchestrator/static/index.html",
+        "src/stwi/t4_orchestrator/static/dashboard.css",
+        "src/stwi/t4_orchestrator/static/dashboard.js",
+        "docs/guides/mvp_operator_dashboard.md"
+      ],
+      "acceptance_criteria": [
+        "A same-origin /demo/ flow allows submit -> observe -> inspect -> approve/reject without raw video or secrets.",
+        "needs_review shows candidate_action only; never recommended_action.",
+        "Dashboard preserves fail-closed, aggregate-only, and human-approval semantics."
+      ],
+      "next_action": "Wait for TRA-23 CI mandate, then review dashboard scope and local browser QA.",
+      "checks": [
+        "python -m unittest tests.t4_orchestrator.test_t4_api_http -> pass",
+        "python -m unittest tests.contracts.test_project_contract -> pass, 4 tests",
+        "node --check src/stwi/t4_orchestrator/static/dashboard.js -> pass",
+        "git diff --check -> pass"
+      ],
+      "human_review_gate": "dashboard scope expansion, local browser QA evidence, and final diff approval"
+    },
+    {
+      "id": "STWI-SYM-028",
+      "title": "Add deterministic offline MVP demo smoke harness and runbook",
+      "linear_identifier": "TRA-25",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-25/add-deterministic-offline-mvp-demo-smoke-harness-and-runbook",
+      "lane": "Orchestrator/API/Release",
+      "owner_agent": "ReleaseQaAgent",
+      "status": "Todo",
+      "priority": "P1",
+      "dependencies": ["STWI-SYM-026"],
+      "evidence": [
+        "scripts/demo/run_mvp_smoke.py",
+        "tests/demo/test_mvp_smoke.py",
+        "docs/guides/mvp_demo_runbook.md",
+        "README.md"
+      ],
+      "acceptance_criteria": [
+        "Offline smoke proof covers POST 202 -> terminal result -> SSE -> approve/reject with applied_by_system=false.",
+        "Evidence JSON records statuses, trace IDs, provisional labels, and invariant checks.",
+        "No live service, raw video, secret, or production-readiness claim is introduced."
+      ],
+      "next_action": "Implement after TRA-23 is merged; this ticket may be reviewed in parallel with TRA-24 only if files do not overlap.",
+      "checks": [
+        "python -m unittest tests.demo.test_mvp_smoke -> pass",
+        "python scripts/demo/run_mvp_smoke.py -> pass",
+        "python -m unittest tests.t4_orchestrator.test_t4_api_http -> 36 tests",
+        "python scripts/validation/validate_docs.py -> pass",
+        "git diff --check -> pass"
+      ],
+      "human_review_gate": "offline evidence reproducibility, demo-mode limitations wording, and draft PR approval"
+    },
+    {
+      "id": "STWI-SYM-029",
+      "title": "Run final integrated MVP demo acceptance",
+      "linear_identifier": "TRA-26",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-26/run-final-integrated-mvp-demo-acceptance-after-tra-232425",
+      "lane": "Orchestrator/API/Release",
+      "owner_agent": "ReleaseQaAgent / LeadCoordinator",
+      "status": "Backlog",
+      "priority": "P1",
+      "dependencies": ["STWI-SYM-026", "STWI-SYM-027", "STWI-SYM-028"],
+      "evidence": [
+        "docs/project_management/symphony/mvp_demo_acceptance.md",
+        "docs/project_management/symphony/board.json",
+        "docs/project_management/symphony/board.md",
+        "docs/project_management/symphony/status_report.md",
+        "docs/project_management/symphony/current_dispatch_packet.md",
+        "tests/t4_orchestrator",
+        "tests/demo"
+      ],
+      "acceptance_criteria": [
+        "TRA-23/24/25 are merged and the release verifier runs from updated main.",
+        "Tier-4 HTTP coverage, offline smoke evidence, and /demo/ browser QA are complete and reproducible.",
+        "Remaining live RTSP, production persistence, benchmark hardware, SOP corpus, and auth/RBAC gaps remain explicit and do not block acceptance."
+      ],
+      "next_action": "Keep in Backlog until TRA-23, TRA-24, and TRA-25 evidence is complete.",
+      "checks": [
+        "python scripts/validation/validate_docs.py -> pass",
+        "python -m unittest tests.contracts.test_project_contract -> pass, 4 tests",
+        "node --check slides/js/presentation.js -> pass",
+        "node --check slides/js/presentation-tools.js -> pass",
+        "git diff --check -> pass"
+      ],
+      "human_review_gate": "final Demo MVP acceptance, live service boundary confirmation, and user approval before Done"
     }
   ]
 }
