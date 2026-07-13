@@ -26,8 +26,8 @@ def _map_recorded_profile(benchmark: dict[str, Any]) -> dict[str, Any]:
     return {
         "cpu_cores": benchmark.get("cpu_cores", benchmark.get("cpu_threads")),
         "ram_gb": benchmark.get("ram_gb"),
-        "gpu_vram_gb_min": benchmark.get("gpu_vram_gb_min"),
-        "gpu_vram_gb_max": benchmark.get("gpu_vram_gb_max"),
+        "device": benchmark.get("device"),
+        "gpu_vram_gb": benchmark.get("gpu_vram_gb"),
     }
 
 
@@ -43,15 +43,17 @@ def _validate(benchmark: dict[str, Any], profile: dict[str, Any]) -> list[str]:
         errors.append("surrogate P99 is not below 500 ms")
 
     recorded = _map_recorded_profile(benchmark)
-    missing_fields = [key for key, target in profile.items() if target is not None and recorded.get(key) is None]
+    required_recorded = ("cpu_cores", "ram_gb", "device", "gpu_vram_gb")
+    missing_fields = [key for key in required_recorded if recorded.get(key) is None]
     if missing_fields:
         errors.append(
             "benchmark report is missing profile fields: " + ", ".join(missing_fields)
         )
 
     unmatched = [
-        key for key, target in profile.items()
-        if target is not None and recorded.get(key) is not None and recorded.get(key) != target
+        key
+        for key in ("cpu_cores", "ram_gb")
+        if recorded.get(key) is not None and recorded.get(key) != profile.get(key)
     ]
     if unmatched:
         missing = ", ".join(f"{key}={recorded.get(key)}" for key in unmatched)
@@ -59,6 +61,27 @@ def _validate(benchmark: dict[str, Any], profile: dict[str, Any]) -> list[str]:
         errors.append(
             "benchmark profile does not match contract: " + missing + "; expected: " + expected
         )
+
+    device = str(recorded.get("device") or "").lower()
+    if recorded.get("device") is not None and not any(
+        marker in device for marker in ("cuda", "gpu", "nvidia")
+    ):
+        errors.append("benchmark device is not an NVIDIA GPU/CUDA device")
+
+    gpu_vram_gb = recorded.get("gpu_vram_gb")
+    if gpu_vram_gb is not None:
+        if not isinstance(gpu_vram_gb, (int, float)):
+            errors.append("benchmark gpu_vram_gb must be numeric")
+        elif not (
+            profile["gpu_vram_gb_min"]
+            <= gpu_vram_gb
+            <= profile["gpu_vram_gb_max"]
+        ):
+            errors.append(
+                "benchmark gpu_vram_gb is outside the contract range: "
+                f"recorded={gpu_vram_gb}; expected="
+                f"{profile['gpu_vram_gb_min']}-{profile['gpu_vram_gb_max']}"
+            )
 
     return errors
 

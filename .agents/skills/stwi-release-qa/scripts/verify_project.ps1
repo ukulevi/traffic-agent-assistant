@@ -24,8 +24,19 @@ if (-not (Test-Path "project_contract.json")) {
     throw "Run this script inside the STWI repository."
 }
 
-Invoke-Checked "Documentation validator" { python scripts\validate_docs.py }
-Invoke-Checked "Contract tests" { python -m unittest tests.test_project_contract }
+$pythonCommand = Get-Command python -ErrorAction SilentlyContinue
+if ($pythonCommand) {
+    $pythonPath = $pythonCommand.Source
+} else {
+    $bundledPython = Join-Path $env:USERPROFILE ".cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe"
+    if (-not (Test-Path $bundledPython)) {
+        throw "Python is unavailable in PATH and the Codex bundled runtime was not found."
+    }
+    $pythonPath = $bundledPython
+}
+
+Invoke-Checked "Documentation validator" { & $pythonPath scripts\validation\validate_docs.py }
+Invoke-Checked "Contract tests" { & $pythonPath -m unittest tests.contracts.test_project_contract }
 
 if (Get-Command node -ErrorAction SilentlyContinue) {
     Invoke-Checked "presentation.js syntax" { node --check slides\js\presentation.js }

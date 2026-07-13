@@ -116,7 +116,7 @@ Variance giữa ba sub-model không tự động là uncertainty đáng tin cậ
 
 Benchmark chuẩn: 8 CPU cores, 32 GB RAM, NVIDIA GPU 12–16 GB, warm-up cố định, payload 20 node và concurrency được ghi trong report. Surrogate phải đạt P99 < 500 ms trên profile này. Không mô tả inference là O(1); chi phí phụ thuộc N, batch, model và phần cứng.
 
-QA cho `TRA-6` có thể dùng bằng chứng ngoại tuyến từ `docs/guides/surrogate_benchmark_evidence.md` và validator `scripts/validation/validate_surrogate_benchmark_evidence.py`; không cần chạy benchmark phần cứng mới để xác nhận P99 hiện có.
+QA cho `TRA-6` dùng bằng chứng ngoại tuyến từ `docs/guides/surrogate_benchmark_evidence.md` và validator `scripts/validation/validate_surrogate_benchmark_evidence.py`. Chỉ report ghi thiết bị GPU và VRAM đo được trong profile 12–16 GB mới được xác nhận đạt contract; kết quả CPU chỉ là bằng chứng provisional và không thay thế benchmark phần cứng chuẩn.
 
 ## 5. Acceptance gates
 

@@ -109,6 +109,8 @@ Each `evidence.json` should contain these top-level sections.
     "ram_gb": 32,
     "gpu_vram_gb_min": 12,
     "gpu_vram_gb_max": 16,
+    "device": "cuda:0 NVIDIA",
+    "gpu_vram_gb": 16,
     "seconds_per_image_p50": null,
     "seconds_per_image_p99": null,
     "report_path": null
