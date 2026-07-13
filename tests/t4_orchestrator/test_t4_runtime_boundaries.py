@@ -36,6 +36,20 @@ class TestRuntimeSettings(unittest.TestCase):
         with self.assertRaises(ValueError):
             get_runtime_settings({"STWI_RUNTIME_MODE": "unsafe"})
 
+    def test_auto_job_concurrency_is_cpu_bounded(self):
+        settings = get_runtime_settings({}, cpu_count=lambda: 16)
+        self.assertEqual(settings.job_concurrency, 4)
+
+    def test_explicit_job_concurrency_is_preserved(self):
+        settings = get_runtime_settings(
+            {"STWI_JOB_CONCURRENCY": "2"}, cpu_count=lambda: 16
+        )
+        self.assertEqual(settings.job_concurrency, 2)
+
+    def test_job_concurrency_rejects_invalid_values(self):
+        with self.assertRaises(ValueError):
+            get_runtime_settings({"STWI_JOB_CONCURRENCY": "0"})
+
 
 class TestProductionCompositionGuard(unittest.TestCase):
     def setUp(self):
