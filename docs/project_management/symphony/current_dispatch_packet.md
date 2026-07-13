@@ -26,12 +26,12 @@ Do not use Antigravity in this workflow.
 
 ## Ticket
 
-STWI-SYM-022 / TRA-18 - Finalize Symphony automation evidence and release QA snapshot
+STWI-SYM-024 / TRA-20 - Synchronize Symphony board snapshot after PR #5 tracker backfill
 
 ## Branch
 
 Expected ticket branch:
-`ticket/TRA-18-finalize-symphony-automation-evidence-and-release-qa-snapshot`
+`codex/tra-20-sync-symphony-board-snapshot`
 
 ## Worktree Expectation
 
@@ -47,13 +47,17 @@ dùng trực tiếp thực thi.
 
 ## Goal
 
-Finalize Symphony automation evidence and release QA snapshot. Review all modified/untracked workflow artifacts under `docs/project_management/symphony/**`, package them as one coherent change set, regenerate `board.md` and `status_report.md`, verify against current Linear state, and produce a final report. Do not commit, push, update Linear, or restart Symphony in this executor pass.
+Synchronize the local Symphony board snapshot after PR #5 tracker backfill. Update only the bounded board artifacts for TRA-6, TRA-19, and TRA-20; regenerate the derived Markdown reports; and prepare evidence for Human Review. Do not commit, push, update Linear, or restart Symphony in this executor pass.
 
 ## Allowed Files
 
-- `docs/project_management/symphony/**`
-- `scripts/project_management/symphony_report.py`
-- `scripts/project_management/hermes_runner_bridge.py`
+```text
+docs/project_management/symphony/board.json
+docs/project_management/symphony/board.md
+docs/project_management/symphony/status_report.md
+docs/project_management/symphony/current_dispatch_packet.md
+scripts/project_management/symphony_report.py
+```
 
 Do not edit files outside this list for this ticket.
 
@@ -84,14 +88,14 @@ Human review is supervisory and required for:
 
 ## Acceptance Criteria
 
-1. All modified/untracked workflow artifacts under `docs/project_management/symphony/**` are reviewed, grouped, and committed as a single coherent change set.
-2. Generated `board.md`, `status_report.md`, and Hermes runner artifacts are regenerated and verified against current Linear state.
-3. No secrets, `.env`, raw video, private weights, or private data are committed.
-4. The ticket includes a final report with Result, Changed files, Checks, Contract/artifact impact, Risks/blockers, and Recommended next state.
+1. TRA-6 is recorded as `Todo` with the required 12-16 GB GPU benchmark blocker.
+2. TRA-19 is recorded as `Done` with the PR #5 retrospective evidence.
+3. TRA-20 is recorded as `In Progress`, and `board.md` plus `status_report.md` are regenerated from `board.json`.
+4. No secrets, `.env`, raw video, private weights, private data, or unrelated implementation files are changed.
 
 ## Next Action
 
-Package existing automation evidence into one reviewable commit and snapshot before dispatching the next implementation ticket.
+Run the bounded checks, then open a draft PR for Human Review before any merge.
 
 ## Exact Checks
 
@@ -104,7 +108,7 @@ node --check slides/js/presentation-tools.js
 git diff --check
 python scripts/project_management/symphony_report.py --write-markdown docs/project_management/symphony/board.md
 python scripts/project_management/symphony_report.py --write-markdown docs/project_management/symphony/status_report.md
-python scripts/project_management/hermes_runner_bridge.py --runner-command "C:\Users\PC\AppData\Local\hermes\hermes-agent\venv\Scripts\hermes.exe" --oneshot docs/project_management/symphony/hermes_runs/tra_18_prompt.md
+python scripts/project_management/symphony_report.py
 ```
 
 ## Required Final Report

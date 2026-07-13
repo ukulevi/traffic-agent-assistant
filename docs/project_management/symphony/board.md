@@ -1,11 +1,11 @@
 # STWI MVP Readiness Symphony
 
-Last reviewed: 2026-07-06
+Last reviewed: 2026-07-13
 
 ## Readiness Handoff Summary
 
 - Evidence base: project_contract.json
-- Todo: 5 | In Progress: 6 | Human Review: 3 | Rework: 0 | Done: 7
+- Todo: 6 | In Progress: 6 | Human Review: 3 | Rework: 0 | Done: 8
 - Requires human review for: contract changes, dashboard scope changes, legal/SOP source approval, vision promotion threshold changes, production credentials or external services
 - Report command: python scripts/project_management/symphony_report.py
 - Daily agent update: enabled
@@ -16,12 +16,12 @@ Last reviewed: 2026-07-06
 | Status | Count |
 |---|---:|
 | Backlog | 4 |
-| Todo | 5 |
+| Todo | 6 |
 | In Progress | 6 |
 | Human Review | 3 |
 | Rework | 0 |
 | Merging | 0 |
-| Done | 7 |
+| Done | 8 |
 | Canceled | 0 |
 | Duplicate | 0 |
 
@@ -61,6 +61,10 @@ Last reviewed: 2026-07-06
   Evidence: data/derived/private/phase2_surrogate/provisional_gate_p2_report.json, tests/t2_forecast/test_surrogate_safety.py
   Acceptance: Calibration report uses held-out validation data.; OOD/high uncertainty returns `needs_review`.; Retrieved cases are never blended into online input.
   Next: Prepare validation split and rerun provisional gate with standard evidence.
+- `STWI-SYM-005` / TRA-6 [P1] Prove surrogate P99 under the contract benchmark profile (ML/Simulation, MLSimulationAgent)
+  Evidence: project_contract.json, data/derived/private/phase2_surrogate/v3/benchmark_report.json, docs/guides/surrogate_benchmark_evidence.md
+  Acceptance: Benchmark machine profile matches 8 CPU, 32 GB RAM, 12-16 GB GPU VRAM.; Surrogate P99 is below 500 ms.; Raw benchmark result is retained as private artifact.; E2E P95 target is recorded as required future evidence; no claim is made without measurement.
+  Next: Run the benchmark on the 8 CPU / 32 GB RAM / NVIDIA GPU 12-16 GB profile and retain the new private artifact; this workstation's 4 GB GPU cannot satisfy the gate.
 - `STWI-SYM-007` [P1] Switch Phase 3 validation from fake retriever to Qdrant/BGE path (Knowledge/RAG, KnowledgeRagAgent)
   Evidence: src/stwi/t3_knowledge, infra/harness/compose.phase3.yaml, tests/t3_knowledge/test_t3_integration.py
   Acceptance: Qdrant-backed retrieval runs in integration harness.; BGE-m3 embedding path is documented and tested.; Service-dependent skips are reduced or explicitly justified.
@@ -81,10 +85,6 @@ Last reviewed: 2026-07-06
 
 ### In Progress
 
-- `STWI-SYM-005` / TRA-6 [P1] Prove surrogate P99 under the contract benchmark profile (ML/Simulation, MLSimulationAgent)
-  Evidence: project_contract.json, data/derived/private/phase2_surrogate/v3/benchmark_report.json, docs/guides/surrogate_benchmark_evidence.md
-  Acceptance: Benchmark machine profile matches 8 CPU, 32 GB RAM, 12-16 GB GPU VRAM.; Surrogate P99 is below 500 ms.; Raw benchmark result is retained as private artifact.; E2E P95 target is recorded as required future evidence; no claim is made without measurement.
-  Next: Archive the recorded private benchmark artifact and extend runbook with E2E measurement plan.
 - `STWI-SYM-009` / TRA-7 [P1] Replace provisional fake adapters in production runtime (Orchestrator/API/Release, OrchestratorReleaseAgent)
   Evidence: src/stwi/config/runtime.py, src/stwi/t4_orchestrator/orchestrator.py, src/stwi/t3_knowledge/tier3_facade.py, docs/guides/production_adapter_replacement_runbook.md
   Acceptance: `STWI_RUNTIME_MODE=production` rejects fake adapters.; Real adapters have documented required environment variables.; Production startup fails closed when services are missing.; No new dependency or external service is added beyond the approved stack.
@@ -109,6 +109,10 @@ Last reviewed: 2026-07-06
   Acceptance: Runbook explains how an operator sets `STWI_RTSP_URL` locally without writing it to repo, Linear, logs, or manifests.; Procedure captures only sparse frames into `data/quarantine/rtsp_frames` and never stores a raw video container.; Procedure lists privacy review, retention, cleanup, and aggregate-only next steps before any frame leaves quarantine.; Procedure includes exact offline verification commands that can run after supervised capture.
   Next: Review the RTSP smoke-test runbook and advance to Human Review before live execution.
   Checks: python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests; node --check slides/js/presentation.js -> pass; node --check slides/js/presentation-tools.js -> pass; git diff --check -> pass
+- `STWI-SYM-024` / TRA-20 [P1] Synchronize Symphony board snapshot after PR #5 tracker backfill (Orchestrator/API/Release, LeadCoordinator)
+  Evidence: docs/project_management/symphony/board.json, docs/project_management/symphony/board.md, docs/project_management/symphony/status_report.md, TRA-6, TRA-19, TRA-20
+  Acceptance: Board state matches the current Linear state for TRA-6, TRA-19, and TRA-20.; Generated Markdown reports are regenerated from board.json.; No private artifacts, secrets, or unrelated implementation files are changed.
+  Next: Regenerate reports, run release checks, then open a draft PR for Human Review.
 
 ### Human Review
 
@@ -171,6 +175,11 @@ Last reviewed: 2026-07-06
   Acceptance: `edge_camera_1` is accepted as a safe source id and unsafe source ids remain rejected.; Capture path continues reading the endpoint only from `STWI_RTSP_URL`.; Command output and manifests do not include the RTSP endpoint, credentials, image base64, or raw video references.; Focused tests cover missing env handling, safe source id, redaction, and fail-closed behavior without opening a live stream.
   Next: Keep done evidence on Linear; live capture remains gated by STWI-RTSP-003.
   Checks: python -m unittest tests.t1_pipeline.test_capture_rtsp_frames -> pass, 14 tests; git diff --cached --check -> pass
+- `STWI-SYM-023` / TRA-19 [P1] Backfill audit for PR #5 automation and CI stabilization (Orchestrator/API/Release, LeadCoordinator)
+  Evidence: https://github.com/ukulevi/traffic-agent-assistant/pull/5, 4557064, TRA-19
+  Acceptance: Merged PR #5 scope, checks, and residual benchmark blocker are recorded.; The ticket explicitly identifies its post-merge backfill status.; No private benchmark artifact is published.
+  Next: Keep the audit record; future implementation must start from a Linear ticket before any code changes.
+  Checks: GitHub fast-guards -> pass; GitHub build-pdf -> pass; PR #5 merged as 4557064
 
 ### Canceled
 
