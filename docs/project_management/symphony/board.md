@@ -5,7 +5,7 @@ Last reviewed: 2026-07-13
 ## Readiness Handoff Summary
 
 - Evidence base: project_contract.json
-- Todo: 6 | In Progress: 5 | Human Review: 4 | Rework: 0 | Done: 8
+- Todo: 5 | In Progress: 6 | Human Review: 3 | Rework: 0 | Done: 9
 - Requires human review for: contract changes, dashboard scope changes, legal/SOP source approval, vision promotion threshold changes, production credentials or external services
 - Report command: python scripts/project_management/symphony_report.py
 - Daily agent update: enabled
@@ -16,13 +16,13 @@ Last reviewed: 2026-07-13
 | Status | Count |
 |---|---:|
 | Backlog | 4 |
-| Todo | 6 |
-| In Progress | 5 |
-| Human Review | 4 |
+| Todo | 5 |
+| In Progress | 6 |
+| Human Review | 3 |
 | Rework | 0 |
 | Merging | 0 |
-| Done | 8 |
-| Canceled | 0 |
+| Done | 9 |
+| Canceled | 1 |
 | Duplicate | 0 |
 
 ## Lane Readiness Evidence
@@ -77,11 +77,6 @@ Last reviewed: 2026-07-13
   Evidence: data/derived/private/vision_evals/motoann_best_val_minarea003/roi_ap50_summary.json, scripts/training/train_vision_model.py, tests/vision
   Acceptance: Validation/test evaluation is rerun after label/model improvements.; Motorcycle and transport classes meet the accepted MVP evidence threshold or are explicitly scoped down.; Promotion decision is consistent with STWI-SYM-001.
   Next: Analyze low-precision classes and select retraining or class-scope adjustment.
-- `STWI-SYM-022` / TRA-18 [P2] Finalize Symphony automation evidence and release QA snapshot (Orchestrator/API/Release, ReleaseQaAgent / LeadCoordinator)
-  Evidence: docs/project_management/symphony/board.json, docs/project_management/symphony/board.md, docs/project_management/symphony/status_report.md, docs/project_management/symphony/current_dispatch_packet.md, docs/project_management/symphony/hermes_orchestrator_handoff.md, docs/project_management/symphony/agent_routing.json, docs/project_management/symphony/hermes_worker_prompts.md, scripts/project_management/symphony_report.py, scripts/project_management/hermes_runner_bridge.py
-  Acceptance: All modified/untracked workflow artifacts under `docs/project_management/symphony/**` are reviewed, grouped, and committed as a single coherent change set.; Generated `board.md`, `status_report.md`, and Hermes runner artifacts are regenerated and verified against current Linear state.; No secrets, `.env`, raw video, private weights, or private data are committed.; The ticket includes a final report with Result, Changed files, Checks, Contract/artifact impact, Risks/blockers, and Recommended next state.
-  Next: Package existing automation evidence into one reviewable commit and snapshot before dispatching the next implementation ticket.
-  Checks: python scripts/project_management/symphony_report.py -> pass; python scripts/project_management/symphony_report.py --write-markdown docs/project_management/symphony/board.md -> pass; python scripts/project_management/symphony_report.py --write-markdown docs/project_management/symphony/status_report.md -> pass; python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass; node --check slides/js/presentation.js -> pass; node --check slides/js/presentation-tools.js -> pass; git diff --check -> pass
 
 ### In Progress
 
@@ -109,6 +104,10 @@ Last reviewed: 2026-07-13
   Acceptance: Runbook explains how an operator sets `STWI_RTSP_URL` locally without writing it to repo, Linear, logs, or manifests.; Procedure captures only sparse frames into `data/quarantine/rtsp_frames` and never stores a raw video container.; Procedure lists privacy review, retention, cleanup, and aggregate-only next steps before any frame leaves quarantine.; Procedure includes exact offline verification commands that can run after supervised capture.
   Next: Review the RTSP smoke-test runbook and advance to Human Review before live execution.
   Checks: python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests; node --check slides/js/presentation.js -> pass; node --check slides/js/presentation-tools.js -> pass; git diff --check -> pass
+- `STWI-SYM-025` / TRA-21 [P1] Synchronize Symphony tracker after PR #6 and prepare next dispatch (Orchestrator/API/Release, LeadCoordinator)
+  Evidence: docs/project_management/symphony/board.json, docs/project_management/symphony/board.md, docs/project_management/symphony/status_report.md, docs/project_management/symphony/current_dispatch_packet.md, TRA-18, TRA-20, TRA-21
+  Acceptance: TRA-20 is recorded as Done with PR #6 merge evidence e405a8c.; TRA-18 is recorded as Canceled because its tracker scope was superseded.; Generated Markdown reports are regenerated from board.json.; The dispatch packet names only TRA-7 and its bounded runtime safety scope.
+  Next: Run bounded checks and open a draft PR for final user review.
 
 ### Human Review
 
@@ -125,10 +124,6 @@ Last reviewed: 2026-07-13
   Acceptance: Human operator confirms the RTSP endpoint is approved for STWI testing and sets it only in `STWI_RTSP_URL`.; Local environment uses `.env.local.example` as the template; `.env.local` is not committed.; Live capture is bounded to a small sample, stores sparse frames only in quarantine, and retains no raw video.; Manifest is reviewed to confirm no endpoint, credentials, image base64, or raw video reference is present.; Resulting evidence is deleted, kept in quarantine for privacy review, or converted into approved aggregate-only evidence by a follow-up issue.
   Next: Keep in Human Review; do not add `symphony-approved` because this requires live external service access and human supervision.
   Checks: python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests; node --check slides/js/presentation.js -> pass; node --check slides/js/presentation-tools.js -> pass; git diff --check -> pass
-- `STWI-SYM-024` / TRA-20 [P1] Synchronize Symphony board snapshot after PR #5 tracker backfill (Orchestrator/API/Release, LeadCoordinator)
-  Evidence: docs/project_management/symphony/board.json, docs/project_management/symphony/board.md, docs/project_management/symphony/status_report.md, TRA-6, TRA-19, TRA-20
-  Acceptance: Board state matches the current Linear state for TRA-6, TRA-19, and TRA-20.; Generated Markdown reports are regenerated from board.json.; No private artifacts, secrets, or unrelated implementation files are changed.
-  Next: Await final user review and merge of PR #6; mark Done only after main is synchronized.
 
 ### Rework
 
@@ -180,10 +175,19 @@ Last reviewed: 2026-07-13
   Acceptance: Merged PR #5 scope, checks, and residual benchmark blocker are recorded.; The ticket explicitly identifies its post-merge backfill status.; No private benchmark artifact is published.
   Next: Keep the audit record; future implementation must start from a Linear ticket before any code changes.
   Checks: GitHub fast-guards -> pass; GitHub build-pdf -> pass; PR #5 merged as 4557064
+- `STWI-SYM-024` / TRA-20 [P1] Synchronize Symphony board snapshot after PR #5 tracker backfill (Orchestrator/API/Release, LeadCoordinator)
+  Evidence: docs/project_management/symphony/board.json, docs/project_management/symphony/board.md, docs/project_management/symphony/status_report.md, https://github.com/ukulevi/traffic-agent-assistant/pull/6, e405a8c, TRA-6, TRA-19, TRA-20
+  Acceptance: Board state matches the current Linear state for TRA-6, TRA-19, and TRA-20.; Generated Markdown reports are regenerated from board.json.; No private artifacts, secrets, or unrelated implementation files are changed.
+  Next: Keep the merge evidence; TRA-21 owns post-merge tracker synchronization.
+  Checks: GitHub fast-guards -> pass; GitHub build-pdf -> pass; PR #6 merged as e405a8c
 
 ### Canceled
 
-- None
+- `STWI-SYM-022` / TRA-18 [P2] Finalize Symphony automation evidence and release QA snapshot (Orchestrator/API/Release, ReleaseQaAgent / LeadCoordinator)
+  Evidence: docs/project_management/symphony/board.json, docs/project_management/symphony/board.md, docs/project_management/symphony/status_report.md, docs/project_management/symphony/current_dispatch_packet.md, docs/project_management/symphony/hermes_orchestrator_handoff.md, docs/project_management/symphony/agent_routing.json, docs/project_management/symphony/hermes_worker_prompts.md, scripts/project_management/symphony_report.py, scripts/project_management/hermes_runner_bridge.py
+  Acceptance: All modified/untracked workflow artifacts under `docs/project_management/symphony/**` are reviewed, grouped, and committed as a single coherent change set.; Generated `board.md`, `status_report.md`, and Hermes runner artifacts are regenerated and verified against current Linear state.; No secrets, `.env`, raw video, private weights, or private data are committed.; The ticket includes a final report with Result, Changed files, Checks, Contract/artifact impact, Risks/blockers, and Recommended next state.
+  Next: Superseded by TRA-20 and TRA-21; do not dispatch a second tracker snapshot task.
+  Checks: python scripts/project_management/symphony_report.py -> pass; python scripts/project_management/symphony_report.py --write-markdown docs/project_management/symphony/board.md -> pass; python scripts/project_management/symphony_report.py --write-markdown docs/project_management/symphony/status_report.md -> pass; python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass; node --check slides/js/presentation.js -> pass; node --check slides/js/presentation-tools.js -> pass; git diff --check -> pass
 
 ### Duplicate
 
