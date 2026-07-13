@@ -7,6 +7,7 @@ mode without duplicating contract constants from ``project_contract.json``.
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 
@@ -37,6 +38,7 @@ class RuntimeSettings:
     """Resolved runtime settings for app composition."""
 
     mode: RuntimeMode
+    job_concurrency: int
 
     @property
     def allow_provisional_adapters(self) -> bool:
@@ -48,11 +50,38 @@ class RuntimeSettings:
         }
 
 
-def get_runtime_settings(environ: dict[str, str] | None = None) -> RuntimeSettings:
+def _resolve_job_concurrency(
+    raw_value: str | None,
+    cpu_count: int | None,
+) -> int:
+    """Resolve the bounded API job concurrency without changing SLA policy."""
+    normalized = (raw_value or "auto").strip().lower()
+    available_cpus = max(cpu_count or 1, 1)
+    if normalized == "auto":
+        # Reserve roughly half of the machine for the API, database clients,
+        # and the OS; the cap prevents a small demo deployment from creating
+        # an unbounded number of CPU-heavy inference threads.
+        return min(4, max(1, available_cpus // 2))
+    try:
+        requested = int(normalized)
+    except ValueError as exc:
+        raise ValueError(
+            "STWI_JOB_CONCURRENCY must be 'auto' or a positive integer"
+        ) from exc
+    if requested < 1:
+        raise ValueError("STWI_JOB_CONCURRENCY must be at least 1")
+    return requested
+
+
+def get_runtime_settings(
+    environ: dict[str, str] | None = None,
+    cpu_count: Callable[[], int | None] = os.cpu_count,
+) -> RuntimeSettings:
     """Resolve runtime settings from environment variables.
 
-    ``STWI_RUNTIME_MODE`` is deliberately the single mode knob for now. The
-    default remains development so existing tests and local demos are stable.
+    ``STWI_RUNTIME_MODE`` controls composition. ``STWI_JOB_CONCURRENCY`` may
+    be ``auto`` (the default) or a positive integer. Auto uses half of the
+    detected CPUs, capped at four, to avoid starving the API or host machine.
     """
     env = environ if environ is not None else os.environ
     raw_mode = env.get("STWI_RUNTIME_MODE", RuntimeMode.DEVELOPMENT.value).strip().lower()
@@ -63,7 +92,12 @@ def get_runtime_settings(environ: dict[str, str] | None = None) -> RuntimeSettin
         raise ValueError(
             f"Unsupported STWI_RUNTIME_MODE={raw_mode!r}; expected one of: {allowed}"
         ) from exc
-    return RuntimeSettings(mode=mode)
+    return RuntimeSettings(
+        mode=mode,
+        job_concurrency=_resolve_job_concurrency(
+            env.get("STWI_JOB_CONCURRENCY"), cpu_count()
+        ),
+    )
 
 
 def is_production_mode(environ: dict[str, str] | None = None) -> bool:

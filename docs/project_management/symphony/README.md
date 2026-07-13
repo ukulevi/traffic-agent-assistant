@@ -44,6 +44,49 @@ treated as a messaging/session bridge, not a worker runner; use
 [hermes_orchestrator_handoff.md](./hermes_orchestrator_handoff.md) when Hermes
 orchestrates Step workers through its native tools.
 
+## Nhập yêu cầu vấn đề linh hoạt
+
+Bạn có thể nhập prompt dài tự do hoặc yêu cầu ngắn chung chung. Điểm quan
+trọng là trước khi dispatch cho Codex/Symphony, yêu cầu đó được chuyển thành
+brief nhỏ có các mục: ticket, goal, acceptance criteria, allowed files, exact
+checks, branch, worktree expectation, và đặc biệt phải giữ lại yêu cầu gốc/bản
+ghi yêu cầu gốc kèm interpretation notes nếu có suy luận thêm.
+
+Quy trình chuẩn:
+- Bạn nhập yêu cầu tự do.
+- Tôi/Hermes chuẩn hóa brief, giữ nguyên yêu cầu gốc, ghi rõ giả định.
+- Bạn duyệt khi brief có mục `inferred` hoặc chưa chắc chắn.
+- Sau đó mới dispatch cho Codex/Symphony.
+
+Dispatch không được diễn giải một mình; nếu brief ở trạng thái `inferred` về
+phạm vi/safety/contract/pháp lý, phải xác nhận lại với người dùng trước khi
+thực thi. Xem hướng dẫn tại
+[`issue_request_brief_template.md`](./issue_request_brief_template.md).
+
+## Branch/PR isolation
+
+Mỗi ticket phải có một branch riêng theo pattern:
+`ticket/<linear-seed>-<short-slug>`. Không push thẳng lên `main`.
+
+- Mỗi ticket chạy trong workspace/branch checkout riêng, không dùng chung
+  workspace bẩn giữa các ticket khác nhau.
+- Nếu working tree đã có thay đổi không liên quan, dừng lại và chuyển về
+  `Human Review` thay vì staging hỗn hợp.
+- Khi một commit đã push bị lỗi, revert/fix-forward trên chính branch đó hoặc
+  branch fix riêng. Không để một ticket lỗi chặn cả lịch sử clean của các
+  ticket khác.
+
+## CI/CD yêu cầu
+
+- CI kiểm tra từng PR branch, không chỉ `main`.
+- Bật branch protection: yêu cầu checks pass trước khi merge và chặn direct
+  push vào `main`.
+- Dùng chung các lệnh kiểm tra trong workflow cho PR checks:
+  `validate_docs.py`, focused unit tests, và lane tests liên quan.
+- Các job cần private data, live services, training lớn, benchmark hardware,
+  release actions, hoặc production credentials phải giữ ngoài unattended CI và
+  ở `Human Review`.
+
 ## Hermes runner bridge
 
 Use the repository bridge to validate a Codex-authored dispatch packet and
@@ -79,20 +122,16 @@ The local MCP adapter is configured in `C:\Users\PC\.codex\config.toml` as
 python C:\Users\PC\.codex\mcp\symphony_mcp_server.py --check
 ```
 
-`SOURCE_REPO_URL` and the Symphony path variables are configured globally in
-`C:\Users\PC\.codex\config.toml` under `[mcp_servers.symphony.env]`, so future
-Codex projects do not need to re-add them. `LINEAR_API_KEY` must remain outside
-the repository. For this machine, the reusable location is
-`C:\Users\PC\.codex\symphony\.env`, which is read by the local Symphony MCP
-adapter. If the key exists only in a PowerShell session but is not visible to
+Use `.env.local` for project-local secrets. This file is ignored by git and
+should contain values such as `STWI_RTSP_URL` and `LINEAR_API_KEY`. If the
+key exists only in a PowerShell session but is not visible to
 Codex, persist it once from that same session:
 
 ```powershell
 & C:\Users\PC\.codex\symphony\persist-env.ps1
 ```
 
-Temporary per-project files such as `.env.symphony.local` are ignored by git and
-should only be used to bootstrap the global `.codex` environment.
+Do not use `.env.symphony.local` as a bootstrap path anymore.
 
 The Symphony dashboard URL is printed when the service is started. The previous
 local log showed a dashboard on `http://127.0.0.1:4011`, but the active port can

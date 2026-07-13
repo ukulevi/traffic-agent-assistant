@@ -20,6 +20,7 @@ SSE event format:
 import asyncio
 import json
 import logging
+import threading
 from datetime import datetime, timezone
 from typing import AsyncGenerator
 
@@ -73,6 +74,7 @@ def create_app(
 
     _store = store or get_job_store()
     _orchestrator = orchestrator or WhatIfOrchestrator()
+    _job_slots = threading.BoundedSemaphore(_settings.job_concurrency)
 
     app = FastAPI(
         title="STWI What-If API",
@@ -95,7 +97,14 @@ def create_app(
         """Create a what-if scenario job and return 202 Accepted."""
         envelope = _store.create(request)
 
-        background_tasks.add_task(_run_job, envelope.job_id, request, _store, _orchestrator)
+        background_tasks.add_task(
+            _run_job,
+            envelope.job_id,
+            request,
+            _store,
+            _orchestrator,
+            _job_slots,
+        )
 
         return JSONResponse(
             status_code=202,
@@ -213,27 +222,34 @@ def _run_job(
     request: WhatIfJobRequest,
     store: JobStore,
     orchestrator: WhatIfOrchestrator,
+    job_slots: threading.BoundedSemaphore | None = None,
 ) -> None:
-    """Run the orchestrator and persist the result (background task)."""
-    store.update_status(job_id, JobStatus.RUNNING)
+    """Run one job within the configured resource-concurrency bound."""
+    if job_slots is not None:
+        job_slots.acquire()
     try:
-        result = orchestrator.run(job_id=job_id, request=request)
-        store.set_result(job_id, result)
-        logger.info("Job %s completed with status %s", job_id, result.status.value)
-    except (TimeoutError, asyncio.TimeoutError) as exc:
-        logger.warning("Job %s timed out/expired: %s", job_id, exc)
-        store.update_status(
-            job_id,
-            JobStatus.EXPIRED,
-            error_message=str(exc),
-        )
-    except Exception as exc:
-        logger.exception("Job %s raised unhandled exception: %s", job_id, exc)
-        store.update_status(
-            job_id,
-            JobStatus.FAILED,
-            error_message=f"Unexpected error: {exc}",
-        )
+        store.update_status(job_id, JobStatus.RUNNING)
+        try:
+            result = orchestrator.run(job_id=job_id, request=request)
+            store.set_result(job_id, result)
+            logger.info("Job %s completed with status %s", job_id, result.status.value)
+        except (TimeoutError, asyncio.TimeoutError) as exc:
+            logger.warning("Job %s timed out/expired: %s", job_id, exc)
+            store.update_status(
+                job_id,
+                JobStatus.EXPIRED,
+                error_message=str(exc),
+            )
+        except Exception as exc:
+            logger.exception("Job %s raised unhandled exception: %s", job_id, exc)
+            store.update_status(
+                job_id,
+                JobStatus.FAILED,
+                error_message=f"Unexpected error: {exc}",
+            )
+    finally:
+        if job_slots is not None:
+            job_slots.release()
 
 
 # ---------------------------------------------------------------------------
