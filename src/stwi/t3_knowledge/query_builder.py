@@ -33,9 +33,6 @@ class SQLQueryBuilder:
     ALLOWED_AGGREGATIONS = {Aggregation.AVG, Aggregation.SUM, Aggregation.MAX, Aggregation.MIN}
     ALLOWED_ORDER_BY = {OrderBy.HORIZON_MINUTES, OrderBy.NODE_ID, OrderBy.TIMESTAMP}
 
-    def __init__(self, default_tenant: str = "default") -> None:
-        self.default_tenant = default_tenant
-
     def build(self, query: SimulationQuery) -> tuple[str, tuple[Any, ...]]:
         """Build parameterized SQL from SimulationQuery.
 
@@ -87,12 +84,10 @@ class SQLQueryBuilder:
             where_clauses.append(f"node_id IN ({placeholders})")
             params.extend(query.node_ids)
 
-        if query.tenant_id:
-            where_clauses.append("tenant_id = %s")
-            params.append(query.tenant_id)
-        else:
-            where_clauses.append("tenant_id = %s")
-            params.append(self.default_tenant)
+        if not query.tenant_id:
+            raise ValueError("tenant_id must be resolved before query execution")
+        where_clauses.append("tenant_id = %s")
+        params.append(query.tenant_id)
 
         where_clause = " AND ".join(where_clauses)
 

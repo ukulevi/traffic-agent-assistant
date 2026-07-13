@@ -1,8 +1,9 @@
 # STWI — Auth, RBAC, and Tenant-Boundary Design
 
 **Ticket:** `TRA-13` / `STWI-SYM-017`
-**Status:** Draft
-**Scope:** Design proposal only. No dependency, IdP, API schema, credential, or runtime implementation.
+**Status:** Approved design; implementation tracked by `TRA-30`.
+**Scope:** Defines the approved boundary. `TRA-30` adds a resolver seam without
+selecting an IdP, storing credentials, or adding a dependency.
 
 > [!IMPORTANT]
 > STWI is decision-support only. No automatic actuation is performed. Human operator approval is required before applying any recommended action.
@@ -209,6 +210,15 @@ Evidence to record in `board.json`:
 | RBAC enforcement | Add role allowlist checks in API layer |
 | Query builder hardening | Remove default-tenant fallback and enforce resolved tenant_id |
 | Integration tests | Add focused tests for tenant mismatch, missing claim, and role denial |
+
+## 10.1 Implemented Boundary Direction
+
+`TRA-30` introduces a typed `PrincipalResolver` seam. Production composition
+must inject a trusted server-side resolver; app startup fails without one.
+Development, test, and demo may use an explicitly provisional resolver so
+offline evidence remains reproducible. That resolver is never production
+identity evidence and does not satisfy any future deployment authentication
+requirement.
 
 ## 11. References
 

@@ -26,6 +26,13 @@ from pathlib import Path
 from typing import AsyncGenerator
 
 from stwi.config.runtime import RuntimeSettings, get_runtime_settings
+from stwi.t4_orchestrator.auth import (
+    PrincipalResolutionError,
+    PrincipalResolver,
+    PrincipalRole,
+    ProvisionalBodyPrincipalResolver,
+    ServerPrincipal,
+)
 from stwi.t4_orchestrator.contracts import (
     JobEnvelope,
     JobEvent,
@@ -48,6 +55,7 @@ def create_app(
     store: JobStore | None = None,
     orchestrator: WhatIfOrchestrator | None = None,
     settings: RuntimeSettings | None = None,
+    principal_resolver: PrincipalResolver | None = None,
 ) -> object:
     """Create and return the FastAPI application.
 
@@ -71,6 +79,13 @@ def create_app(
             "Production runtime rejects provisional in-memory stores and "
             "adapters."
         )
+    if principal_resolver is None:
+        if not _settings.allow_provisional_adapters:
+            raise RuntimeError(
+                "Production runtime requires an explicit server-side "
+                "PrincipalResolver."
+            )
+        principal_resolver = ProvisionalBodyPrincipalResolver()
 
     try:
         from fastapi import BackgroundTasks, FastAPI, Header, HTTPException
@@ -85,6 +100,33 @@ def create_app(
     _store = store or get_job_store()
     _orchestrator = orchestrator or WhatIfOrchestrator()
     _job_slots = threading.BoundedSemaphore(_settings.job_concurrency)
+
+    def resolve_principal(
+        *,
+        tenant_hint: str | None = None,
+        operator_hint: str | None = None,
+    ) -> ServerPrincipal:
+        try:
+            return principal_resolver.resolve(
+                tenant_hint=tenant_hint,
+                operator_hint=operator_hint,
+            )
+        except PrincipalResolutionError as exc:
+            raise HTTPException(
+                status_code=401,
+                detail="Trusted principal is required",
+            ) from exc
+
+    def require_roles(principal: ServerPrincipal, *roles: PrincipalRole) -> None:
+        if not principal.has_any_role(*roles):
+            raise HTTPException(
+                status_code=403,
+                detail="Principal role is not authorized",
+            )
+
+    def require_tenant(principal: ServerPrincipal, tenant_id: str) -> None:
+        if principal.tenant_id != tenant_id:
+            raise HTTPException(status_code=403, detail="Cross-tenant access is denied")
 
     app = FastAPI(
         title="STWI What-If API",
@@ -110,12 +152,21 @@ def create_app(
         background_tasks: BackgroundTasks,
     ) -> JSONResponse:
         """Create a what-if scenario job and return 202 Accepted."""
-        envelope = _store.create(request)
+        principal = resolve_principal(tenant_hint=request.tenant_id)
+        require_roles(
+            principal,
+            PrincipalRole.OPERATOR,
+            PrincipalRole.ANALYST,
+            PrincipalRole.ADMIN,
+        )
+        require_tenant(principal, request.tenant_id)
+        resolved_request = request.model_copy(update={"tenant_id": principal.tenant_id})
+        envelope = _store.create(resolved_request)
 
         background_tasks.add_task(
             _run_job,
             envelope.job_id,
-            request,
+            resolved_request,
             _store,
             _orchestrator,
             _job_slots,
@@ -147,6 +198,8 @@ def create_app(
         envelope = _store.get(job_id)
         if envelope is None:
             raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+        principal = resolve_principal(tenant_hint=envelope.tenant_id)
+        require_tenant(principal, envelope.tenant_id)
 
         response: dict = {
             "job_id": envelope.job_id,
@@ -176,6 +229,14 @@ def create_app(
         envelope = _store.get(job_id)
         if envelope is None:
             raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+        principal = resolve_principal(
+            tenant_hint=envelope.tenant_id,
+            operator_hint=decision_request.operator_id,
+        )
+        require_tenant(principal, envelope.tenant_id)
+        require_roles(principal, PrincipalRole.OPERATOR, PrincipalRole.ADMIN)
+        if decision_request.operator_id != principal.operator_id:
+            raise HTTPException(status_code=403, detail="Operator identity mismatch")
         if envelope.status not in (
             JobStatus.SUCCEEDED,
             JobStatus.NEEDS_REVIEW,
@@ -188,7 +249,7 @@ def create_app(
             )
         record = _store.record_operator_decision(
             job_id=job_id,
-            operator_id=decision_request.operator_id,
+            operator_id=principal.operator_id,
             decision=decision_request.decision.value,
             comment=decision_request.comment,
         )
@@ -214,6 +275,8 @@ def create_app(
         envelope = _store.get(job_id)
         if envelope is None:
             raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+        principal = resolve_principal(tenant_hint=envelope.tenant_id)
+        require_tenant(principal, envelope.tenant_id)
         resume_after = _parse_last_event_id(last_event_id)
 
         return StreamingResponse(
