@@ -36,6 +36,20 @@ Current recorded values on this machine:
 - Do not rename, copy, or publish private benchmark artifacts into public docs/slides.
 - If a rerun is done, preserve previous report and stamp new report with run timestamp.
 
+### 4.1 Development simulation
+
+When the approved benchmark hardware is unavailable, developers may generate a
+deterministic formatting and CI fixture without reading private model artifacts:
+
+```powershell
+python scripts/validation/generate_simulated_surrogate_benchmark.py --output C:\tmp\surrogate_benchmark_simulated.json --p99-ms 100
+```
+
+The generated report is marked `evidence_kind: simulated` and `status:
+simulated`. The contract validator rejects it by design. It exercises report
+format, error handling, and CI paths only; it neither proves the 500 ms SLA nor
+replaces the required measured hardware benchmark.
+
 ## 5. E2E status
 
 Surrogate-only P99 was measured offline on the local benchmark artifact above and
@@ -94,10 +108,10 @@ Contract requirement: `cpu_cores=8`, `ram_gb=32`, `gpu_vram_gb_min=12`, `gpu_vra
 The current benchmark artifact **does not match the contract benchmark profile** for GPU VRAM. The P99 latency is well within the 500 ms threshold, but the measurement was taken on CPU, not on the specified GPU configuration.
 
 ### Compliance path
-1. **Short-term evidence:** The CPU benchmark with `p99_ms=14.12` provides strong evidence that the surrogate is fast enough to meet the 500 ms target even without GPU acceleration.
+1. **Short-term evidence:** CPU or simulated results are development evidence only. They do not establish hardware-profile compliance.
 2. **Full contract compliance:** Requires a benchmark rerun on the specified hardware profile (`8 CPU / 32 GB RAM / NVIDIA GPU 12–16 GB`) to generate a fully contract-compliant artifact.
 3. **Required measured fields:** The report records `cpu_cores`, `ram_gb`, `device`, and the measured numeric `gpu_vram_gb`. Contract range fields are expectations, not substitutes for measured hardware evidence.
-4. **Validator behavior:** `scripts/validation/validate_surrogate_benchmark_evidence.py` fails closed when the measured profile does not match the contract. This prevents false claims of compliance.
+4. **Validator behavior:** `scripts/validation/validate_surrogate_benchmark_evidence.py` accepts only `evidence_kind: measured` with the required measured profile. It rejects CPU, simulated, unclassified, or non-matching evidence. This prevents false claims of compliance.
 
 ### Action
 - [ ] Schedule GPU benchmark run on the specified hardware profile
