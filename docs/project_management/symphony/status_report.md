@@ -5,7 +5,7 @@ Last reviewed: 2026-07-13
 ## Readiness Handoff Summary
 
 - Evidence base: project_contract.json
-- Todo: 6 | In Progress: 6 | Human Review: 3 | Rework: 0 | Done: 8
+- Todo: 6 | In Progress: 5 | Human Review: 4 | Rework: 0 | Done: 8
 - Requires human review for: contract changes, dashboard scope changes, legal/SOP source approval, vision promotion threshold changes, production credentials or external services
 - Report command: python scripts/project_management/symphony_report.py
 - Daily agent update: enabled
@@ -17,8 +17,8 @@ Last reviewed: 2026-07-13
 |---|---:|
 | Backlog | 4 |
 | Todo | 6 |
-| In Progress | 6 |
-| Human Review | 3 |
+| In Progress | 5 |
+| Human Review | 4 |
 | Rework | 0 |
 | Merging | 0 |
 | Done | 8 |
@@ -109,10 +109,6 @@ Last reviewed: 2026-07-13
   Acceptance: Runbook explains how an operator sets `STWI_RTSP_URL` locally without writing it to repo, Linear, logs, or manifests.; Procedure captures only sparse frames into `data/quarantine/rtsp_frames` and never stores a raw video container.; Procedure lists privacy review, retention, cleanup, and aggregate-only next steps before any frame leaves quarantine.; Procedure includes exact offline verification commands that can run after supervised capture.
   Next: Review the RTSP smoke-test runbook and advance to Human Review before live execution.
   Checks: python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests; node --check slides/js/presentation.js -> pass; node --check slides/js/presentation-tools.js -> pass; git diff --check -> pass
-- `STWI-SYM-024` / TRA-20 [P1] Synchronize Symphony board snapshot after PR #5 tracker backfill (Orchestrator/API/Release, LeadCoordinator)
-  Evidence: docs/project_management/symphony/board.json, docs/project_management/symphony/board.md, docs/project_management/symphony/status_report.md, TRA-6, TRA-19, TRA-20
-  Acceptance: Board state matches the current Linear state for TRA-6, TRA-19, and TRA-20.; Generated Markdown reports are regenerated from board.json.; No private artifacts, secrets, or unrelated implementation files are changed.
-  Next: Regenerate reports, run release checks, then open a draft PR for Human Review.
 
 ### Human Review
 
@@ -129,6 +125,10 @@ Last reviewed: 2026-07-13
   Acceptance: Human operator confirms the RTSP endpoint is approved for STWI testing and sets it only in `STWI_RTSP_URL`.; Local environment uses `.env.local.example` as the template; `.env.local` is not committed.; Live capture is bounded to a small sample, stores sparse frames only in quarantine, and retains no raw video.; Manifest is reviewed to confirm no endpoint, credentials, image base64, or raw video reference is present.; Resulting evidence is deleted, kept in quarantine for privacy review, or converted into approved aggregate-only evidence by a follow-up issue.
   Next: Keep in Human Review; do not add `symphony-approved` because this requires live external service access and human supervision.
   Checks: python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests; node --check slides/js/presentation.js -> pass; node --check slides/js/presentation-tools.js -> pass; git diff --check -> pass
+- `STWI-SYM-024` / TRA-20 [P1] Synchronize Symphony board snapshot after PR #5 tracker backfill (Orchestrator/API/Release, LeadCoordinator)
+  Evidence: docs/project_management/symphony/board.json, docs/project_management/symphony/board.md, docs/project_management/symphony/status_report.md, TRA-6, TRA-19, TRA-20
+  Acceptance: Board state matches the current Linear state for TRA-6, TRA-19, and TRA-20.; Generated Markdown reports are regenerated from board.json.; No private artifacts, secrets, or unrelated implementation files are changed.
+  Next: Await final user review and merge of PR #6; mark Done only after main is synchronized.
 
 ### Rework
 

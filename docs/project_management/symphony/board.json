@@ -722,7 +722,7 @@
       "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-20/synchronize-symphony-board-snapshot-after-pr-5-tracker-backfill",
       "lane": "Orchestrator/API/Release",
       "owner_agent": "LeadCoordinator",
-      "status": "In Progress",
+      "status": "Human Review",
       "priority": "P1",
       "evidence": [
         "docs/project_management/symphony/board.json",
@@ -737,7 +737,7 @@
         "Generated Markdown reports are regenerated from board.json.",
         "No private artifacts, secrets, or unrelated implementation files are changed."
       ],
-      "next_action": "Regenerate reports, run release checks, then open a draft PR for Human Review."
+      "next_action": "Await final user review and merge of PR #6; mark Done only after main is synchronized."
     }
   ]
 }
