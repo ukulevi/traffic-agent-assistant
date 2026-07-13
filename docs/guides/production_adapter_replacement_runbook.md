@@ -19,7 +19,9 @@ required environment variables, and verification commands.
 | Surrogate forecast | explicit `ScenarioForecaster` | required in production |
 | Legal evidence / RAG | explicit `LegalEvidenceProvider` | required in production |
 
-In `development`, `test`, and `demo`, provisional adapters remain allowed for local experimentation. In `production`, `WhatIfOrchestrator` requires all three adapters to be injected explicitly.
+In `development`, `test`, and `demo`, provisional adapters remain allowed for local experimentation. In `production`, `WhatIfOrchestrator` requires all three adapters to be injected explicitly and rejects adapters marked provisional even when a caller passes them directly, including a `T3KnowledgeTier` that wraps a fake adapter. The API also rejects `InMemoryJobStore` before it accepts a job.
+
+Corpus manifest writes use UTF-8 explicitly so Vietnamese legal metadata does not depend on the Windows active code page.
 
 ## 3. Required Environment
 

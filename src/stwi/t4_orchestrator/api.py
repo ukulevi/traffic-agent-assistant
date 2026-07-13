@@ -62,6 +62,14 @@ def create_app(
             "Production runtime requires explicit job store and orchestrator; "
             "InMemoryJobStore/provisional defaults are disabled."
         )
+    if not _settings.allow_provisional_adapters and (
+        getattr(store, "is_provisional_store", False)
+        or getattr(orchestrator, "uses_provisional_adapters", False)
+    ):
+        raise RuntimeError(
+            "Production runtime rejects provisional in-memory stores and "
+            "adapters."
+        )
 
     try:
         from fastapi import BackgroundTasks, FastAPI, Header, HTTPException

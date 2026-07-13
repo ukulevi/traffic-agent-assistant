@@ -29,6 +29,8 @@ class InMemoryJobStore:
     Phase 4 provisional — replaced by Redis in Phase 5.
     """
 
+    is_provisional_store = True
+
     def __init__(self) -> None:
         self._jobs: dict[str, JobEnvelope] = {}
         self._events: dict[str, list[JobEvent]] = {}
