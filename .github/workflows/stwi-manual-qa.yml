@@ -13,6 +13,7 @@ on:
           - project-management
           - tier3-offline
           - tier4-contracts
+          - tier4-http
           - all-light
       ticket_branch:
         description: "Related ticket branch for audit context"
@@ -38,6 +39,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
+      - name: Install project dependencies
+        run: python -m pip install -e ".[orchestrator]"
 
       - name: Core repository guards
         if: inputs.suite == 'core' || inputs.suite == 'all-light'
@@ -73,3 +77,7 @@ jobs:
             tests.t4_orchestrator.test_t4_contracts \
             tests.t4_orchestrator.test_t4_safety \
             tests.t4_orchestrator.test_t4_runtime_boundaries
+
+      - name: Tier 4 HTTP API tests
+        if: inputs.suite == 'tier4-http' || inputs.suite == 'all-light'
+        run: python -m unittest tests.t4_orchestrator.test_t4_api_http
