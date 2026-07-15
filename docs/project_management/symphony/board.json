@@ -3,7 +3,7 @@
   "project": "SmartTraffic What-If",
   "short_name": "STWI",
   "board_name": "STWI MVP Readiness Symphony",
-  "last_reviewed_at": "2026-07-13",
+  "last_reviewed_at": "2026-07-14",
   "source_of_truth": [
     "project_contract.json",
     "docs/00_STWI_Summary_and_Guidelines.md",
@@ -74,6 +74,8 @@
     {
       "id": "STWI-SYM-001",
       "title": "Reconcile official vision artifact with current promotion gate",
+      "linear_identifier": "TRA-31",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-31/reconcile-official-vision-artifact-with-current-promotion-gate",
       "lane": "Data/Vision",
       "owner_agent": "DataVisionAgent",
       "status": "Human Review",
@@ -116,6 +118,8 @@
     {
       "id": "STWI-SYM-003",
       "title": "Replace Phase 2 mock observations with real aggregate dataset",
+      "linear_identifier": "TRA-32",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-32/replace-phase-2-mock-observations-with-real-aggregate-dataset",
       "lane": "ML/Simulation",
       "owner_agent": "MLSimulationAgent",
       "status": "Backlog",
@@ -134,9 +138,11 @@
     {
       "id": "STWI-SYM-004",
       "title": "Rerun surrogate calibration and OOD thresholds on non-mock validation data",
+      "linear_identifier": "TRA-36",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-36/rerun-surrogate-calibration-and-ood-thresholds-on-non-mock-validation",
       "lane": "ML/Simulation",
       "owner_agent": "MLSimulationAgent",
-      "status": "Todo",
+      "status": "Backlog",
       "priority": "P1",
       "evidence": [
         "data/derived/private/phase2_surrogate/provisional_gate_p2_report.json",
@@ -156,7 +162,7 @@
       "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-6/prove-surrogate-p99-under-contract-benchmark-profile",
       "lane": "ML/Simulation",
       "owner_agent": "MLSimulationAgent",
-      "status": "Todo",
+      "status": "Human Review",
       "priority": "P1",
       "evidence": [
         "project_contract.json",
@@ -169,11 +175,13 @@
         "Raw benchmark result is retained as private artifact.",
         "E2E P95 target is recorded as required future evidence; no claim is made without measurement."
       ],
-      "next_action": "Run the benchmark on the 8 CPU / 32 GB RAM / NVIDIA GPU 12-16 GB profile and retain the new private artifact; this workstation's 4 GB GPU cannot satisfy the gate."
+      "next_action": "Keep TRA-6 in Human Review until the benchmark runs on the 8 CPU / 32 GB RAM / NVIDIA GPU 12-16 GB contract profile; this workstation's 4 GB GPU cannot satisfy the gate."
     },
     {
       "id": "STWI-SYM-006",
       "title": "Ingest approved SOP corpus and validate citation coverage",
+      "linear_identifier": "TRA-33",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-33/ingest-approved-sop-corpus-and-validate-citation-coverage",
       "lane": "Knowledge/RAG",
       "owner_agent": "KnowledgeRagAgent",
       "status": "Backlog",
@@ -192,9 +200,11 @@
     {
       "id": "STWI-SYM-007",
       "title": "Switch Phase 3 validation from fake retriever to Qdrant/BGE path",
+      "linear_identifier": "TRA-34",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-34/switch-phase-3-validation-from-fake-retriever-to-qdrantbge-path",
       "lane": "Knowledge/RAG",
       "owner_agent": "KnowledgeRagAgent",
-      "status": "Todo",
+      "status": "Backlog",
       "priority": "P1",
       "evidence": [
         "src/stwi/t3_knowledge",
@@ -211,6 +221,8 @@
     {
       "id": "STWI-SYM-008",
       "title": "Implement production job persistence with Celery and Redis",
+      "linear_identifier": "TRA-35",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-35/implement-production-job-persistence-with-celery-and-redis",
       "lane": "Orchestrator/API/Release",
       "owner_agent": "OrchestratorReleaseAgent",
       "status": "Backlog",
@@ -265,7 +277,7 @@
       "title": "Build operator dashboard or explicitly scope it out of demo",
       "lane": "Orchestrator/API/Release",
       "owner_agent": "FrontendAgent",
-      "status": "Human Review",
+      "status": "Duplicate",
       "priority": "P2",
       "evidence": [
         "docs/05_Implementation_Plan.md",
@@ -277,7 +289,8 @@
         "If implemented, UI shows job status, citations, warnings, versions, trace_id, and approval state.",
         "If deferred, docs and demo script clearly state the limitation."
       ],
-      "next_action": "User decides whether to build a minimal dashboard or keep API/slides demo."
+      "next_action": "Superseded by STWI-SYM-027 / TRA-24, which delivered the bounded minimal dashboard and is Done.",
+      "duplicate_of": "STWI-SYM-027 / TRA-24"
     },
     {
       "id": "STWI-SYM-011",
@@ -312,7 +325,7 @@
       "title": "Resolve dirty working tree into reviewable change groups",
       "lane": "Orchestrator/API/Release",
       "owner_agent": "LeadCoordinator",
-      "status": "In Progress",
+        "status": "Human Review",
       "priority": "P1",
       "evidence": [
         "git status --short",
@@ -336,7 +349,7 @@
       "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-5/complete-vision-artifact-metadata-for-latency-thresholds-roi-policy",
       "lane": "Data/Vision",
       "owner_agent": "DataVisionAgent",
-      "status": "In Progress",
+      "status": "Done",
       "priority": "P1",
       "evidence": [
         "src/stwi/tooling/vision_training/promotion.py",
@@ -350,7 +363,7 @@
         "Privacy review remains aggregate-only and does not publish raw images/video.",
         "Promotion validator requires calibration, benchmark, and legal/privacy metadata."
       ],
-      "next_action": "Review the updated promotion validator and model-registry evidence guide before marking Done.",
+      "next_action": "Keep TRA-5 closed for its bounded validator/docs scope; resolve the current private official-artifact mismatch through STWI-SYM-001 Human Review.",
       "checks": [
         "python scripts/validation/validate_docs.py -> pass",
         "python -m unittest tests.contracts.test_project_contract -> pass, 4 tests",
@@ -363,9 +376,11 @@
     {
       "id": "STWI-SYM-014",
       "title": "Validate recorded-camera or RTSP calibration and aggregate extraction path",
+      "linear_identifier": "TRA-37",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-37/validate-recorded-camera-or-rtsp-calibration-and-aggregate-extraction",
       "lane": "Data/Vision",
       "owner_agent": "DataVisionAgent",
-      "status": "Todo",
+      "status": "Human Review",
       "priority": "P1",
       "evidence": [
         "scripts/data_prep/capture_rtsp_frames.py",
@@ -382,9 +397,11 @@
     {
       "id": "STWI-SYM-015",
       "title": "Improve detector AP toward current MVP promotion threshold",
+      "linear_identifier": "TRA-38",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-38/improve-detector-ap-toward-current-mvp-promotion-threshold",
       "lane": "Data/Vision",
       "owner_agent": "DataVisionAgent",
-      "status": "Todo",
+      "status": "Backlog",
       "priority": "P2",
       "evidence": [
         "data/derived/private/vision_evals/motoann_best_val_minarea003/roi_ap50_summary.json",
@@ -432,7 +449,7 @@
       "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-13/draft-auth-rbac-and-tenant-boundary-design",
       "lane": "Orchestrator/API/Release",
       "owner_agent": "OrchestratorReleaseAgent",
-      "status": "In Progress",
+      "status": "Done",
       "priority": "P2",
       "evidence": [
         "project_contract.json",
@@ -448,7 +465,7 @@
         "Role boundaries for operator, analyst, admin, and readonly are specified without choosing a new identity provider.",
         "No auth dependency, external IdP, credential storage, or runtime implementation is introduced in TRA-13."
       ],
-      "next_action": "Review the auth/RBAC/tenant-boundary design and advance to Human Review before implementation.",
+      "next_action": "Keep TRA-13 as completed design evidence; any runtime implementation remains a separate Human Review issue and must not infer an identity provider.",
       "checks": [
         "python scripts/validation/validate_docs.py -> pass",
         "python -m unittest tests.contracts.test_project_contract -> pass, 4 tests",
@@ -549,7 +566,7 @@
       "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-17/review-production-deployment-options-without-changing-the-approved",
       "lane": "Orchestrator/API/Release",
       "owner_agent": "ReleaseQaAgent",
-      "status": "Backlog",
+      "status": "Done",
       "priority": "P2",
       "evidence": [
         "project_contract.json",
@@ -562,7 +579,14 @@
         "No Kubernetes, secrets manager, tracing, or model-serving framework is added to active architecture.",
         "The recommendation lists cost, complexity, safety, rollback, and Human Review requirements for a later decision."
       ],
-      "next_action": "Prepare an options review after MVP gate gaps are stable; keep implementation blocked pending user approval."
+      "next_action": "Keep TRA-17 as completed options-review evidence; production deployment implementation remains blocked pending an explicit Human Review selection.",
+      "checks": [
+        "python scripts/validation/validate_docs.py -> pass on 2026-07-14",
+        "python -m unittest tests.contracts.test_project_contract -> pass, 4 tests on 2026-07-14",
+        "node --check slides/js/presentation.js -> pass on 2026-07-14",
+        "node --check slides/js/presentation-tools.js -> pass on 2026-07-14",
+        "git diff --check -> pass on 2026-07-14"
+      ]
     },
     {
       "id": "STWI-RTSP-001",
@@ -598,7 +622,7 @@
       "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-10/document-supervised-rtsp-to-quarantine-smoke-test-procedure",
       "lane": "Data/Vision",
       "owner_agent": "DataVisionAgent",
-      "status": "In Progress",
+      "status": "Done",
       "priority": "P1",
       "evidence": [
         "docs/guides/vision_local_training_runbook.md",
@@ -613,7 +637,7 @@
         "Procedure lists privacy review, retention, cleanup, and aggregate-only next steps before any frame leaves quarantine.",
         "Procedure includes exact offline verification commands that can run after supervised capture."
       ],
-      "next_action": "Review the RTSP smoke-test runbook and advance to Human Review before live execution.",
+      "next_action": "Keep TRA-10 closed as runbook evidence; supervised live execution remains gated by TRA-11 / STWI-RTSP-003.",
       "checks": [
         "python scripts/validation/validate_docs.py -> pass",
         "python -m unittest tests.contracts.test_project_contract -> pass, 4 tests",
@@ -790,7 +814,7 @@
       "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-23/make-tier-4-http-api-tests-mandatory-for-mvp-demo-ci",
       "lane": "Orchestrator/API/Release",
       "owner_agent": "ReleaseQaAgent",
-      "status": "Todo",
+      "status": "Done",
       "priority": "P1",
       "evidence": [
         "tests/t4_orchestrator/test_t4_api_http.py",
@@ -803,7 +827,7 @@
         "The 36 HTTP tests run with no dependency-only skips.",
         "No API/runtime/contract/dependency/deployment contract is weakened."
       ],
-      "next_action": "Review CI workflow changes and validate the HTTP test gate before merge.",
+      "next_action": "Keep TRA-23 closed; broader full-suite and phase-gate integrity follow-up is tracked separately in STWI-SYM-031.",
       "checks": [
         "python scripts/validation/validate_ci_guardrails.py -> pass",
         "python scripts/validation/validate_docs.py -> pass",
@@ -819,7 +843,7 @@
       "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-24/build-minimal-operator-review-dashboard-for-mvp-demo",
       "lane": "Orchestrator/API/Release",
       "owner_agent": "FrontendAgent",
-      "status": "Todo",
+      "status": "Done",
       "priority": "P1",
       "dependencies": ["STWI-SYM-026"],
       "evidence": [
@@ -834,7 +858,7 @@
         "needs_review shows candidate_action only; never recommended_action.",
         "Dashboard preserves fail-closed, aggregate-only, and human-approval semantics."
       ],
-      "next_action": "Wait for TRA-23 CI mandate, then review dashboard scope and local browser QA.",
+      "next_action": "Keep TRA-24 closed for the minimal dashboard scope; asynchronous lifecycle hardening follows in STWI-SYM-034.",
       "checks": [
         "python -m unittest tests.t4_orchestrator.test_t4_api_http -> pass",
         "python -m unittest tests.contracts.test_project_contract -> pass, 4 tests",
@@ -850,7 +874,7 @@
       "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-25/add-deterministic-offline-mvp-demo-smoke-harness-and-runbook",
       "lane": "Orchestrator/API/Release",
       "owner_agent": "ReleaseQaAgent",
-      "status": "Todo",
+      "status": "Done",
       "priority": "P1",
       "dependencies": ["STWI-SYM-026"],
       "evidence": [
@@ -864,7 +888,7 @@
         "Evidence JSON records statuses, trace IDs, provisional labels, and invariant checks.",
         "No live service, raw video, secret, or production-readiness claim is introduced."
       ],
-      "next_action": "Implement after TRA-23 is merged; this ticket may be reviewed in parallel with TRA-24 only if files do not overlap.",
+      "next_action": "Keep TRA-25 closed for the deterministic offline smoke scope; expanded terminal-branch coverage follows in STWI-SYM-034 and STWI-SYM-036.",
       "checks": [
         "python -m unittest tests.demo.test_mvp_smoke -> pass",
         "python scripts/demo/run_mvp_smoke.py -> pass",
@@ -881,7 +905,7 @@
       "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-26/run-final-integrated-mvp-demo-acceptance-after-tra-232425",
       "lane": "Orchestrator/API/Release",
       "owner_agent": "ReleaseQaAgent / LeadCoordinator",
-      "status": "Backlog",
+      "status": "Done",
       "priority": "P1",
       "dependencies": ["STWI-SYM-026", "STWI-SYM-027", "STWI-SYM-028"],
       "evidence": [
@@ -898,7 +922,7 @@
         "Tier-4 HTTP coverage, offline smoke evidence, and /demo/ browser QA are complete and reproducible.",
         "Remaining live RTSP, production persistence, benchmark hardware, SOP corpus, and auth/RBAC gaps remain explicit and do not block acceptance."
       ],
-      "next_action": "Keep in Backlog until TRA-23, TRA-24, and TRA-25 evidence is complete.",
+      "next_action": "Keep TRA-26 closed as the bounded offline Demo MVP acceptance baseline; post-audit hardening and re-acceptance follow in STWI-SYM-031 through STWI-SYM-036.",
       "checks": [
         "python scripts/validation/validate_docs.py -> pass",
         "python -m unittest tests.contracts.test_project_contract -> pass, 4 tests",
@@ -907,6 +931,344 @@
         "git diff --check -> pass"
       ],
       "human_review_gate": "final Demo MVP acceptance, live service boundary confirmation, and user approval before Done"
+    },
+    {
+      "id": "STWI-SYM-030",
+      "title": "Reconcile Linear and Symphony state before next dispatch",
+      "linear_identifier": "TRA-39",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-39/reconcile-linear-and-symphony-state-before-next-dispatch",
+      "lane": "Orchestrator/API/Release",
+      "owner_agent": "LeadCoordinator",
+      "status": "Done",
+      "priority": "P1",
+      "evidence": [
+        "docs/project_management/symphony/board.json",
+        "docs/project_management/symphony/status_report.md",
+        "docs/project_management/symphony/current_dispatch_packet.md",
+        "docs/project_management/symphony/blocker_linear_ticket_drafts_2026-07-14.md"
+      ],
+      "acceptance_criteria": [
+        "Legacy Linear states and URLs are read back before mirror updates.",
+        "Missing legacy backlog issues are created without unsafe dispatch approval.",
+        "Superseded placeholders are marked duplicate and completed work is removed from dispatch.",
+        "Exactly one dependency-safe next issue is selected."
+      ],
+      "next_action": "Dispatch only STWI-SYM-031 / TRA-40 after tracker verification.",
+      "checks": [
+        "Linear readback TRA-5 through TRA-51 -> pass on 2026-07-14",
+        "dispatch_linear_issues.py dry-run for legacy and blocker seeds -> pass",
+        "new issue readback state/labels/URLs -> pass"
+      ]
+    },
+    {
+      "id": "STWI-SYM-031",
+      "title": "Repair full-suite, phase-gate, and CI evidence integrity",
+      "linear_identifier": "TRA-40",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-40/repair-full-suite-phase-gate-and-ci-evidence-integrity",
+      "lane": "Orchestrator/API/Release",
+      "owner_agent": "ReleaseQaAgent",
+      "status": "Done",
+      "priority": "P1",
+      "dependencies": ["STWI-SYM-030"],
+      "evidence": [
+        "scripts/validation/validate_provisional_phase2_gate.py",
+        "scripts/validation/gate_p3_validator.py",
+        "tests/t2_forecast/test_phase2_provisional_gate.py",
+        ".github/workflows/stwi-fast-ci.yml"
+      ],
+      "acceptance_criteria": [
+        "Phase gate CLIs run from repository root without import errors.",
+        "The complete lightweight suite has no failing test and preserves measured-evidence semantics.",
+        "Gate P3 records executed pass/fail/not-verified evidence instead of literal True assertions.",
+        "CI runs the complete lightweight suite with explicit optional-service skips."
+      ],
+      "next_action": "Accepted by the user on 2026-07-15; preserve the verified evidence and hand off the next dependency-safe ticket to TRA-41.",
+      "checks": [
+        "Symphony log -> repeated task_complete with last_agent_message null and 1-second active-state continuation",
+        "Codex session turn_context -> model stepfun/step-3.7-flash-free",
+        "TRA-40 workspace -> Hermes produced an in-scope three-file diff",
+        "Symphony process -> stopped on 2026-07-14",
+        "Hermes native smoke -> HERMES_NATIVE_OK, provider nous, model stepfun/step-3.7-flash:free",
+        "Linear dispatch readback -> hermes-approved was used without codex-symphony-approved",
+        "Hermes final rework -> bridge exit 0, no scope violations, and diff reduced to 17 insertions / 7 deletions across three allowed files",
+        "Independent review: validate_provisional_phase2_gate.py --help -> pass",
+        "Independent review: gate_p3_validator.py --help -> FAIL ModuleNotFoundError: No module named tests",
+        "Independent review: tests.t2_forecast.test_phase2_provisional_gate -> pass, 2 tests",
+        "Independent review: validate_ci_guardrails.py and git diff --check -> pass",
+        "User approved a new two-validator Hermes repair cycle on 2026-07-15",
+        "Dispatch attempt was blocked before transmission by tenant data-export policy; no workaround attempted",
+        "User explicitly accepted outside-tenant processing risk and confirmed sharing authority/no prohibited data",
+        "Final Hermes repair uses repository root parents[2] in both validators",
+        "Codex independent CLI help checks -> pass for P2 and P3",
+        "Codex focused provisional-gate tests -> pass, 2 tests",
+        "Codex full lightweight suite with existing private/mock gate artifacts -> pass, 309 tests, 13 skipped",
+        "Codex CI guardrails, release verifier, and git diff --check -> pass",
+        "User final acceptance received; Linear TRA-40 moved to Done on 2026-07-15"
+      ]
+    },
+    {
+      "id": "STWI-SYM-032",
+      "title": "Enforce hard deadline and immutable terminal job states",
+      "linear_identifier": "TRA-41",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-41/enforce-hard-deadline-and-immutable-terminal-job-states",
+      "lane": "Orchestrator/API/Release",
+      "owner_agent": "OrchestratorReleaseAgent",
+      "status": "Done",
+      "priority": "P1",
+      "dependencies": ["STWI-SYM-031"],
+      "evidence": [
+        "src/stwi/t4_orchestrator/orchestrator.py",
+        "src/stwi/t4_orchestrator/job_store.py",
+        "src/stwi/t4_orchestrator/api.py"
+      ],
+      "acceptance_criteria": [
+        "Blocking dependencies have bounded deadline/cancellation behavior.",
+        "Terminal job states are immutable and cannot be overwritten by a late worker.",
+        "SSE cannot create a conflicting timeout state.",
+        "Timeout/dependency failures never return recommended_action."
+      ],
+      "next_action": "User accepted TRA-41 on 2026-07-15. Preserve the verified bounded deadline and immutable-terminal-state behavior; TRA-42 is the next dependency-safe review item.",
+      "checks": [
+        "Codex configuration readback -> model gpt-5.6-terra, model_reasoning_effort medium",
+        "Hermes configuration readback -> Nous Step 3.7 Flash, agent.reasoning_effort xhigh",
+          "Hermes bridge enforces --allow-external-code-transfer for execution; --no-write remains local-only",
+          "Symphony run6 -> Codex app-server Terra Medium completed one turn with 61,832 tokens and no retry after coordinator stop",
+          "Codex review -> no workspace diff; worker reported codex-windows-sandbox-setup.exe Access is denied before mandatory reads",
+          "Independent review with PYTHONPATH pinned to the TRA-41 workspace source -> 57 targeted/contract tests pass; documentation validation and git diff --check pass",
+          "User final acceptance received; Linear TRA-41 moved to Done on 2026-07-15"
+      ]
+    },
+    {
+      "id": "STWI-SYM-033",
+      "title": "Type and validate scenario actions at the API boundary",
+      "linear_identifier": "TRA-42",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-42/type-and-validate-scenario-actions-at-the-api-boundary",
+      "lane": "Orchestrator/API/Release",
+      "owner_agent": "OrchestratorReleaseAgent",
+      "status": "Human Review",
+      "priority": "P1",
+      "evidence": [
+        "src/stwi/t4_orchestrator/contracts.py",
+        "src/stwi/t4_orchestrator/interfaces.py",
+        "docs/04_AI_Agent_Orchestrator_CF_VLA.md"
+      ],
+      "acceptance_criteria": [
+        "Scenario actions and request boundaries are typed and validated.",
+        "The wire shape remains compatible unless a contract change is separately approved.",
+        "Unknown/out-of-range input fails closed with no recommended_action.",
+        "Synthetic demo behavior does not claim fabricated causality."
+      ],
+      "next_action": "Codex reviewed the bounded Terra Medium implementation. Board Human Review maps to Linear In Review; wait for user final approval before Done and before activating TRA-43.",
+      "checks": [
+        "TRA-42 scope narrowed to contracts.py and focused Tier-4 tests; no API route, status, SLA, or documentation contract change",
+        "Independent review with PYTHONPATH pinned to the TRA-42 workspace source -> test_t4_contracts pass (34 tests), test_t4_api_http pass (40 tests)",
+        "validate_docs.py and git diff --check -> pass",
+        "Linear TRA-42 moved to In Review on 2026-07-15; waiting for user final approval"
+      ]
+    },
+    {
+      "id": "STWI-SYM-034",
+      "title": "Fix dashboard async lifecycle and demo terminal branches",
+      "linear_identifier": "TRA-43",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-43/fix-dashboard-async-lifecycle-and-demo-terminal-branches",
+      "lane": "Orchestrator/API/Release",
+      "owner_agent": "FrontendAgent",
+      "status": "Backlog",
+      "priority": "P1",
+      "dependencies": ["STWI-SYM-032", "STWI-SYM-033"],
+      "evidence": [
+        "src/stwi/t4_orchestrator/static/dashboard.js",
+        "tests/demo",
+        "docs/guides/mvp_operator_dashboard.md"
+      ],
+      "acceptance_criteria": [
+        "UI handles queued/running, SSE reconnect, polling fallback, null result, and network errors.",
+        "Failed/expired results cannot be approved.",
+        "Demo evidence covers success, safety/OOD review, missing citation, and failure/expiry.",
+        "Desktop/mobile/keyboard QA preserves human approval and no actuation."
+      ],
+      "next_action": "Keep in Backlog until STWI-SYM-032 and STWI-SYM-033 are accepted."
+    },
+    {
+      "id": "STWI-SYM-035",
+      "title": "Reconcile API documentation, report claims, and PDF layout",
+      "linear_identifier": "TRA-44",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-44/reconcile-api-documentation-report-claims-and-pdf-layout",
+      "lane": "Orchestrator/API/Release",
+      "owner_agent": "ReleaseQaAgent",
+      "status": "Backlog",
+      "priority": "P2",
+      "dependencies": ["STWI-SYM-033", "STWI-SYM-034"],
+      "evidence": [
+        "report/main.tex",
+        "report/chapters/ch03_kien_truc.tex",
+        "report/chapters/ch07_agent.tex",
+        "report/chapters/appendix_api.tex"
+      ],
+      "acceptance_criteria": [
+        "SLA, normalization, endpoints, examples, and statuses match the contract and API.",
+        "No production or measured-SLA claim is made without evidence.",
+        "Affected PDF header, endpoint, and table overlaps are removed.",
+        "Version/date/status wording changes remain Human Review gated."
+      ],
+      "next_action": "Keep in Backlog until API/action and dashboard behavior are stable."
+    },
+    {
+      "id": "STWI-SYM-036",
+      "title": "Run hardened offline MVP demo acceptance",
+      "linear_identifier": "TRA-45",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-45/run-hardened-offline-mvp-demo-acceptance",
+      "lane": "Orchestrator/API/Release",
+      "owner_agent": "ReleaseQaAgent / LeadCoordinator",
+      "status": "Backlog",
+      "priority": "P1",
+      "dependencies": ["STWI-SYM-031", "STWI-SYM-032", "STWI-SYM-033", "STWI-SYM-034", "STWI-SYM-035"],
+      "evidence": [
+        "docs/project_management/symphony/mvp_demo_acceptance.md",
+        "tests/demo",
+        "tests/t4_orchestrator"
+      ],
+      "acceptance_criteria": [
+        "Full lightweight tests and release verifier pass with all skips listed.",
+        "Browser and CLI evidence cover the required terminal branches.",
+        "Every flow proves no automatic actuation, valid action semantics, trace/version evidence, and no raw video/secrets.",
+        "Remaining pilot and production gates stay explicit."
+      ],
+      "next_action": "Run only after STWI-SYM-031 through STWI-SYM-035 are accepted."
+    },
+    {
+      "id": "STWI-SYM-037",
+      "title": "Bind production runtime provenance and policy to promoted artifacts",
+      "linear_identifier": "TRA-46",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-46/bind-production-runtime-provenance-and-policy-to-promoted-artifacts",
+      "lane": "ML/Simulation",
+      "owner_agent": "MLSimulationAgent / OrchestratorReleaseAgent",
+      "status": "Backlog",
+      "priority": "P1",
+      "dependencies": ["STWI-SYM-003", "STWI-SYM-004", "STWI-SYM-007", "STWI-SYM-013"],
+      "evidence": [
+        "src/stwi/t4_orchestrator/orchestrator.py",
+        "src/stwi/app.py",
+        "src/stwi/t1_pipeline/local_vision.py"
+      ],
+      "acceptance_criteria": [
+        "Production provenance and safety thresholds come from validated promoted artifacts.",
+        "Missing/stale/checksum-invalid/uncalibrated/provisional artifacts fail closed.",
+        "Demo composition remains isolated and visibly provisional.",
+        "Audit versions match the artifacts used for inference."
+      ],
+      "next_action": "Keep in Backlog until real/calibrated artifact dependencies are available."
+    },
+    {
+      "id": "STWI-SYM-038",
+      "title": "Harden T3 service boundary and redact internal errors",
+      "linear_identifier": "TRA-47",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-47/harden-t3-service-boundary-and-redact-internal-errors",
+      "lane": "Knowledge/RAG",
+      "owner_agent": "KnowledgeRagAgent",
+      "status": "Backlog",
+      "priority": "P1",
+      "dependencies": ["STWI-SYM-007"],
+      "evidence": [
+        "src/stwi/t3_knowledge/tier3_facade.py",
+        "src/stwi/t3_knowledge/qdrant_retriever.py",
+        "src/stwi/t3_knowledge/timescale_executor.py"
+      ],
+      "acceptance_criteria": [
+        "Production has no embedded dev credential fallback.",
+        "Effective-date and hybrid retrieval behavior is service-tested against the pinned client.",
+        "SQL remains typed, parameterized, allowlisted, tenant/job filtered, and read-only.",
+        "Client errors expose stable codes and trace_id, not raw internals."
+      ],
+      "next_action": "Keep in Backlog until STWI-SYM-007 and external-service approval are available."
+    },
+    {
+      "id": "STWI-SYM-039",
+      "title": "Prove measured end-to-end SLA on the contract profile",
+      "linear_identifier": "TRA-48",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-48/prove-measured-end-to-end-sla-on-the-contract-profile",
+      "lane": "ML/Simulation",
+      "owner_agent": "ReleaseQaAgent / MLSimulationAgent",
+      "status": "Human Review",
+      "priority": "P1",
+      "dependencies": ["STWI-SYM-005", "STWI-SYM-008", "STWI-SYM-037", "STWI-SYM-038"],
+      "evidence": [
+        "project_contract.json",
+        "docs/guides/surrogate_benchmark_evidence.md"
+      ],
+      "acceptance_criteria": [
+        "Benchmark uses the 8 CPU / 32 GB RAM / 12-16 GB GPU profile.",
+        "Evidence is measured and records load, versions, percentiles, and failures.",
+        "Surrogate P99, E2E P95, and hard deadline meet contract or report FAIL.",
+        "Raw results remain private."
+      ],
+      "next_action": "Wait for contract-profile hardware and all runtime dependencies."
+    },
+    {
+      "id": "STWI-SYM-040",
+      "title": "Implement approved auth, RBAC, and tenant boundary",
+      "linear_identifier": "TRA-49",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-49/implement-approved-auth-rbac-and-tenant-boundary",
+      "lane": "Orchestrator/API/Release",
+      "owner_agent": "OrchestratorReleaseAgent",
+      "status": "Backlog",
+      "priority": "P1",
+      "dependencies": ["STWI-SYM-017 Human Review approval"],
+      "evidence": [
+        "docs/design/auth_rbac_tenant_boundary.md",
+        "src/stwi/t4_orchestrator/auth.py"
+      ],
+      "acceptance_criteria": [
+        "Tenant/operator request fields cannot elevate privilege or cross tenants.",
+        "Approved role boundaries cover POST, GET, SSE, and operator decisions.",
+        "Production cannot use anonymous/dev identity behavior.",
+        "Negative tenant/role/reconnect/decision tests pass."
+      ],
+      "next_action": "Human Review selects the approved implementation mechanism before dispatch."
+    },
+    {
+      "id": "STWI-SYM-041",
+      "title": "Build the approved production deployment baseline",
+      "linear_identifier": "TRA-50",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-50/build-the-approved-production-deployment-baseline",
+      "lane": "Orchestrator/API/Release",
+      "owner_agent": "OrchestratorReleaseAgent / ReleaseQaAgent",
+      "status": "Backlog",
+      "priority": "P1",
+      "dependencies": ["STWI-SYM-008", "STWI-SYM-018", "STWI-SYM-021 approval", "STWI-SYM-038", "STWI-SYM-040"],
+      "evidence": [
+        "docs/design/production_deployment_options.md",
+        "infra/harness"
+      ],
+      "acceptance_criteria": [
+        "Production starts with approved stack components and no provisional/in-memory dependency.",
+        "No dev secret, public database port, raw error, or docs-only health check is accepted.",
+        "Runtime uses least privilege and reproducibly pinned dependencies/images.",
+        "Recovery, migration, backup/restore, monitoring, retention, rate limit, and rollback are evidenced."
+      ],
+      "next_action": "Keep blocked until deployment option and auth implementation receive explicit Human Review approval."
+    },
+    {
+      "id": "STWI-SYM-042",
+      "title": "Run final production release-readiness QA",
+      "linear_identifier": "TRA-51",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-51/run-final-production-release-readiness-qa",
+      "lane": "Orchestrator/API/Release",
+      "owner_agent": "ReleaseQaAgent / LeadCoordinator",
+      "status": "Backlog",
+      "priority": "P1",
+      "dependencies": ["All open P1 vision/data/ML/RAG/runtime/SLA/auth/deployment gates"],
+      "evidence": [
+        ".agents/skills/stwi-release-qa/SKILL.md",
+        "docs/project_management/symphony/status_report.md"
+      ],
+      "acceptance_criteria": [
+        "All test, service, security, SLA, browser, artifact, recovery, and rollback evidence is attached.",
+        "Production mode rejects provisional or invalid dependencies/artifacts.",
+        "No open P1 blocker, unexplained service skip, privacy breach, invalid citation, actuation, or executable needs_review remains.",
+        "The result is a Human Review go/no-go recommendation without automatic release/deployment."
+      ],
+      "next_action": "Keep in Backlog until every dependency is reviewable."
     }
   ]
 }

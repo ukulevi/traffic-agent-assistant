@@ -11,6 +11,7 @@ This module is the canonical executor entrypoint for the STWI workflow:
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import json
 import re
 import shutil
@@ -27,12 +28,12 @@ DEFAULT_ARTIFACT_DIR = ROOT / "docs/project_management/symphony/hermes_runs"
 WINDOWS_RUNNER_COMMAND = (
     r"C:\Users\PC\AppData\Local\hermes\hermes-agent\venv\Scripts\hermes.exe",
     "--oneshot",
-    "{prompt_file}",
+    "{prompt}",
 )
 MACOS_RUNNER_COMMAND = (
     "/Applications/Hermes.app/Contents/MacOS/hermes",
     "--oneshot",
-    "{prompt_file}",
+    "{prompt}",
 )
 REQUIRED_SECTIONS = (
     "Ticket",
@@ -150,6 +151,11 @@ def parse_dispatch_packet(text: str) -> DispatchPacket:
 
 def validate_packet(packet: DispatchPacket) -> list[str]:
     errors: list[str] = []
+    status_match = re.search(r"^Status:\s*(.+)$", packet.raw_text, re.MULTILINE)
+    if status_match is None or not status_match.group(1).lower().startswith(
+        "ready for hermes"
+    ):
+        errors.append("Dispatch packet Status must start with 'ready for Hermes'.")
     forbidden = sorted(
         path for path in packet.allowed_files if path in FORBIDDEN_ALLOWED_FILES
     )
@@ -210,12 +216,59 @@ def build_hermes_prompt(packet: DispatchPacket, repo_root: Path) -> str:
     )
 
 
-def render_command(command: Sequence[str], prompt_file: Path, packet_file: Path) -> list[str]:
+def render_command(
+    command: Sequence[str],
+    prompt: str,
+    prompt_file: Path,
+    packet_file: Path,
+) -> list[str]:
     replacements = {
+        "{prompt}": prompt,
         "{prompt_file}": str(prompt_file),
         "{packet_file}": str(packet_file),
     }
     return [replacements.get(part, part) for part in command]
+
+
+def validate_repo_root(repo_root: Path) -> Path:
+    resolved = repo_root.resolve()
+    if not resolved.is_dir() or not (resolved / ".git").exists():
+        raise ValueError(f"repo_root must be a Git workspace: {resolved}")
+    return resolved
+
+
+def git_changed_files(repo_root: Path) -> list[str]:
+    completed = subprocess.run(
+        ["git", "status", "--porcelain=v1"],
+        cwd=repo_root,
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    if completed.returncode != 0:
+        raise RuntimeError(completed.stderr.strip() or "git status failed")
+    changed: list[str] = []
+    for line in completed.stdout.splitlines():
+        path = line[3:].strip()
+        if " -> " in path:
+            path = path.split(" -> ", 1)[1]
+        if path:
+            changed.append(path.replace("\\", "/"))
+    return changed
+
+
+def path_is_allowed(path: str, allowed_files: Sequence[str]) -> bool:
+    normalized = path.replace("\\", "/")
+    return any(
+        fnmatch.fnmatchcase(normalized, pattern.replace("**", "*"))
+        for pattern in allowed_files
+    )
+
+
+def validate_report(stdout: str) -> list[str]:
+    return [field for field in REQUIRED_REPORT_FIELDS if field not in stdout]
 
 
 def write_artifacts(
@@ -246,9 +299,15 @@ def write_artifacts(
     return prompt_file, manifest_file, base
 
 
-def run_command(command: Sequence[str], stdout_file: Path, stderr_file: Path) -> int:
+def run_command(
+    command: Sequence[str],
+    stdout_file: Path,
+    stderr_file: Path,
+    repo_root: Path,
+) -> int:
     completed = subprocess.run(
         command,
+        cwd=repo_root,
         check=False,
         capture_output=True,
         text=True,
@@ -257,28 +316,56 @@ def run_command(command: Sequence[str], stdout_file: Path, stderr_file: Path) ->
     )
     stdout_file.write_text(completed.stdout, encoding="utf-8")
     stderr_file.write_text(completed.stderr, encoding="utf-8")
-    if completed.stdout:
-        print(completed.stdout, end="")
-    if completed.stderr:
-        print(completed.stderr, end="")
     return completed.returncode
+
+
+def require_external_code_transfer(approved: bool) -> None:
+    """Fail closed unless the caller explicitly authorizes code export."""
+    if not approved:
+        raise SystemExit(
+            "External code transfer is disabled by default. "
+            "Use --allow-external-code-transfer only after ticket-specific "
+            "informed user approval."
+        )
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--packet", type=Path, default=DEFAULT_PACKET)
-    parser.add_argument("--artifact-dir", type=Path, default=DEFAULT_ARTIFACT_DIR)
+    parser.add_argument("--artifact-dir", type=Path)
+    parser.add_argument(
+        "--repo-root",
+        type=Path,
+        default=ROOT,
+        help="Isolated Git workspace used as the Hermes process cwd.",
+    )
     parser.add_argument(
         "--no-write",
         action="store_true",
         help="Validate and print the prepared status without writing artifacts.",
     )
     parser.add_argument(
+        "--allow-external-code-transfer",
+        action="store_true",
+        help=(
+            "Required to send source code or prompts to Hermes/Nous after "
+            "ticket-specific informed user approval."
+        ),
+    )
+    parser.add_argument(
+        "--resume-dirty",
+        action="store_true",
+        help=(
+            "Continue an explicit Rework turn only when every existing changed "
+            "file is already inside Allowed Files."
+        ),
+    )
+    parser.add_argument(
         "--runner-command",
         nargs=argparse.REMAINDER,
         help=(
-            "Optional Hermes command. Use {prompt_file} and {packet_file} "
-            "placeholders, for example: --runner-command hermes --oneshot {prompt_file}"
+            "Optional Hermes command. Use {prompt}, {prompt_file}, and "
+            "{packet_file} placeholders; native Hermes oneshot should use {prompt}."
         ),
     )
     return parser.parse_args()
@@ -286,6 +373,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    repo_root = validate_repo_root(args.repo_root)
     packet_file = args.packet.resolve()
     text = packet_file.read_text(encoding="utf-8")
     packet = parse_dispatch_packet(text)
@@ -293,7 +381,7 @@ def main() -> None:
     if errors:
         raise SystemExit("\n".join(errors))
 
-    prompt = build_hermes_prompt(packet, ROOT)
+    prompt = build_hermes_prompt(packet, repo_root)
     runner_command = args.runner_command or None
     if runner_command is None:
         runner_command = resolve_default_runner_command()
@@ -308,6 +396,7 @@ def main() -> None:
                     "state": "validated",
                     "allowed_files": packet.allowed_files,
                     "runner_ready": assume_runner_ready,
+                    "repo_root": str(repo_root),
                     "runner_command": list(runner_command) if runner_command else None,
                 },
                 indent=2,
@@ -315,15 +404,44 @@ def main() -> None:
         )
         return
 
+    require_external_code_transfer(args.allow_external_code_transfer)
+
+    artifact_dir = (
+        args.artifact_dir.resolve()
+        if args.artifact_dir
+        else Path.home()
+        / ".codex"
+        / "symphony"
+        / "logs"
+        / "hermes_runs"
+        / packet.identifier
+    )
+    initial_changes = git_changed_files(repo_root)
+    initial_scope_violations = [
+        path
+        for path in initial_changes
+        if not path_is_allowed(path, packet.allowed_files)
+    ]
+    if initial_scope_violations:
+        raise SystemExit(
+            "Dirty Hermes workspace contains out-of-scope files: "
+            + ", ".join(initial_scope_violations)
+        )
+    if initial_changes and not args.resume_dirty:
+        raise SystemExit(
+            "Hermes workspace must be clean before dispatch: "
+            + ", ".join(initial_changes)
+        )
+
     prompt_file, manifest_file, artifact_base = write_artifacts(
         packet=packet,
         prompt=prompt,
-        artifact_dir=args.artifact_dir,
+        artifact_dir=artifact_dir,
         packet_file=packet_file,
         runner_command=runner_command,
     )
-    stdout_file = args.artifact_dir / f"{artifact_base}_stdout.txt"
-    stderr_file = args.artifact_dir / f"{artifact_base}_stderr.txt"
+    stdout_file = artifact_dir / f"{artifact_base}_stdout.txt"
+    stderr_file = artifact_dir / f"{artifact_base}_stderr.txt"
     result = {
         "identifier": packet.identifier,
         "title": packet.title,
@@ -334,13 +452,37 @@ def main() -> None:
         "stderr_file": str(stderr_file),
         "runner_ready": assume_runner_ready,
         "runner_command": list(runner_command) if runner_command else None,
+        "repo_root": str(repo_root),
+        "initial_changed_files": initial_changes,
     }
 
     if runner_command:
-        command = render_command(runner_command, prompt_file, packet_file)
-        result["runner_command"] = command
-        result["runner_exit_code"] = run_command(command, stdout_file, stderr_file)
-        result["state"] = "runner_finished"
+        command = render_command(runner_command, prompt, prompt_file, packet_file)
+        result["runner_command"] = [
+            "{prompt}" if part == prompt else part for part in command
+        ]
+        result["runner_exit_code"] = run_command(
+            command, stdout_file, stderr_file, repo_root
+        )
+        changed_files = git_changed_files(repo_root)
+        scope_violations = [
+            path
+            for path in changed_files
+            if not path_is_allowed(path, packet.allowed_files)
+        ]
+        stdout = stdout_file.read_text(encoding="utf-8")
+        missing_report_fields = validate_report(stdout)
+        result["changed_files"] = changed_files
+        result["scope_violations"] = scope_violations
+        result["missing_report_fields"] = missing_report_fields
+        if result["runner_exit_code"] != 0:
+            result["state"] = "runner_failed"
+        elif scope_violations:
+            result["state"] = "scope_violation"
+        elif missing_report_fields:
+            result["state"] = "invalid_report"
+        else:
+            result["state"] = "human_review"
 
     print(json.dumps(result, indent=2))
 

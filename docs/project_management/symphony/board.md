@@ -1,11 +1,11 @@
 # STWI MVP Readiness Symphony
 
-Last reviewed: 2026-07-13
+Last reviewed: 2026-07-14
 
 ## Readiness Handoff Summary
 
 - Evidence base: project_contract.json
-- Todo: 8 | In Progress: 5 | Human Review: 3 | Rework: 0 | Done: 10
+- Todo: 0 | In Progress: 0 | Human Review: 7 | Rework: 0 | Done: 22
 - Requires human review for: contract changes, dashboard scope changes, legal/SOP source approval, vision promotion threshold changes, production credentials or external services
 - Report command: python scripts/project_management/symphony_report.py
 - Daily agent update: enabled
@@ -15,15 +15,15 @@ Last reviewed: 2026-07-13
 
 | Status | Count |
 |---|---:|
-| Backlog | 5 |
-| Todo | 8 |
-| In Progress | 5 |
-| Human Review | 3 |
+| Backlog | 14 |
+| Todo | 0 |
+| In Progress | 0 |
+| Human Review | 7 |
 | Rework | 0 |
 | Merging | 0 |
-| Done | 10 |
+| Done | 22 |
 | Canceled | 1 |
-| Duplicate | 0 |
+| Duplicate | 1 |
 
 ## Lane Readiness Evidence
 
@@ -38,107 +38,103 @@ Last reviewed: 2026-07-13
 
 ### Backlog
 
-- `STWI-SYM-003` [P1] Replace Phase 2 mock observations with real aggregate dataset (ML/Simulation, MLSimulationAgent)
+- `STWI-SYM-003` / TRA-32 [P1] Replace Phase 2 mock observations with real aggregate dataset (ML/Simulation, MLSimulationAgent)
   Evidence: data/derived/private/phase2_forecast/phase2_readiness_report.json, docs/02_ML_and_Simulation_Specification.md
   Acceptance: Chronological split is recorded.; Scaler is fit only on training split.; Forecast metrics are reported by horizon/node/missing bucket.
   Next: Select approved aggregate dataset and run Phase 2 start readiness again.
-- `STWI-SYM-006` [P1] Ingest approved SOP corpus and validate citation coverage (Knowledge/RAG, KnowledgeRagAgent)
-  Evidence: docs/03_Knowledge_Base_and_RAG_Design.md, data/derived/private/phase3_knowledge/gate_p3_report.json
-  Acceptance: SOP corpus has source registry, effective date, and content hash.; Unsupported claim rate is zero after validator/abstention.; Citation precision target is measured against the evaluation set.
-  Next: Obtain approved SOP sources from human reviewer.
-- `STWI-SYM-008` [P1] Implement production job persistence with Celery and Redis (Orchestrator/API/Release, OrchestratorReleaseAgent)
-  Evidence: src/stwi/t4_orchestrator/job_store.py, src/stwi/t4_orchestrator/api.py, infra/harness/compose.phase4.yaml
-  Acceptance: Jobs are queued and executed by Celery worker.; Progress and events are persisted in Redis.; SSE reconnect does not duplicate execution.
-  Next: Design minimal Redis-backed job store and Celery worker slice.
-- `STWI-SYM-021` / TRA-17 [P2] Review production deployment options without changing the approved stack (Orchestrator/API/Release, ReleaseQaAgent)
-  Evidence: project_contract.json, infra/harness, docs/05_Implementation_Plan.md, docs/project_management/symphony/roadmap_intelligence_2026-07-03.md
-  Acceptance: Docker Compose production, Kubernetes, and managed-service options are compared as deployment options only.; No Kubernetes, secrets manager, tracing, or model-serving framework is added to active architecture.; The recommendation lists cost, complexity, safety, rollback, and Human Review requirements for a later decision.
-  Next: Prepare an options review after MVP gate gaps are stable; keep implementation blocked pending user approval.
-- `STWI-SYM-029` / TRA-26 [P1] Run final integrated MVP demo acceptance after TRA-23/24/25 (Orchestrator/API/Release, ReleaseQaAgent / LeadCoordinator)
-  Evidence: docs/project_management/symphony/mvp_demo_acceptance.md, docs/project_management/symphony/board.json, docs/project_management/symphony/board.md, docs/project_management/symphony/status_report.md, docs/project_management/symphony/current_dispatch_packet.md, tests/t4_orchestrator, tests/demo
-  Acceptance: TRA-23/24/25 are merged and the release verifier runs from updated main.; Tier-4 HTTP coverage, offline smoke evidence, and /demo/ browser QA are complete and reproducible.; Remaining live RTSP, production persistence, benchmark hardware, SOP corpus, and auth/RBAC gaps remain explicit and do not block acceptance.
-  Next: Keep in Backlog until TRA-23, TRA-24, and TRA-26 evidence is complete.
-  Checks: python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests; node --check slides/js/presentation.js -> pass; node --check slides/js/presentation-tools.js -> pass; git diff --check -> pass
-
-### Todo
-
-- `STWI-SYM-004` [P1] Rerun surrogate calibration and OOD thresholds on non-mock validation data (ML/Simulation, MLSimulationAgent)
+- `STWI-SYM-004` / TRA-36 [P1] Rerun surrogate calibration and OOD thresholds on non-mock validation data (ML/Simulation, MLSimulationAgent)
   Evidence: data/derived/private/phase2_surrogate/provisional_gate_p2_report.json, tests/t2_forecast/test_surrogate_safety.py
   Acceptance: Calibration report uses held-out validation data.; OOD/high uncertainty returns `needs_review`.; Retrieved cases are never blended into online input.
   Next: Prepare validation split and rerun provisional gate with standard evidence.
-- `STWI-SYM-005` / TRA-6 [P1] Prove surrogate P99 under the contract benchmark profile (ML/Simulation, MLSimulationAgent)
-  Evidence: project_contract.json, data/derived/private/phase2_surrogate/v3/benchmark_report.json, docs/guides/surrogate_benchmark_evidence.md
-  Acceptance: Benchmark machine profile matches 8 CPU, 32 GB RAM, 12-16 GB GPU VRAM.; Surrogate P99 is below 500 ms.; Raw benchmark result is retained as private artifact.; E2E P95 target is recorded as required future evidence; no claim is made without measurement.
-  Next: Run the benchmark on the 8 CPU / 32 GB RAM / NVIDIA GPU 12-16 GB profile and retain the new private artifact; this workstation's 4 GB GPU cannot satisfy the gate.
-- `STWI-SYM-007` [P1] Switch Phase 3 validation from fake retriever to Qdrant/BGE path (Knowledge/RAG, KnowledgeRagAgent)
+- `STWI-SYM-006` / TRA-33 [P1] Ingest approved SOP corpus and validate citation coverage (Knowledge/RAG, KnowledgeRagAgent)
+  Evidence: docs/03_Knowledge_Base_and_RAG_Design.md, data/derived/private/phase3_knowledge/gate_p3_report.json
+  Acceptance: SOP corpus has source registry, effective date, and content hash.; Unsupported claim rate is zero after validator/abstention.; Citation precision target is measured against the evaluation set.
+  Next: Obtain approved SOP sources from human reviewer.
+- `STWI-SYM-007` / TRA-34 [P1] Switch Phase 3 validation from fake retriever to Qdrant/BGE path (Knowledge/RAG, KnowledgeRagAgent)
   Evidence: src/stwi/t3_knowledge, infra/harness/compose.phase3.yaml, tests/t3_knowledge/test_t3_integration.py
   Acceptance: Qdrant-backed retrieval runs in integration harness.; BGE-m3 embedding path is documented and tested.; Service-dependent skips are reduced or explicitly justified.
   Next: Run Phase 3 harness and capture integration results.
-- `STWI-SYM-014` [P1] Validate recorded-camera or RTSP calibration and aggregate extraction path (Data/Vision, DataVisionAgent)
-  Evidence: scripts/data_prep/capture_rtsp_frames.py, src/stwi/t1_pipeline, tests/t1_pipeline
-  Acceptance: Calibration ROI/homography evidence is recorded for approved demo input.; ByteTrack or equivalent track quality is measured.; Five-minute aggregate output preserves the project data contract.
-  Next: Run the recorded-camera calibration path on approved non-published demo evidence.
-- `STWI-SYM-015` [P2] Improve detector AP toward current MVP promotion threshold (Data/Vision, DataVisionAgent)
+- `STWI-SYM-008` / TRA-35 [P1] Implement production job persistence with Celery and Redis (Orchestrator/API/Release, OrchestratorReleaseAgent)
+  Evidence: src/stwi/t4_orchestrator/job_store.py, src/stwi/t4_orchestrator/api.py, infra/harness/compose.phase4.yaml
+  Acceptance: Jobs are queued and executed by Celery worker.; Progress and events are persisted in Redis.; SSE reconnect does not duplicate execution.
+  Next: Design minimal Redis-backed job store and Celery worker slice.
+- `STWI-SYM-015` / TRA-38 [P2] Improve detector AP toward current MVP promotion threshold (Data/Vision, DataVisionAgent)
   Evidence: data/derived/private/vision_evals/motoann_best_val_minarea003/roi_ap50_summary.json, scripts/training/train_vision_model.py, tests/vision
   Acceptance: Validation/test evaluation is rerun after label/model improvements.; Motorcycle and transport classes meet the accepted MVP evidence threshold or are explicitly scoped down.; Promotion decision is consistent with STWI-SYM-001.
   Next: Analyze low-precision classes and select retraining or class-scope adjustment.
-- `STWI-SYM-026` / TRA-23 [P1] Make Tier-4 HTTP API tests mandatory for MVP demo CI (Orchestrator/API/Release, ReleaseQaAgent)
-  Evidence: tests/t4_orchestrator/test_t4_api_http.py, .github/workflows/stwi-fast-ci.yml, .github/workflows/stwi-manual-qa.yml, project_contract.json
-  Acceptance: Fast CI installs the existing orchestrator extra and runs tests.t4_orchestrator.test_t4_api_http.; The 36 HTTP tests run with no dependency-only skips.; No API/runtime/contract/dependency/deployment contract is weakened.
-  Next: Review CI workflow changes and validate the HTTP test gate before merge.
-  Checks: python scripts/validation/validate_ci_guardrails.py -> pass; python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests; python -m unittest tests.t4_orchestrator.test_t4_api_http -> 36 tests; git diff --check -> pass
-- `STWI-SYM-027` / TRA-24 [P1] Build minimal operator review dashboard for MVP demo (Orchestrator/API/Release, FrontendAgent)
-  Evidence: src/stwi/t4_orchestrator/api.py, src/stwi/t4_orchestrator/static/index.html, src/stwi/t4_orchestrator/static/dashboard.css, src/stwi/t4_orchestrator/static/dashboard.js, docs/guides/mvp_operator_dashboard.md
-  Acceptance: A same-origin /demo/ flow allows submit -> observe -> inspect -> approve/reject without raw video or secrets.; needs_review shows candidate_action only; never recommended_action.; Dashboard preserves fail-closed, aggregate-only, and human-approval semantics.
-  Next: Wait for TRA-23 CI mandate, then review dashboard scope and local browser QA.
-  Checks: python -m unittest tests.t4_orchestrator.test_t4_api_http -> pass; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests; node --check src/stwi/t4_orchestrator/static/dashboard.js -> pass; git diff --check -> pass
-- `STWI-SYM-028` / TRA-25 [P1] Add deterministic offline MVP demo smoke harness and runbook (Orchestrator/API/Release, ReleaseQaAgent)
-  Evidence: scripts/demo/run_mvp_smoke.py, tests/demo/test_mvp_smoke.py, docs/guides/mvp_demo_runbook.md, README.md
-  Acceptance: Offline smoke proof covers POST 202 -> terminal result -> SSE -> approve/reject with applied_by_system=false.; Evidence JSON records statuses, trace IDs, provisional labels, and invariant checks.; No live service, raw video, secret, or production-readiness claim is introduced.
-  Next: Implement after TRA-23 is merged; this ticket may be reviewed in parallel with TRA-24 only if files do not overlap.
-  Checks: python -m unittest tests.demo.test_mvp_smoke -> pass; python scripts/demo/run_mvp_smoke.py -> pass; python -m unittest tests.t4_orchestrator.test_t4_api_http -> 36 tests; python scripts/validation/validate_docs.py -> pass; git diff --check -> pass
+- `STWI-SYM-034` / TRA-43 [P1] Fix dashboard async lifecycle and demo terminal branches (Orchestrator/API/Release, FrontendAgent)
+  Evidence: src/stwi/t4_orchestrator/static/dashboard.js, tests/demo, docs/guides/mvp_operator_dashboard.md
+  Acceptance: UI handles queued/running, SSE reconnect, polling fallback, null result, and network errors.; Failed/expired results cannot be approved.; Demo evidence covers success, safety/OOD review, missing citation, and failure/expiry.; Desktop/mobile/keyboard QA preserves human approval and no actuation.
+  Next: Keep in Backlog until STWI-SYM-032 and STWI-SYM-033 are accepted.
+- `STWI-SYM-035` / TRA-44 [P2] Reconcile API documentation, report claims, and PDF layout (Orchestrator/API/Release, ReleaseQaAgent)
+  Evidence: report/main.tex, report/chapters/ch03_kien_truc.tex, report/chapters/ch07_agent.tex, report/chapters/appendix_api.tex
+  Acceptance: SLA, normalization, endpoints, examples, and statuses match the contract and API.; No production or measured-SLA claim is made without evidence.; Affected PDF header, endpoint, and table overlaps are removed.; Version/date/status wording changes remain Human Review gated.
+  Next: Keep in Backlog until API/action and dashboard behavior are stable.
+- `STWI-SYM-036` / TRA-45 [P1] Run hardened offline MVP demo acceptance (Orchestrator/API/Release, ReleaseQaAgent / LeadCoordinator)
+  Evidence: docs/project_management/symphony/mvp_demo_acceptance.md, tests/demo, tests/t4_orchestrator
+  Acceptance: Full lightweight tests and release verifier pass with all skips listed.; Browser and CLI evidence cover the required terminal branches.; Every flow proves no automatic actuation, valid action semantics, trace/version evidence, and no raw video/secrets.; Remaining pilot and production gates stay explicit.
+  Next: Run only after STWI-SYM-031 through STWI-SYM-035 are accepted.
+- `STWI-SYM-037` / TRA-46 [P1] Bind production runtime provenance and policy to promoted artifacts (ML/Simulation, MLSimulationAgent / OrchestratorReleaseAgent)
+  Evidence: src/stwi/t4_orchestrator/orchestrator.py, src/stwi/app.py, src/stwi/t1_pipeline/local_vision.py
+  Acceptance: Production provenance and safety thresholds come from validated promoted artifacts.; Missing/stale/checksum-invalid/uncalibrated/provisional artifacts fail closed.; Demo composition remains isolated and visibly provisional.; Audit versions match the artifacts used for inference.
+  Next: Keep in Backlog until real/calibrated artifact dependencies are available.
+- `STWI-SYM-038` / TRA-47 [P1] Harden T3 service boundary and redact internal errors (Knowledge/RAG, KnowledgeRagAgent)
+  Evidence: src/stwi/t3_knowledge/tier3_facade.py, src/stwi/t3_knowledge/qdrant_retriever.py, src/stwi/t3_knowledge/timescale_executor.py
+  Acceptance: Production has no embedded dev credential fallback.; Effective-date and hybrid retrieval behavior is service-tested against the pinned client.; SQL remains typed, parameterized, allowlisted, tenant/job filtered, and read-only.; Client errors expose stable codes and trace_id, not raw internals.
+  Next: Keep in Backlog until STWI-SYM-007 and external-service approval are available.
+- `STWI-SYM-040` / TRA-49 [P1] Implement approved auth, RBAC, and tenant boundary (Orchestrator/API/Release, OrchestratorReleaseAgent)
+  Evidence: docs/design/auth_rbac_tenant_boundary.md, src/stwi/t4_orchestrator/auth.py
+  Acceptance: Tenant/operator request fields cannot elevate privilege or cross tenants.; Approved role boundaries cover POST, GET, SSE, and operator decisions.; Production cannot use anonymous/dev identity behavior.; Negative tenant/role/reconnect/decision tests pass.
+  Next: Human Review selects the approved implementation mechanism before dispatch.
+- `STWI-SYM-041` / TRA-50 [P1] Build the approved production deployment baseline (Orchestrator/API/Release, OrchestratorReleaseAgent / ReleaseQaAgent)
+  Evidence: docs/design/production_deployment_options.md, infra/harness
+  Acceptance: Production starts with approved stack components and no provisional/in-memory dependency.; No dev secret, public database port, raw error, or docs-only health check is accepted.; Runtime uses least privilege and reproducibly pinned dependencies/images.; Recovery, migration, backup/restore, monitoring, retention, rate limit, and rollback are evidenced.
+  Next: Keep blocked until deployment option and auth implementation receive explicit Human Review approval.
+- `STWI-SYM-042` / TRA-51 [P1] Run final production release-readiness QA (Orchestrator/API/Release, ReleaseQaAgent / LeadCoordinator)
+  Evidence: .agents/skills/stwi-release-qa/SKILL.md, docs/project_management/symphony/status_report.md
+  Acceptance: All test, service, security, SLA, browser, artifact, recovery, and rollback evidence is attached.; Production mode rejects provisional or invalid dependencies/artifacts.; No open P1 blocker, unexplained service skip, privacy breach, invalid citation, actuation, or executable needs_review remains.; The result is a Human Review go/no-go recommendation without automatic release/deployment.
+  Next: Keep in Backlog until every dependency is reviewable.
+
+### Todo
+
+- None
 
 ### In Progress
 
+- None
+
+### Human Review
+
+- `STWI-SYM-001` / TRA-31 [P1] Reconcile official vision artifact with current promotion gate (Data/Vision, DataVisionAgent)
+  Evidence: data/derived/private/vision_models/official/model_artifact.json, scripts/training/promote_vision_model.py, docs/vision_local_training_runbook.md
+  Acceptance: Promotion gate threshold and official artifact metrics are consistent.; Decision is recorded without weakening privacy or aggregate-only constraints.; Detector status is documented as official, provisional, or rejected.
+  Next: User/lead decides whether to lower gate, retrain, or mark artifact provisional.
+- `STWI-SYM-005` / TRA-6 [P1] Prove surrogate P99 under the contract benchmark profile (ML/Simulation, MLSimulationAgent)
+  Evidence: project_contract.json, data/derived/private/phase2_surrogate/v3/benchmark_report.json, docs/guides/surrogate_benchmark_evidence.md
+  Acceptance: Benchmark machine profile matches 8 CPU, 32 GB RAM, 12-16 GB GPU VRAM.; Surrogate P99 is below 500 ms.; Raw benchmark result is retained as private artifact.; E2E P95 target is recorded as required future evidence; no claim is made without measurement.
+  Next: Keep TRA-6 in Human Review until the benchmark runs on the 8 CPU / 32 GB RAM / NVIDIA GPU 12-16 GB contract profile; this workstation's 4 GB GPU cannot satisfy the gate.
 - `STWI-SYM-012` [P1] Resolve dirty working tree into reviewable change groups (Orchestrator/API/Release, LeadCoordinator)
   Evidence: git status --short, python scripts/project_management/worktree_intake.py, docs/guides/repository_structure.md, src/stwi/tooling, tests/vision
   Acceptance: Unrelated generated manifests are kept separate from source changes.; Refactor files are reviewed as one coherent change set.; A read-only intake report groups dirty worktree changes before staging.; No user changes are reverted.
   Next: Review diff grouping before any staging or commit.
-- `STWI-SYM-013` / TRA-5 [P1] Complete vision artifact metadata for latency, thresholds, ROI policy, and license/source (Data/Vision, DataVisionAgent)
-  Evidence: src/stwi/tooling/vision_training/promotion.py, docs/guides/model_registry_evidence.md, docs/guides/vision_local_training_runbook.md, docs/01_System_Architecture_Data_Pipeline.md
-  Acceptance: Official or candidate artifact records latency and threshold evidence.; ROI policy and source/license review are present.; Privacy review remains aggregate-only and does not publish raw images/video.; Promotion validator requires calibration, benchmark, and legal/privacy metadata.
-  Next: Review the updated promotion validator and model-registry evidence guide before marking Done.
-  Checks: python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests; python -m unittest tests.vision.test_vision_relabel_and_promotion -> pass; node --check slides/js/presentation.js -> pass; node --check slides/js/presentation-tools.js -> pass; git diff --check -> pass
-- `STWI-SYM-017` / TRA-13 [P2] Draft auth, RBAC, and tenant-boundary design (Orchestrator/API/Release, OrchestratorReleaseAgent)
-  Evidence: project_contract.json, docs/04_AI_Agent_Orchestrator_CF_VLA.md, src/stwi/t4_orchestrator/contracts.py, src/stwi/t4_orchestrator/api.py, src/stwi/t4_orchestrator/orchestrator.py, src/stwi/t3_knowledge/query_builder.py, docs/design/auth_rbac_tenant_boundary.md
-  Acceptance: Design derives operator identity and tenant context server-side instead of trusting request body fields.; Role boundaries for operator, analyst, admin, and readonly are specified without choosing a new identity provider.; No auth dependency, external IdP, credential storage, or runtime implementation is introduced in TRA-13.
-  Next: Review the auth/RBAC/tenant-boundary design and advance to Human Review before implementation.
-  Checks: python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests; node --check slides/js/presentation.js -> pass; node --check slides/js/presentation-tools.js -> pass; git diff --check -> pass
-- `STWI-RTSP-002` / TRA-10 [P1] Document supervised RTSP-to-quarantine smoke test procedure (Data/Vision, DataVisionAgent)
-  Evidence: docs/guides/vision_local_training_runbook.md, docs/01_System_Architecture_Data_Pipeline.md, README.md, docs/guides/rtsp_smoke_test_runbook.md, scripts/data_prep/capture_rtsp_frames.py
-  Acceptance: Runbook explains how an operator sets `STWI_RTSP_URL` locally without writing it to repo, Linear, logs, or manifests.; Procedure captures only sparse frames into `data/quarantine/rtsp_frames` and never stores a raw video container.; Procedure lists privacy review, retention, cleanup, and aggregate-only next steps before any frame leaves quarantine.; Procedure includes exact offline verification commands that can run after supervised capture.
-  Next: Review the RTSP smoke-test runbook and advance to Human Review before live execution.
-  Checks: python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests; node --check slides/js/presentation.js -> pass; node --check slides/js/presentation-tools.js -> pass; git diff --check -> pass
-- `STWI-SYM-025` / TRA-21 [P1] Synchronize Symphony tracker after PR #6 and prepare next dispatch (Orchestrator/API/Release, LeadCoordinator)
-  Evidence: docs/project_management/symphony/board.json, docs/project_management/symphony/board.md, docs/project_management/symphony/status_report.md, docs/project_management/symphony/current_dispatch_packet.md, TRA-18, TRA-20, TRA-21
-  Acceptance: TRA-20 is recorded as Done with PR #6 merge evidence e405a8c.; TRA-18 is recorded as Canceled because its tracker scope was superseded.; Generated Markdown reports are regenerated from board.json.; The dispatch packet names only TRA-7 and its bounded runtime safety scope.
-  Next: Run bounded checks and open a draft PR for final user review.
-
-### Human Review
-
-- `STWI-SYM-001` [P1] Reconcile official vision artifact with current promotion gate (Data/Vision, DataVisionAgent)
-  Evidence: data/derived/private/vision_models/official/model_artifact.json, scripts/training/promote_vision_model.py, docs/vision_local_training_runbook.md
-  Acceptance: Promotion gate threshold and official artifact metrics are consistent.; Decision is recorded without weakening privacy or aggregate-only constraints.; Detector status is documented as official, provisional, or rejected.
-  Next: User/lead decides whether to lower gate, retrain, or mark artifact provisional.
-- `STWI-SYM-010` [P2] Build operator dashboard or explicitly scope it out of demo (Orchestrator/API/Release, FrontendAgent)
-  Evidence: docs/05_Implementation_Plan.md, slides/sections/07_01_multiagent.html, slides/sections/09_01_kpi.html
-  Acceptance: Dashboard scope is approved by user.; If implemented, UI shows job status, citations, warnings, versions, trace_id, and approval state.; If deferred, docs and demo script clearly state the limitation.
-  Next: User decides whether to build a minimal dashboard or keep API/slides demo.
+- `STWI-SYM-014` / TRA-37 [P1] Validate recorded-camera or RTSP calibration and aggregate extraction path (Data/Vision, DataVisionAgent)
+  Evidence: scripts/data_prep/capture_rtsp_frames.py, src/stwi/t1_pipeline, tests/t1_pipeline
+  Acceptance: Calibration ROI/homography evidence is recorded for approved demo input.; ByteTrack or equivalent track quality is measured.; Five-minute aggregate output preserves the project data contract.
+  Next: Run the recorded-camera calibration path on approved non-published demo evidence.
 - `STWI-RTSP-003` / TRA-11 [P1] Run supervised live RTSP smoke test for edge_camera_1 (Data/Vision, DataVisionAgent with human supervision)
   Evidence: STWI_RTSP_URL local environment variable, .env.local.example, data/quarantine/rtsp_frames, docs/guides/rtsp_smoke_test_runbook.md, https://linear.app/traffic-agent-assistant/issue/TRA-11/run-supervised-live-rtsp-smoke-test-for-edge-camera-1
   Acceptance: Human operator confirms the RTSP endpoint is approved for STWI testing and sets it only in `STWI_RTSP_URL`.; Local environment uses `.env.local.example` as the template; `.env.local` is not committed.; Live capture is bounded to a small sample, stores sparse frames only in quarantine, and retains no raw video.; Manifest is reviewed to confirm no endpoint, credentials, image base64, or raw video reference is present.; Resulting evidence is deleted, kept in quarantine for privacy review, or converted into approved aggregate-only evidence by a follow-up issue.
   Next: Keep in Human Review; do not add `symphony-approved` because this requires live external service access and human supervision.
   Checks: python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests; node --check slides/js/presentation.js -> pass; node --check slides/js/presentation-tools.js -> pass; git diff --check -> pass
+- `STWI-SYM-033` / TRA-42 [P1] Type and validate scenario actions at the API boundary (Orchestrator/API/Release, OrchestratorReleaseAgent)
+  Evidence: src/stwi/t4_orchestrator/contracts.py, src/stwi/t4_orchestrator/interfaces.py, docs/04_AI_Agent_Orchestrator_CF_VLA.md
+  Acceptance: Scenario actions and request boundaries are typed and validated.; The wire shape remains compatible unless a contract change is separately approved.; Unknown/out-of-range input fails closed with no recommended_action.; Synthetic demo behavior does not claim fabricated causality.
+  Next: Codex reviewed the bounded Terra Medium implementation. Board Human Review maps to Linear In Review; wait for user final approval before Done and before activating TRA-43.
+  Checks: TRA-42 scope narrowed to contracts.py and focused Tier-4 tests; no API route, status, SLA, or documentation contract change; Independent review with PYTHONPATH pinned to the TRA-42 workspace source -> test_t4_contracts pass (34 tests), test_t4_api_http pass (40 tests); validate_docs.py and git diff --check -> pass; Linear TRA-42 moved to In Review on 2026-07-15; waiting for user final approval
+- `STWI-SYM-039` / TRA-48 [P1] Prove measured end-to-end SLA on the contract profile (ML/Simulation, ReleaseQaAgent / MLSimulationAgent)
+  Evidence: project_contract.json, docs/guides/surrogate_benchmark_evidence.md
+  Acceptance: Benchmark uses the 8 CPU / 32 GB RAM / 12-16 GB GPU profile.; Evidence is measured and records load, versions, percentiles, and failures.; Surrogate P99, E2E P95, and hard deadline meet contract or report FAIL.; Raw results remain private.
+  Next: Wait for contract-profile hardware and all runtime dependencies.
 
 ### Rework
 
@@ -165,11 +161,21 @@ Last reviewed: 2026-07-13
   Acceptance: Docs validator, contract tests, JS checks, slide static check, and git diff check pass.; Skipped tests and unverified service paths are listed.; No cache/build artifact is staged.
   Next: Keep QA evidence attached to Linear and rerun release QA after the remaining staged batch changes.
   Checks: python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests; node --check slides/js/presentation.js -> pass; node --check slides/js/presentation-tools.js -> pass; git diff --check -> pass
+- `STWI-SYM-013` / TRA-5 [P1] Complete vision artifact metadata for latency, thresholds, ROI policy, and license/source (Data/Vision, DataVisionAgent)
+  Evidence: src/stwi/tooling/vision_training/promotion.py, docs/guides/model_registry_evidence.md, docs/guides/vision_local_training_runbook.md, docs/01_System_Architecture_Data_Pipeline.md
+  Acceptance: Official or candidate artifact records latency and threshold evidence.; ROI policy and source/license review are present.; Privacy review remains aggregate-only and does not publish raw images/video.; Promotion validator requires calibration, benchmark, and legal/privacy metadata.
+  Next: Keep TRA-5 closed for its bounded validator/docs scope; resolve the current private official-artifact mismatch through STWI-SYM-001 Human Review.
+  Checks: python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests; python -m unittest tests.vision.test_vision_relabel_and_promotion -> pass; node --check slides/js/presentation.js -> pass; node --check slides/js/presentation-tools.js -> pass; git diff --check -> pass
 - `STWI-SYM-016` / TRA-12 [P2] Reconcile readiness scoring and progress evidence (Orchestrator/API/Release, LeadCoordinator)
   Evidence: docs/project_management/symphony/board.json, docs/project_management/symphony/roadmap_intelligence_2026-07-03.md, docs/project_management/symphony/status_report.md
   Acceptance: Progress estimates are derived from board state, gate criteria, and verified checks instead of raw agent-report percentages.; Stale test counts are replaced or explicitly marked stale.; A single readiness summary is available for Symphony/Linear handoff.
   Next: Keep gate-backed readiness scoring and status report current.
   Checks: python scripts/project_management/symphony_report.py -> pass; docs/project_management/symphony/board.md -> regenerated; docs/project_management/symphony/status_report.md -> regenerated
+- `STWI-SYM-017` / TRA-13 [P2] Draft auth, RBAC, and tenant-boundary design (Orchestrator/API/Release, OrchestratorReleaseAgent)
+  Evidence: project_contract.json, docs/04_AI_Agent_Orchestrator_CF_VLA.md, src/stwi/t4_orchestrator/contracts.py, src/stwi/t4_orchestrator/api.py, src/stwi/t4_orchestrator/orchestrator.py, src/stwi/t3_knowledge/query_builder.py, docs/design/auth_rbac_tenant_boundary.md
+  Acceptance: Design derives operator identity and tenant context server-side instead of trusting request body fields.; Role boundaries for operator, analyst, admin, and readonly are specified without choosing a new identity provider.; No auth dependency, external IdP, credential storage, or runtime implementation is introduced in TRA-13.
+  Next: Keep TRA-13 as completed design evidence; any runtime implementation remains a separate Human Review issue and must not infer an identity provider.
+  Checks: python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests; node --check slides/js/presentation.js -> pass; node --check slides/js/presentation-tools.js -> pass; git diff --check -> pass
 - `STWI-SYM-018` / TRA-14 [P2] Specify observability minimum for trace, logs, and metrics (Orchestrator/API/Release, OrchestratorReleaseAgent)
   Evidence: project_contract.json, docs/04_AI_Agent_Orchestrator_CF_VLA.md, docs/05_Implementation_Plan.md, docs/guides/observability_minimum.md
   Acceptance: Required trace_id, job timing, model/data/policy version, status transition, and safety reason fields are listed.; Metric names are specified for job counts, job latency, safety loop outcomes, retrieval latency, and surrogate latency.; Prometheus, OpenTelemetry, or other observability services remain optional future deployment choices until explicitly approved.
@@ -185,11 +191,21 @@ Last reviewed: 2026-07-13
   Acceptance: Retries, timeout, circuit-breaker-style behavior, and dependency failure classes map to `needs_review`, `failed`, or `expired`.; No runtime path returns an executable action after tool, RAG, TimescaleDB, Qdrant, Celery, Redis, or model failure.; The rejected fail-open wording is replaced with an explicit fail-closed policy and focused tests are identified.
   Next: Write the policy and identify the smallest tests needed before any runtime hardening issue.
   Checks: python scripts/validation/validate_docs.py -> pass; python -m unittest discover -s tests/t4_orchestrator -> pass, 96 tests; git diff --check -> pass
+- `STWI-SYM-021` / TRA-17 [P2] Review production deployment options without changing the approved stack (Orchestrator/API/Release, ReleaseQaAgent)
+  Evidence: project_contract.json, infra/harness, docs/05_Implementation_Plan.md, docs/project_management/symphony/roadmap_intelligence_2026-07-03.md
+  Acceptance: Docker Compose production, Kubernetes, and managed-service options are compared as deployment options only.; No Kubernetes, secrets manager, tracing, or model-serving framework is added to active architecture.; The recommendation lists cost, complexity, safety, rollback, and Human Review requirements for a later decision.
+  Next: Keep TRA-17 as completed options-review evidence; production deployment implementation remains blocked pending an explicit Human Review selection.
+  Checks: python scripts/validation/validate_docs.py -> pass on 2026-07-14; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests on 2026-07-14; node --check slides/js/presentation.js -> pass on 2026-07-14; node --check slides/js/presentation-tools.js -> pass on 2026-07-14; git diff --check -> pass on 2026-07-14
 - `STWI-RTSP-001` / TRA-9 [P1] Prepare RTSP source alias and capture guardrails for edge_camera_1 (Data/Vision, DataVisionAgent)
   Evidence: scripts/data_prep/capture_rtsp_frames.py, tests/t1_pipeline/test_capture_rtsp_frames.py, docs/guides/vision_local_training_runbook.md, https://linear.app/traffic-agent-assistant/issue/TRA-9/prepare-rtsp-source-alias-and-capture-guardrails-for-edge-camera-1
   Acceptance: `edge_camera_1` is accepted as a safe source id and unsafe source ids remain rejected.; Capture path continues reading the endpoint only from `STWI_RTSP_URL`.; Command output and manifests do not include the RTSP endpoint, credentials, image base64, or raw video references.; Focused tests cover missing env handling, safe source id, redaction, and fail-closed behavior without opening a live stream.
   Next: Keep done evidence on Linear; live capture remains gated by STWI-RTSP-003.
   Checks: python -m unittest tests.t1_pipeline.test_capture_rtsp_frames -> pass, 14 tests; git diff --cached --check -> pass
+- `STWI-RTSP-002` / TRA-10 [P1] Document supervised RTSP-to-quarantine smoke test procedure (Data/Vision, DataVisionAgent)
+  Evidence: docs/guides/vision_local_training_runbook.md, docs/01_System_Architecture_Data_Pipeline.md, README.md, docs/guides/rtsp_smoke_test_runbook.md, scripts/data_prep/capture_rtsp_frames.py
+  Acceptance: Runbook explains how an operator sets `STWI_RTSP_URL` locally without writing it to repo, Linear, logs, or manifests.; Procedure captures only sparse frames into `data/quarantine/rtsp_frames` and never stores a raw video container.; Procedure lists privacy review, retention, cleanup, and aggregate-only next steps before any frame leaves quarantine.; Procedure includes exact offline verification commands that can run after supervised capture.
+  Next: Keep TRA-10 closed as runbook evidence; supervised live execution remains gated by TRA-11 / STWI-RTSP-003.
+  Checks: python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests; node --check slides/js/presentation.js -> pass; node --check slides/js/presentation-tools.js -> pass; git diff --check -> pass
 - `STWI-SYM-023` / TRA-19 [P1] Backfill audit for PR #5 automation and CI stabilization (Orchestrator/API/Release, LeadCoordinator)
   Evidence: https://github.com/ukulevi/traffic-agent-assistant/pull/5, 4557064, TRA-19
   Acceptance: Merged PR #5 scope, checks, and residual benchmark blocker are recorded.; The ticket explicitly identifies its post-merge backfill status.; No private benchmark artifact is published.
@@ -200,6 +216,46 @@ Last reviewed: 2026-07-13
   Acceptance: Board state matches the current Linear state for TRA-6, TRA-19, and TRA-20.; Generated Markdown reports are regenerated from board.json.; No private artifacts, secrets, or unrelated implementation files are changed.
   Next: Keep the merge evidence; TRA-21 owns post-merge tracker synchronization.
   Checks: GitHub fast-guards -> pass; GitHub build-pdf -> pass; PR #6 merged as e405a8c
+- `STWI-SYM-025` / TRA-21 [P1] Synchronize Symphony tracker after PR #6 and prepare next dispatch (Orchestrator/API/Release, LeadCoordinator)
+  Evidence: docs/project_management/symphony/board.json, docs/project_management/symphony/board.md, docs/project_management/symphony/status_report.md, docs/project_management/symphony/current_dispatch_packet.md, https://github.com/ukulevi/traffic-agent-assistant/pull/7, e9cfc6b, TRA-21
+  Acceptance: TRA-20 is recorded as Done with PR #6 merge evidence e405a8c.; TRA-18 is recorded as Canceled because its tracker scope was superseded.; Generated Markdown reports are regenerated from board.json.; The dispatch packet names only TRA-7 and its bounded runtime safety scope.
+  Next: Preserve the PR #7 merge evidence and keep the tracker snapshot current for the next bounded dispatch.
+  Checks: python scripts/project_management/symphony_report.py -> pass; python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests; node --check slides/js/presentation.js -> pass; node --check slides/js/presentation-tools.js -> pass; git diff --check -> pass
+- `STWI-SYM-026` / TRA-23 [P1] Make Tier-4 HTTP API tests mandatory for MVP demo CI (Orchestrator/API/Release, ReleaseQaAgent)
+  Evidence: tests/t4_orchestrator/test_t4_api_http.py, .github/workflows/stwi-fast-ci.yml, .github/workflows/stwi-manual-qa.yml, project_contract.json
+  Acceptance: Fast CI installs the existing orchestrator extra and runs tests.t4_orchestrator.test_t4_api_http.; The 36 HTTP tests run with no dependency-only skips.; No API/runtime/contract/dependency/deployment contract is weakened.
+  Next: Keep TRA-23 closed; broader full-suite and phase-gate integrity follow-up is tracked separately in STWI-SYM-031.
+  Checks: python scripts/validation/validate_ci_guardrails.py -> pass; python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests; python -m unittest tests.t4_orchestrator.test_t4_api_http -> 36 tests; git diff --check -> pass
+- `STWI-SYM-027` / TRA-24 [P1] Build minimal operator review dashboard for MVP demo (Orchestrator/API/Release, FrontendAgent)
+  Evidence: src/stwi/t4_orchestrator/api.py, src/stwi/t4_orchestrator/static/index.html, src/stwi/t4_orchestrator/static/dashboard.css, src/stwi/t4_orchestrator/static/dashboard.js, docs/guides/mvp_operator_dashboard.md
+  Acceptance: A same-origin /demo/ flow allows submit -> observe -> inspect -> approve/reject without raw video or secrets.; needs_review shows candidate_action only; never recommended_action.; Dashboard preserves fail-closed, aggregate-only, and human-approval semantics.
+  Next: Keep TRA-24 closed for the minimal dashboard scope; asynchronous lifecycle hardening follows in STWI-SYM-034.
+  Checks: python -m unittest tests.t4_orchestrator.test_t4_api_http -> pass; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests; node --check src/stwi/t4_orchestrator/static/dashboard.js -> pass; git diff --check -> pass
+- `STWI-SYM-028` / TRA-25 [P1] Add deterministic offline MVP demo smoke harness and runbook (Orchestrator/API/Release, ReleaseQaAgent)
+  Evidence: scripts/demo/run_mvp_smoke.py, tests/demo/test_mvp_smoke.py, docs/guides/mvp_demo_runbook.md, README.md
+  Acceptance: Offline smoke proof covers POST 202 -> terminal result -> SSE -> approve/reject with applied_by_system=false.; Evidence JSON records statuses, trace IDs, provisional labels, and invariant checks.; No live service, raw video, secret, or production-readiness claim is introduced.
+  Next: Keep TRA-25 closed for the deterministic offline smoke scope; expanded terminal-branch coverage follows in STWI-SYM-034 and STWI-SYM-036.
+  Checks: python -m unittest tests.demo.test_mvp_smoke -> pass; python scripts/demo/run_mvp_smoke.py -> pass; python -m unittest tests.t4_orchestrator.test_t4_api_http -> 36 tests; python scripts/validation/validate_docs.py -> pass; git diff --check -> pass
+- `STWI-SYM-029` / TRA-26 [P1] Run final integrated MVP demo acceptance (Orchestrator/API/Release, ReleaseQaAgent / LeadCoordinator)
+  Evidence: docs/project_management/symphony/mvp_demo_acceptance.md, docs/project_management/symphony/board.json, docs/project_management/symphony/board.md, docs/project_management/symphony/status_report.md, docs/project_management/symphony/current_dispatch_packet.md, tests/t4_orchestrator, tests/demo
+  Acceptance: TRA-23/24/25 are merged and the release verifier runs from updated main.; Tier-4 HTTP coverage, offline smoke evidence, and /demo/ browser QA are complete and reproducible.; Remaining live RTSP, production persistence, benchmark hardware, SOP corpus, and auth/RBAC gaps remain explicit and do not block acceptance.
+  Next: Keep TRA-26 closed as the bounded offline Demo MVP acceptance baseline; post-audit hardening and re-acceptance follow in STWI-SYM-031 through STWI-SYM-036.
+  Checks: python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests; node --check slides/js/presentation.js -> pass; node --check slides/js/presentation-tools.js -> pass; git diff --check -> pass
+- `STWI-SYM-030` / TRA-39 [P1] Reconcile Linear and Symphony state before next dispatch (Orchestrator/API/Release, LeadCoordinator)
+  Evidence: docs/project_management/symphony/board.json, docs/project_management/symphony/status_report.md, docs/project_management/symphony/current_dispatch_packet.md, docs/project_management/symphony/blocker_linear_ticket_drafts_2026-07-14.md
+  Acceptance: Legacy Linear states and URLs are read back before mirror updates.; Missing legacy backlog issues are created without unsafe dispatch approval.; Superseded placeholders are marked duplicate and completed work is removed from dispatch.; Exactly one dependency-safe next issue is selected.
+  Next: Dispatch only STWI-SYM-031 / TRA-40 after tracker verification.
+  Checks: Linear readback TRA-5 through TRA-51 -> pass on 2026-07-14; dispatch_linear_issues.py dry-run for legacy and blocker seeds -> pass; new issue readback state/labels/URLs -> pass
+- `STWI-SYM-031` / TRA-40 [P1] Repair full-suite, phase-gate, and CI evidence integrity (Orchestrator/API/Release, ReleaseQaAgent)
+  Evidence: scripts/validation/validate_provisional_phase2_gate.py, scripts/validation/gate_p3_validator.py, tests/t2_forecast/test_phase2_provisional_gate.py, .github/workflows/stwi-fast-ci.yml
+  Acceptance: Phase gate CLIs run from repository root without import errors.; The complete lightweight suite has no failing test and preserves measured-evidence semantics.; Gate P3 records executed pass/fail/not-verified evidence instead of literal True assertions.; CI runs the complete lightweight suite with explicit optional-service skips.
+  Next: Accepted by the user on 2026-07-15; preserve the verified evidence and hand off the next dependency-safe ticket to TRA-41.
+  Checks: Symphony log -> repeated task_complete with last_agent_message null and 1-second active-state continuation; Codex session turn_context -> model stepfun/step-3.7-flash-free; TRA-40 workspace -> Hermes produced an in-scope three-file diff; Symphony process -> stopped on 2026-07-14; Hermes native smoke -> HERMES_NATIVE_OK, provider nous, model stepfun/step-3.7-flash:free; Linear dispatch readback -> hermes-approved was used without codex-symphony-approved; Hermes final rework -> bridge exit 0, no scope violations, and diff reduced to 17 insertions / 7 deletions across three allowed files; Independent review: validate_provisional_phase2_gate.py --help -> pass; Independent review: gate_p3_validator.py --help -> FAIL ModuleNotFoundError: No module named tests; Independent review: tests.t2_forecast.test_phase2_provisional_gate -> pass, 2 tests; Independent review: validate_ci_guardrails.py and git diff --check -> pass; User approved a new two-validator Hermes repair cycle on 2026-07-15; Dispatch attempt was blocked before transmission by tenant data-export policy; no workaround attempted; User explicitly accepted outside-tenant processing risk and confirmed sharing authority/no prohibited data; Final Hermes repair uses repository root parents[2] in both validators; Codex independent CLI help checks -> pass for P2 and P3; Codex focused provisional-gate tests -> pass, 2 tests; Codex full lightweight suite with existing private/mock gate artifacts -> pass, 309 tests, 13 skipped; Codex CI guardrails, release verifier, and git diff --check -> pass; User final acceptance received; Linear TRA-40 moved to Done on 2026-07-15
+- `STWI-SYM-032` / TRA-41 [P1] Enforce hard deadline and immutable terminal job states (Orchestrator/API/Release, OrchestratorReleaseAgent)
+  Evidence: src/stwi/t4_orchestrator/orchestrator.py, src/stwi/t4_orchestrator/job_store.py, src/stwi/t4_orchestrator/api.py
+  Acceptance: Blocking dependencies have bounded deadline/cancellation behavior.; Terminal job states are immutable and cannot be overwritten by a late worker.; SSE cannot create a conflicting timeout state.; Timeout/dependency failures never return recommended_action.
+  Next: User accepted TRA-41 on 2026-07-15. Preserve the verified bounded deadline and immutable-terminal-state behavior; TRA-42 is the next dependency-safe review item.
+  Checks: Codex configuration readback -> model gpt-5.6-terra, model_reasoning_effort medium; Hermes configuration readback -> Nous Step 3.7 Flash, agent.reasoning_effort xhigh; Hermes bridge enforces --allow-external-code-transfer for execution; --no-write remains local-only; Symphony run6 -> Codex app-server Terra Medium completed one turn with 61,832 tokens and no retry after coordinator stop; Codex review -> no workspace diff; worker reported codex-windows-sandbox-setup.exe Access is denied before mandatory reads; Independent review with PYTHONPATH pinned to the TRA-41 workspace source -> 57 targeted/contract tests pass; documentation validation and git diff --check pass; User final acceptance received; Linear TRA-41 moved to Done on 2026-07-15
 
 ### Canceled
 
@@ -211,4 +267,7 @@ Last reviewed: 2026-07-13
 
 ### Duplicate
 
-- None
+- `STWI-SYM-010` [P2] Build operator dashboard or explicitly scope it out of demo (Orchestrator/API/Release, FrontendAgent)
+  Evidence: docs/05_Implementation_Plan.md, slides/sections/07_01_multiagent.html, slides/sections/09_01_kpi.html
+  Acceptance: Dashboard scope is approved by user.; If implemented, UI shows job status, citations, warnings, versions, trace_id, and approval state.; If deferred, docs and demo script clearly state the limitation.
+  Next: Superseded by STWI-SYM-027 / TRA-24, which delivered the bounded minimal dashboard and is Done.
