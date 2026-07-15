@@ -21,6 +21,7 @@ import asyncio
 import json
 import logging
 import threading
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import AsyncGenerator
@@ -40,7 +41,7 @@ from stwi.t4_orchestrator.contracts import (
     OperatorDecisionRequest,
     WhatIfJobRequest,
 )
-from stwi.t4_orchestrator.interfaces import JobStore
+from stwi.t4_orchestrator.interfaces import JobDispatcher, JobStore
 from stwi.t4_orchestrator.job_store import InMemoryJobStore, get_job_store
 from stwi.t4_orchestrator.orchestrator import WhatIfOrchestrator
 
@@ -56,6 +57,7 @@ def create_app(
     orchestrator: WhatIfOrchestrator | None = None,
     settings: RuntimeSettings | None = None,
     principal_resolver: PrincipalResolver | None = None,
+    dispatcher: JobDispatcher | None = None,
 ) -> object:
     """Create and return the FastAPI application.
 
@@ -95,6 +97,16 @@ def create_app(
             "Production runtime rejects provisional PrincipalResolver "
             "implementations."
         )
+    if not _settings.allow_provisional_adapters and dispatcher is None:
+        raise RuntimeError(
+            "Production runtime requires an explicit Celery job dispatcher."
+        )
+    if not _settings.allow_provisional_adapters and getattr(
+        dispatcher,
+        "is_provisional_dispatcher",
+        False,
+    ):
+        raise RuntimeError("Production runtime rejects provisional job dispatchers.")
 
     try:
         from fastapi import BackgroundTasks, FastAPI, Header, HTTPException
@@ -172,14 +184,34 @@ def create_app(
         resolved_request = request.model_copy(update={"tenant_id": principal.tenant_id})
         envelope = _store.create(resolved_request)
 
-        background_tasks.add_task(
-            _run_job,
-            envelope.job_id,
-            resolved_request,
-            _store,
-            _orchestrator,
-            _job_slots,
-        )
+        try:
+            if dispatcher is None:
+                background_tasks.add_task(
+                    _run_job,
+                    envelope.job_id,
+                    resolved_request,
+                    _store,
+                    _orchestrator,
+                    _job_slots,
+                )
+            else:
+                dispatcher.dispatch(envelope.job_id, resolved_request)
+        except Exception:
+            trace_id = str(uuid.uuid4())
+            logger.error("Job dispatch failed trace_id=%s", trace_id)
+            _store.update_status(
+                envelope.job_id,
+                JobStatus.FAILED,
+                error_message=f"JOB_DISPATCH_FAILED trace_id={trace_id}",
+            )
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "code": "JOB_DISPATCH_FAILED",
+                    "message": "Job queue is unavailable",
+                    "trace_id": trace_id,
+                },
+            )
 
         return JSONResponse(
             status_code=202,
@@ -312,6 +344,11 @@ def _run_job(
     job_slots: threading.BoundedSemaphore | None = None,
 ) -> None:
     """Run one job within the configured resource-concurrency bound."""
+    acquire = getattr(store, "acquire_execution", None)
+    acquired = acquire(job_id, 180) if acquire else True
+    if not acquired:
+        logger.info("Skipped duplicate or terminal job execution job_id=%s", job_id)
+        return
     if job_slots is not None:
         job_slots.acquire()
     try:
@@ -320,23 +357,27 @@ def _run_job(
             result = orchestrator.run(job_id=job_id, request=request)
             store.set_result(job_id, result)
             logger.info("Job %s completed with status %s", job_id, result.status.value)
-        except (TimeoutError, asyncio.TimeoutError) as exc:
-            logger.warning("Job %s timed out/expired: %s", job_id, exc)
+        except (TimeoutError, asyncio.TimeoutError):
+            logger.warning("Job %s timed out/expired", job_id)
             store.update_status(
                 job_id,
                 JobStatus.EXPIRED,
-                error_message=str(exc),
+                error_message="JOB_HARD_DEADLINE_EXCEEDED",
             )
-        except Exception as exc:
-            logger.exception("Job %s raised unhandled exception: %s", job_id, exc)
+        except Exception:
+            trace_id = str(uuid.uuid4())
+            logger.error("Job execution failed job_id=%s trace_id=%s", job_id, trace_id)
             store.update_status(
                 job_id,
                 JobStatus.FAILED,
-                error_message=f"Unexpected error: {exc}",
+                error_message=f"JOB_EXECUTION_FAILED trace_id={trace_id}",
             )
     finally:
         if job_slots is not None:
             job_slots.release()
+        release = getattr(store, "release_execution", None)
+        if release:
+            release(job_id)
 
 
 # ---------------------------------------------------------------------------
@@ -376,25 +417,9 @@ async def _event_generator(
         await asyncio.sleep(poll_interval)
         elapsed += poll_interval
 
-    # Mark expired in store if not terminal
-    envelope = store.get(job_id)
-    if envelope and envelope.status not in (
-        JobStatus.SUCCEEDED,
-        JobStatus.NEEDS_REVIEW,
-        JobStatus.FAILED,
-        JobStatus.EXPIRED,
-    ):
-        store.update_status(
-            job_id,
-            JobStatus.EXPIRED,
-            error_message=f"SSE stream timed out after {timeout_seconds}s for job {job_id}",
-        )
-        for event in store.events_since(job_id, cursor):
-            yield _sse_event(event)
-
     yield _sse({
         "event": "error",
-        "message": f"SSE stream timed out after {timeout_seconds}s for job {job_id}",
+        "message": "SSE stream window ended; reconnect with Last-Event-ID",
     })
 
 
