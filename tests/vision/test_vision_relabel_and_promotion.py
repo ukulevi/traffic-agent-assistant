@@ -302,3 +302,7 @@ class VisionRelabelAndPromotionTest(unittest.TestCase):
             manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
             loaded = load_official_vision_model_artifact(manifest_path)
             self.assertEqual(loaded.model_version, "unit")
+
+            weights.write_bytes(b"tampered")
+            with self.assertRaisesRegex(LocalVisionModelError, "checksum mismatch"):
+                load_official_vision_model_artifact(manifest_path)

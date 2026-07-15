@@ -3,7 +3,7 @@
   "purpose": "Model and role routing for STWI multi-desktop-agent coordination.",
   "source_of_truth": {
     "tracker": "Linear",
-    "runtime_control_plane": "Symphony",
+    "runtime_control_plane": "Linear queue plus Symphony workspace convention; executor selected by mutually exclusive approval label",
     "repo_contract": "project_contract.json",
     "local_board_mirror": "docs/project_management/symphony/board.json"
   },
@@ -16,6 +16,8 @@
         "acceptance criteria",
         "contract and safety review",
         "diff review",
+        "review every Hermes worker result before the user sees a final handoff",
+        "prepare and dispatch bounded same-ticket Hermes Rework when checks or diff review fail",
         "release QA decision",
         "stage commit push only when the user explicitly asks"
       ],
@@ -76,23 +78,46 @@
         "keep Linear state aligned",
         "create or reuse isolated issue workspaces",
         "prepare one bounded issue at a time by default",
-        "stop retry loops when a reviewable diff exists",
+        "run Codex app-server only for codex-symphony-approved issues",
+        "remain stopped while a Hermes sidecar executor is active",
         "never make final merge decisions"
       ]
     }
   },
   "integration_direction": {
-    "selected": "hermes_orchestrates_step_workers_codex_reviews",
-    "reason": "Hermes MCP server exposes conversation and messaging tools only, not a worker-runner contract with workspace, prompt, model, and structured result.",
+    "selected": "in_tenant_codex_default_with_approved_hermes_sidecar_exception",
+    "reason": "Symphony requires the Codex app-server protocol, while Hermes native oneshot is a different CLI contract. In-tenant Codex execution is the default for source code; the verified Hermes bridge is an exception only after ticket-specific informed approval for outside-tenant transmission.",
     "codex_to_hermes_mcp": "Use only for messaging, session observation, or handoff notes.",
-    "hermes_execution": "Use Hermes native terminal/file/browser/delegate_task/chat or oneshot surfaces when available.",
-    "codex_role": "Create plans and prompts, review diffs, decide Rework/Human Review/Done recommendation."
+    "hermes_execution": "Use hermes_runner_bridge.py with native Hermes oneshot prompt content and the isolated Symphony workspace as cwd.",
+    "codex_role": "Create plans and prompts, review every Hermes diff and report, independently verify claims, dispatch bounded Rework when needed, and present only the consolidated final review to the user.",
+    "human_role": "Final acceptance only. After user confirmation, Codex updates the ticket state and activates the next approved ticket.",
+    "rework_limit": 3,
+    "external_code_transmission": {
+      "default": "deny",
+      "destination": "Hermes/Nous Portal",
+      "allow_only_when": [
+        "ticket has an explicit informed outside-tenant approval",
+        "allowed files are classified as non-secret and non-private",
+        "the packet forbids access to private data, credentials, raw video, model weights, and live services",
+        "Codex records the approval and independently reviews the output"
+      ],
+      "fallback": "Codex app-server with gpt-5.6-terra at medium reasoning effort"
+    }
+  },
+  "execution_labels": {
+    "hermes_native_sidecar": "hermes-approved",
+    "native_symphony_codex": "codex-symphony-approved",
+    "legacy_not_dispatchable": "symphony-approved",
+    "mutual_exclusion_required": true
   },
   "model_routes": [
     {
       "route": "step_3_7_flash_free",
       "provider": "Nous Portal",
       "owner_surface": "Hermes Desktop",
+      "model_identifier": "stepfun/step-3.7-flash:free",
+      "reasoning_effort": "xhigh",
+      "configuration_source": "Hermes config.yaml: model.default, model.provider, and agent.reasoning_effort",
       "use_for": [
         "small implementation from exact plan",
         "single-file or narrow multi-file docs update",
@@ -108,6 +133,23 @@
         "safety or legal semantics",
         "root cause across multiple subsystems",
         "final Done or Rework decision"
+      ]
+    },
+    {
+      "route": "codex_terra_medium_in_tenant_worker",
+      "provider": "Codex Desktop tenant",
+      "owner_surface": "Symphony/Codex app-server",
+      "model_identifier": "gpt-5.6-terra",
+      "reasoning_effort": "medium",
+      "use_for": [
+        "bounded source-code implementation when Hermes/Nous export is not approved",
+        "TRA-41 deadline and terminal-state hardening",
+        "focused tests and validation inside the existing Codex tenant"
+      ],
+      "do_not_use_for": [
+        "secrets or private-data access",
+        "raw video, model weights, or live-service execution",
+        "automatic final acceptance, merge, or release decisions"
       ]
     },
     {
@@ -138,7 +180,7 @@
       "allowed_files do not overlap",
       "no task touches project_contract.json API status safety legal private data or live services",
       "each worker stops at reviewable diff",
-      "Codex or human lead reviews before any merge action"
+      "Codex reviews before user final acceptance or any merge action"
     ],
     "current_recommended_mode": "one active implementation issue until TRA-12 is reviewed and leaves Human Review"
   },
@@ -160,9 +202,12 @@
       "risks_or_blockers",
       "recommended_next_state"
     ],
-    "final_states_for_workers": [
-      "Human Review",
-      "Rework"
-    ]
+    "worker_handoff_state": "Codex Review",
+    "codex_review_outcomes": [
+      "Hermes Rework",
+      "Blocked for user decision",
+      "Ready for user final acceptance"
+    ],
+    "done_transition_owner": "Codex after explicit user confirmation"
   }
 }

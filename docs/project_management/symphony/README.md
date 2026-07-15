@@ -94,7 +94,7 @@ prepare a bounded Hermes prompt:
 
 ```powershell
 python scripts/project_management/hermes_runner_bridge.py --no-write
-python scripts/project_management/hermes_runner_bridge.py
+python scripts/project_management/hermes_runner_bridge.py --allow-external-code-transfer
 ```
 
 The first command validates the current packet without writing artifacts. The
@@ -274,6 +274,7 @@ controls that the installed Symphony runtime already reads:
 
 - `agent.max_concurrent_agents: 1`
 - `agent.max_turns: 1`
+- `agent.on_max_turns: human_review`
 - `agent.max_retry_backoff_ms: 900000`
 - `polling.interval_ms: 300000`
 - `codex.approval_policy: never`
@@ -283,6 +284,13 @@ For unattended Symphony runs, `approval_policy: never` is intentionally safer
 than auto-approving privileged actions: agents cannot request escalation and
 must stop for `Human Review` on PR creation, release, destructive actions,
 secrets, private data, live services, and contract changes.
+
+The installed Symphony runtime names its generic terminal handoff state
+`Human Review`, while this Linear team exposes `In Review`. After every
+one-turn batch, the Codex coordinator must map that stop to `In Review` and
+review the worker transcript/diff before any user final acceptance. It must
+never leave an active ticket running solely because its Linear state was not
+updated, and it must never mark `Done` automatically.
 
 ## Provider budget caps
 
@@ -377,23 +385,24 @@ Symphony.
 
 ## Reasoning effort policy
 
-The STWI Symphony workflow intentionally overrides the global Codex reasoning
-setting for unattended agents:
+The STWI Symphony workflow explicitly runs approved in-tenant Codex workers
+with the configured Terra route:
 
 ```text
-model_reasoning_effort = "low"
+model = "gpt-5.6-terra"
+model_reasoning_effort = "medium"
 model_reasoning_summary = "auto"
 ```
 
-Use the default low-reasoning workflow for small implementation, docs, tests,
-and review tasks with explicit acceptance criteria. Do not leave broad or
-ambiguous tasks in `In Progress`; split them first.
+Use this bounded medium-reasoning route only for issues carrying
+`codex-symphony-approved`, with explicit acceptance criteria and one active
+issue. Do not leave broad or ambiguous tasks in `In Progress`; split them
+first.
 
-For work that genuinely needs deeper reasoning, such as safety/legal semantics,
-contract changes, cross-artifact release decisions, or multi-subsystem root
-cause analysis, dispatch only one issue and label it `reasoning:medium` or
-`reasoning:high`. Prefer a dedicated higher-reasoning workflow for that batch
-instead of raising the default for every unattended agent.
+Safety/legal semantics, contract changes, cross-artifact release decisions,
+and multi-subsystem root-cause analysis remain Codex lead-review work. Do not
+raise worker reasoning beyond Medium or broaden the batch without an explicit
+workflow change and a new cost/safety review.
 
 ## Reporting cadence
 

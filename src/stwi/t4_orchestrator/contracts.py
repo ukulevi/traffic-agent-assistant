@@ -130,6 +130,7 @@ class AuditRecord(BaseModel):
     status: JobStatus
     status_reason: str
     safety_iterations: int = Field(0, ge=0, le=3)
+    artifact_provenance: dict[str, dict[str, Any]] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 

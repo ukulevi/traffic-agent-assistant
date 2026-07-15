@@ -41,6 +41,7 @@ class ValidateProvisionalPhase2GateOfflineTest(unittest.TestCase):
     def test_pass_when_profile_matches(self) -> None:
         report_path = self._write_report(
             {
+                "evidence_kind": "measured",
                 "status": "pass",
                 "p99_ms": 14.12,
                 "cpu_threads": 8,

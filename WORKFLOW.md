@@ -2,10 +2,11 @@
 tracker:
   kind: linear
   api_key: $LINEAR_API_KEY
-  project_slug: "traffic-agent-assistant-811a1da43eac"
+  # Symphony's Linear adapter filters `project.slugId`, not a display slug.
+  project_slug: "811a1da43eac"
   required_labels:
     - "stwi-agent"
-    - "symphony-approved"
+    - "codex-symphony-approved"
   active_states:
     - "In Progress"
     - "Rework"
@@ -17,7 +18,7 @@ tracker:
 polling:
   interval_ms: 300000
 observability:
-  dashboard_enabled: false
+  dashboard_enabled: true
   refresh_ms: 5000
   render_interval_ms: 5000
 workspace:
@@ -35,13 +36,17 @@ hooks:
 agent:
   max_concurrent_agents: 1
   max_turns: 1
+  # A bounded one-turn batch must stop for Codex/user review, never auto-rerun
+  # an active issue. The coordinator maps Symphony's generic Human Review stop
+  # to this Linear team's existing `In Review` state; it never marks Done.
+  on_max_turns: human_review
   max_retry_backoff_ms: 900000
   max_concurrent_agents_by_state:
     todo: 1
     in progress: 1
     rework: 1
 codex:
-  command: '"/c/Users/PC/AppData/Local/OpenAI/Codex/bin/ea1c60319a1dcb19/codex.exe" app-server -c model="stepfun/step-3.7-flash-free" -c model_reasoning_effort="low" -c model_reasoning_summary="auto"'
+  command: '"/c/Users/PC/AppData/Local/OpenAI/Codex/bin/3135b80b111fd431/codex.exe" app-server -c model="gpt-5.6-terra" -c model_reasoning_effort="medium" -c model_reasoning_summary="auto"'
   approval_policy: never
   thread_sandbox: workspace-write
   turn_sandbox_policy:
@@ -64,14 +69,19 @@ Issue description:
 {{ issue.description }}
 
 Issue labels:
-{{ issue.labels }}
+{% for label in issue.labels %}
+- {{ label }}
+{% endfor %}
 
 ## Safety gate before any work
 
 Stop immediately and recommend `Human Review` if any required condition is not
 met:
 
-1. The issue must have both labels `stwi-agent` and `symphony-approved`.
+1. Executor approval must be explicit and mutually exclusive:
+   native Symphony/Codex requires `stwi-agent` plus
+   `codex-symphony-approved`; the Hermes sidecar requires `stwi-agent` plus
+   `hermes-approved`. Legacy `symphony-approved` is not a dispatch label.
 2. The issue must have exactly one primary lane label:
    `lane:data`, `lane:vision`, `lane:ml`, `lane:simulation`, `lane:rag`,
    `lane:legal`, `lane:api`, `lane:frontend`, `lane:qa`, or `lane:release`.
@@ -145,6 +155,11 @@ clear `Human Review` blocker.
 6. On Windows, avoid `conda run` for verification. If `python` is missing or
    resolves to a broken Conda environment, use the bundled runtime:
    `C:\\Users\\PC\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe`.
+   Before running Python tests, set `PYTHONPATH` to the current isolated
+   workspace's `src` directory (for example,
+   `$env:PYTHONPATH = (Join-Path (Get-Location) 'src')`). This prevents an
+   editable installation from another workspace from being tested instead of
+   the ticket diff.
 7. Keep command output summaries concise. Report failing command names and the
    decisive error lines instead of pasting long logs.
 8. If an issue remains active after a successful turn only because tracker
@@ -207,10 +222,11 @@ Treat parallelism as a cost control setting, not just a speed knob.
 
 ## Reasoning and context budget
 
-Symphony overrides the global Codex config and starts app-server with
-`model_reasoning_effort="low"` and `model_reasoning_summary="auto"`. This is
-intentional because the global machine config may be set higher for interactive
-Codex work.
+For `codex-symphony-approved` work, Symphony starts app-server explicitly with
+`model="gpt-5.6-terra"`, `model_reasoning_effort="medium"`, and
+`model_reasoning_summary="auto"`. This keeps in-tenant code execution
+independent of global interactive settings and is the default whenever external
+Hermes/Nous code transmission is not explicitly approved.
 
 Provider-side context caching works best when the stable prompt prefix stays
 stable and repeated runs avoid injecting fresh large logs, full diffs, or broad
@@ -218,8 +234,8 @@ search output. Treat caching as an optimization target, not as a substitute for
 scope control: the workflow cannot force billing behavior from `WORKFLOW.md`,
 but it can keep repeated startup context cache-friendly.
 
-1. Default to low reasoning for bounded implementation, docs, tests, validation
-   wrappers, and static review tasks.
+1. Default to Terra medium reasoning for bounded in-tenant implementation,
+   docs, tests, validation wrappers, and static review tasks.
 2. Do not compensate for low reasoning by reading the whole repository. Read
    required startup files once, then inspect only named files, nearby tests,
    lane docs, and focused search results.
@@ -228,10 +244,9 @@ but it can keep repeated startup context cache-friendly.
    cause across multiple subsystems, or unclear architecture tradeoffs. Those
    issues must be single-agent and should carry a label such as
    `reasoning:medium` or `reasoning:high`.
-4. If a task appears to require medium/high reasoning but the issue was
-   dispatched under the default low-reasoning workflow, stop with
-   `Human Review` and recommend either splitting the task or restarting with a
-   dedicated higher-reasoning workflow. Do not push through by broad scanning.
+4. If a task needs high reasoning, preserve the one-issue scope and use a
+   dedicated higher-reasoning review route; do not broaden a Terra-medium
+   worker run to compensate.
 5. Keep the first pass small: after the required startup files, inspect no more
    than about 3 additional files or 600 lines before deciding whether to edit,
    ask for Human Review, or narrow the scope further.
@@ -321,40 +336,59 @@ the hard daily spend cap must be set in the OpenAI API dashboard or organization
 billing controls. The repository guard only observes local dashboard usage and
 cannot enforce provider-side billing limits.
 
-## Free-tier model override policy
+## Executor separation and cost policy
 
-This workflow must run on the free Step 3.7 Flash model to avoid paid quota burn.
-Symphony therefore launches Codex app-server with:
+Native Symphony speaks the Codex app-server protocol. A model string passed to
+`codex.exe app-server` does not turn that process into Hermes and must not be
+used to claim Hermes/Nous execution.
 
-```text
--c model="stepfun/step-3.7-flash-free"
+The default low-cost implementation route is the Hermes native sidecar:
+
+```powershell
+python scripts/project_management/hermes_runner_bridge.py --no-write --repo-root <workspace>
+python scripts/project_management/hermes_runner_bridge.py --allow-external-code-transfer --repo-root <workspace>
 ```
 
-The global `~/.codex/config.toml` may still default to a paid model; the workflow
-command override takes precedence for unattended Symphony runs only.
+1. Keep native Symphony stopped while a Hermes sidecar worker is active.
+2. Native Symphony/Codex may run only for an issue carrying
+   `codex-symphony-approved`; Hermes may run only with `hermes-approved`.
+3. Never place both executor labels on one issue.
+4. The Hermes bridge must pass prompt content, set the isolated workspace as
+   process cwd, verify a clean pre-run tree, and fail closed on out-of-scope
+   changes or a malformed final report.
+5. If Hermes/Nous is unavailable or rate-limited, move the issue to Human Review;
+   do not silently fall back to Codex or another paid provider.
 
-1. Before starting Symphony, confirm the active workflow file still contains the
-   free-tier model override in `codex.command`.
-2. If the active run shows the paid model in use again, pause dispatch, restore
-   the nearest backup workflow file with the free-tier override, and restart
-   Symphony.
-3. Keep the nearest backup workflow file available for fast rollback:
-   - repo: `WORKFLOW.md.bak.stepfun_override.<timestamp>`
-   - runtime: `~/.codex/symphony/workflows/WORKFLOW.stwi.md.bak.stepfun_override.<timestamp>`
-4. If the free-tier endpoint is unavailable, rate-limited, or returns a model
-   error, record the exact error line and move the issue to `Human Review` rather
-   than silently fallback to a paid model.
-5. Do not claim paid-model fallback from inside the agent. Only the coordinator
-   may switch provider assumptions, and only after explicit human approval.
+## Mandatory Hermes to Codex review loop
 
-6. During or after a batch, inspect progress by issue diff and focused test
+The user is the final approver, not the routine worker-output reviewer.
+
+1. Every Hermes result goes first to Codex review. Hermes must not ask the user
+   to inspect raw worker output or decide ordinary implementation Rework.
+2. Codex checks the actual diff, `Allowed Files`, acceptance criteria, exact
+   commands, contract/safety boundaries, and the truthfulness of the worker
+   report.
+3. If the result is not acceptable but can be corrected inside the already
+   approved ticket scope, Codex prepares a narrower Rework packet and dispatches
+   Hermes again. No additional user confirmation is required for that bounded
+   same-ticket Rework.
+4. Rework must never become an automatic retry loop. Codex reviews after every
+   turn and may run at most three bounded Hermes turns for one ticket before
+   stopping for a concrete blocker or user decision.
+5. When Codex considers the ticket acceptable, it presents one consolidated
+   final review to the user. Only after the user confirms may Codex move the
+   ticket to `Done` and activate the next ticket.
+6. Contract, safety, legal, privacy, credential, live-service, destructive, or
+   scope-expansion decisions still stop for user review immediately.
+
+7. During or after a batch, inspect progress by issue diff and focused test
    evidence rather than fixed token ceilings.
-7. If an issue is clearly blocked or repeating without progress, stop
+8. If an issue is clearly blocked or repeating without progress, stop
    dispatching new work for that issue and report `Human Review`.
-8. Prefer two agents only when issues are narrow, independent, and edit
+9. Prefer two agents only when issues are narrow, independent, and edit
    different directories. Prefer pairing implementation with review/QA rather
    than two implementation tasks.
-9. Record the guard action and decisive reason in the coordinator handoff when
+10. Record the guard action and decisive reason in the coordinator handoff when
    stopping, throttling, or choosing not to dispatch a second issue.
 
 ## Workspace cleanup policy
@@ -377,24 +411,19 @@ destructive action.
 4. Symphony agents must not run cleanup themselves. Cleanup is a coordinator
    action outside unattended issue execution.
 
-## Claude handoff policy
+## Codex review availability policy
 
-Codex remains the primary Symphony agent runtime for this workflow. The
-installed Symphony runtime launches a single Codex app-server through
-`codex.command` and does not currently provide a native Claude/Anthropic
-provider fallback.
+Hermes is the primary implementation executor. Codex is the mandatory review
+gate and coordinator, not the default implementation worker.
 
-When Codex quota is exhausted or the budget guard recommends `stop`:
-
-1. Do not start new Codex-backed issues.
-2. Let the active issue finish if it is already producing a coherent diff;
-   otherwise move it to `Human Review` with a short blocker note.
-3. Stop or pause Symphony before changing provider assumptions.
-4. Continue coordination from Claude Desktop through the synced `symphony` MCP
-   server, using the same Linear state, `AGENTS.md`, `project_contract.json`,
-   and `$stwi-*` workflow constraints.
-5. Do not claim automatic Sonnet fallback unless a future provider adapter or
-   wrapper exposes a Codex app-server-compatible protocol for Claude.
+1. If Codex review is temporarily unavailable, pause after the current Hermes
+   turn; do not expose raw output to the user as a substitute for review.
+2. Do not start a new Hermes turn until Codex has reviewed the previous diff.
+3. Native Symphony/Codex execution remains opt-in through
+   `codex-symphony-approved`; it is not an automatic fallback.
+4. Claude or another desktop surface may assist coordination only after an
+   explicit user decision and must preserve the same Linear, contract, and
+   skill boundaries.
 
 Portable MCP declarations can be mirrored to Claude Desktop with:
 
@@ -561,15 +590,17 @@ Use the tracker state as the user-facing Kanban column:
 
 - `Todo`: issue is eligible but not started.
 - `In Progress`: one of at most two issues intentionally dispatched to agents.
-- `Human Review`: issue needs human decision, legal/SOP approval, production
+- `Human Review`: Codex has completed its review and the issue needs final user
+  acceptance or a user decision involving legal/SOP approval, production
   credential, external service access, contract change, secret/private-data
   handling, destructive action, release action, or missing acceptance criteria.
 - `Rework`: previous result failed review or checks.
 - `Merging`: only use when a PR/commit path is explicitly requested and ready.
 - `Done`: acceptance criteria, tests, and evidence are complete.
 
-A successful Symphony run may end at `Human Review`; do not force `Done` when a
-human decision is still required.
+A Hermes run ends at Codex review. After Codex accepts the implementation, keep
+the ticket in `Human Review` until the user confirms `Done` and authorizes moving
+to the next ticket.
 
 ## Required progress report
 
