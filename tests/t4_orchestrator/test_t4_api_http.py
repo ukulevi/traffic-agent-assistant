@@ -511,7 +511,7 @@ class TestJobTimeoutAndExpiration(unittest.TestCase):
         self.assertIn("result", data)
         self.assertEqual(data["result"]["status"], "expired")
 
-    def test_sse_timeout_marks_expired(self):
+    def test_sse_timeout_does_not_mutate_job_status(self):
         from stwi.t4_orchestrator.api import create_app
         store = InMemoryJobStore()
         # Create a job manually in RUNNING status so it never completes
@@ -531,11 +531,10 @@ class TestJobTimeoutAndExpiration(unittest.TestCase):
             return events
 
         events = asyncio.run(run_test())
-        # Check that the job is now expired in the store
+        # A client stream window is not the worker hard deadline.
         final_envelope = store.get(env.job_id)
-        self.assertEqual(final_envelope.status, JobStatus.EXPIRED)
-        # Check that events list contains the event marking it expired
-        self.assertTrue(any("expired" in e for e in events))
+        self.assertEqual(final_envelope.status, JobStatus.RUNNING)
+        self.assertTrue(any("Last-Event-ID" in event for event in events))
 
 
 if __name__ == "__main__":
