@@ -119,6 +119,19 @@ class JobStore(Protocol):
     def events_since(self, job_id: str, last_event_id: int = 0) -> list[JobEvent]:
         ...
 
+    def acquire_execution(self, job_id: str, ttl_seconds: int) -> bool:
+        ...
+
+    def release_execution(self, job_id: str) -> None:
+        ...
+
+
+class JobDispatcher(Protocol):
+    """Queue a previously persisted job for asynchronous execution."""
+
+    def dispatch(self, job_id: str, request: WhatIfJobRequest) -> None:
+        ...
+
 
 __all__ = [
     "BaselineForecast",
@@ -127,4 +140,5 @@ __all__ = [
     "ScenarioForecaster",
     "LegalEvidenceProvider",
     "JobStore",
+    "JobDispatcher",
 ]

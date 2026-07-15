@@ -35,6 +35,7 @@ class InMemoryJobStore:
         self._jobs: dict[str, JobEnvelope] = {}
         self._events: dict[str, list[JobEvent]] = {}
         self._lock = threading.Lock()
+        self._execution_locks: set[str] = set()
 
     def create(self, request: WhatIfJobRequest) -> JobEnvelope:
         """Create a new job in QUEUED state and return its envelope."""
@@ -70,6 +71,15 @@ class InMemoryJobStore:
             env = self._jobs.get(job_id)
             if env is None:
                 return
+            if env.status == status:
+                return
+            if env.status in {
+                JobStatus.SUCCEEDED,
+                JobStatus.NEEDS_REVIEW,
+                JobStatus.FAILED,
+                JobStatus.EXPIRED,
+            }:
+                return
             self._jobs[job_id] = env.model_copy(update={
                 "status": status,
                 "error_message": error_message,
@@ -89,6 +99,13 @@ class InMemoryJobStore:
         with self._lock:
             env = self._jobs.get(job_id)
             if env is None:
+                return
+            if env.status in {
+                JobStatus.SUCCEEDED,
+                JobStatus.NEEDS_REVIEW,
+                JobStatus.FAILED,
+                JobStatus.EXPIRED,
+            }:
                 return
             self._jobs[job_id] = env.model_copy(update={
                 "status": result.status,
@@ -153,6 +170,26 @@ class InMemoryJobStore:
     def all_jobs(self) -> list[JobEnvelope]:
         with self._lock:
             return list(self._jobs.values())
+
+    def acquire_execution(self, job_id: str, ttl_seconds: int) -> bool:
+        del ttl_seconds
+        with self._lock:
+            if job_id in self._execution_locks:
+                return False
+            envelope = self._jobs.get(job_id)
+            if envelope is None or envelope.status in {
+                JobStatus.SUCCEEDED,
+                JobStatus.NEEDS_REVIEW,
+                JobStatus.FAILED,
+                JobStatus.EXPIRED,
+            }:
+                return False
+            self._execution_locks.add(job_id)
+            return True
+
+    def release_execution(self, job_id: str) -> None:
+        with self._lock:
+            self._execution_locks.discard(job_id)
 
     def _append_event_locked(
         self,
