@@ -35,6 +35,577 @@ SEED_FILTER = next(
 
 ISSUES = [
     {
+        "seed": "STWI-SYM-001",
+        "title": "Reconcile official vision artifact with current promotion gate",
+        "state": "In Review",
+        "labels": [
+            "stwi-agent",
+            "lane:vision",
+            "phase:1",
+            "task:review",
+            "needs-human-review",
+        ],
+        "owner": "DataVisionAgent",
+        "scope": (
+            "promotion evidence and decision record only; do not lower the "
+            "mAP50 gate, publish private weights, or retain raw video"
+        ),
+        "criteria": [
+            "Compare the current official artifact with the active promotion validator and mAP50 >= 0.85 gate.",
+            "Record a Human Review decision to keep official, downgrade to provisional/rejected, or require retraining.",
+            "Do not weaken privacy, aggregate-only processing, checksum, calibration, benchmark, or legal/source evidence requirements.",
+            "Keep any retraining work in STWI-SYM-015 and camera-path validation in STWI-SYM-014.",
+        ],
+    },
+    {
+        "seed": "STWI-SYM-003",
+        "title": "Replace Phase 2 mock observations with real aggregate dataset",
+        "state": "Backlog",
+        "labels": [
+            "stwi-agent",
+            "lane:ml",
+            "lane:simulation",
+            "phase:2",
+            "task:review",
+            "needs-human-review",
+        ],
+        "owner": "MLSimulationAgent",
+        "scope": (
+            "dataset selection, manifests, validators, and T2 evidence; no raw "
+            "video, private-data publication, or contract shape change"
+        ),
+        "criteria": [
+            "Use approved five-minute aggregate data with fixed 20-node order and no raw-video retention.",
+            "Record chronological splits and scenario-family leakage checks.",
+            "Fit scalers on the training split only and preserve ratio/cyclical features.",
+            "Report forecast metrics by horizon, node, and missing-data bucket before STWI-SYM-004 starts.",
+        ],
+    },
+    {
+        "seed": "STWI-SYM-004",
+        "title": "Rerun surrogate calibration and OOD thresholds on non-mock validation data",
+        "state": "Backlog",
+        "labels": [
+            "stwi-agent",
+            "lane:simulation",
+            "phase:2",
+            "task:validate",
+        ],
+        "owner": "MLSimulationAgent",
+        "scope": (
+            "surrogate calibration, OOD evidence, validators, and focused tests; "
+            "no SLA, tensor, or safety-threshold weakening"
+        ),
+        "criteria": [
+            "Start only after STWI-SYM-003 provides an approved non-mock chronological dataset.",
+            "Calibrate uncertainty and OOD thresholds on held-out validation data with isolated scenario families.",
+            "High uncertainty or OOD returns needs_review and never recommended_action.",
+            "Retrieved cases remain evidence only and are never blended into online model input.",
+        ],
+    },
+    {
+        "seed": "STWI-SYM-006",
+        "title": "Ingest approved SOP corpus and validate citation coverage",
+        "state": "Backlog",
+        "labels": [
+            "stwi-agent",
+            "lane:rag",
+            "lane:legal",
+            "phase:3",
+            "task:review",
+            "legal-review",
+            "needs-human-review",
+        ],
+        "owner": "KnowledgeRagAgent",
+        "scope": (
+            "approved SOP source registry, ingestion, citation validation, and "
+            "evaluation evidence only"
+        ),
+        "criteria": [
+            "Start only after a human legal reviewer approves the SOP sources.",
+            "Record source registry, effective date, content hash, jurisdiction, and supersession status.",
+            "Unsupported claim rate is zero after validator/abstention and citation precision is measured.",
+            "Do not replace or weaken the required Laws 35/2024/QH15 and 36/2024/QH15 corpus.",
+        ],
+    },
+    {
+        "seed": "STWI-SYM-007",
+        "title": "Switch Phase 3 validation from fake retriever to Qdrant/BGE path",
+        "state": "Backlog",
+        "labels": [
+            "stwi-agent",
+            "lane:rag",
+            "phase:3",
+            "task:validate",
+            "external-service",
+        ],
+        "owner": "KnowledgeRagAgent",
+        "scope": (
+            "T3 Qdrant/BGE-m3 and Timescale read-only integration harness, "
+            "focused tests, and Gate P3 evidence"
+        ),
+        "criteria": [
+            "Gate P3 cannot pass on FakeRetriever or literal unexecuted checks.",
+            "Qdrant/BGE-m3 retrieval, effective-date filtering, structured citations, and read-only Timescale queries run in the integration harness.",
+            "Service-dependent skips are removed or left as explicit Human Review blockers.",
+            "Live service execution requires external-service-approved and must not expose credentials or private corpus content.",
+        ],
+    },
+    {
+        "seed": "STWI-SYM-008",
+        "title": "Implement production job persistence with Celery and Redis",
+        "state": "Backlog",
+        "labels": [
+            "stwi-agent",
+            "lane:api",
+            "phase:4",
+            "task:refactor",
+            "contract-risk",
+        ],
+        "owner": "OrchestratorReleaseAgent",
+        "scope": (
+            "Celery worker, Redis job/event persistence, SSE reconnect, and "
+            "focused Tier-4 tests within the approved stack"
+        ),
+        "criteria": [
+            "Start after the hard-deadline and terminal-state contract is implemented and reviewed.",
+            "Jobs execute through Celery and progress/events persist in Redis across API restart.",
+            "SSE reconnect is idempotent and never duplicates execution or overwrites a terminal state.",
+            "Dependency, timeout, and persistence failures remain fail closed with no executable action.",
+        ],
+    },
+    {
+        "seed": "STWI-SYM-014",
+        "title": "Validate recorded-camera or RTSP calibration and aggregate extraction path",
+        "state": "In Review",
+        "labels": [
+            "stwi-agent",
+            "lane:data",
+            "lane:vision",
+            "phase:1",
+            "task:validate",
+            "needs-human-review",
+            "external-service",
+        ],
+        "owner": "DataVisionAgent",
+        "scope": (
+            "human-approved recorded-camera or supervised RTSP calibration, "
+            "tracking quality, and aggregate-only evidence"
+        ),
+        "criteria": [
+            "Use only an approved source alias and keep endpoints/credentials outside repository, Linear, logs, and manifests.",
+            "Record ROI/homography calibration and tracking quality for the approved demo input.",
+            "Produce only five-minute aggregates that preserve the project data contract and stable node order.",
+            "Retain no raw video; sparse quarantine frames require privacy review and bounded cleanup.",
+        ],
+    },
+    {
+        "seed": "STWI-SYM-015",
+        "title": "Improve detector AP toward current MVP promotion threshold",
+        "state": "Backlog",
+        "labels": [
+            "stwi-agent",
+            "lane:vision",
+            "phase:1",
+            "task:validate",
+            "needs-human-review",
+        ],
+        "owner": "DataVisionAgent",
+        "scope": (
+            "human-approved private training/evaluation workflow and promotion "
+            "evidence; no unattended access to private weights or datasets"
+        ),
+        "criteria": [
+            "Run only after STWI-SYM-001 selects retraining rather than downgrade/rejection.",
+            "Rerun validation/test evaluation after label or model improvements with class-level evidence.",
+            "Meet the accepted mAP50 gate or explicitly remain provisional; do not lower the gate silently.",
+            "Keep privacy, source/license, calibration, benchmark, checksum, and aggregate-only evidence complete.",
+        ],
+    },
+    {
+        "seed": "STWI-SYM-030",
+        "title": "Reconcile Linear and Symphony state before next dispatch",
+        "state": "Done",
+        "labels": ["stwi-agent", "lane:qa", "lane:release", "task:review"],
+        "owner": "LeadCoordinator",
+        "scope": "docs/project_management/symphony tracker artifacts only",
+        "criteria": [
+            "Read back all linked legacy Linear states and URLs before editing the mirror.",
+            "Create missing legacy backlog issues without granting unsafe Symphony approval.",
+            "Mark superseded placeholders duplicate and remove completed work from the dispatch packet.",
+            "Select exactly one dependency-safe next issue for Symphony.",
+        ],
+        "checks": [
+            "python scripts/project_management/symphony_report.py",
+            "python scripts/project_management/hermes_runner_bridge.py --no-write",
+            "python scripts/validation/validate_docs.py",
+            "git diff --check",
+        ],
+        "expected_state": "Done after Linear readback and local mirror verification",
+        "gap_check": "complete",
+    },
+    {
+        "seed": "STWI-SYM-031",
+        "title": "Repair full-suite, phase-gate, and CI evidence integrity",
+        "state": "In Review",
+        "labels": [
+            "stwi-agent",
+            "lane:qa",
+            "task:validate",
+            "needs-human-review",
+        ],
+        "owner": "ReleaseQaAgent",
+        "scope": "phase-gate validators, their tests, and STWI CI workflows only",
+        "dependencies": ["STWI-SYM-030 / tracker reconciliation is Done"],
+        "criteria": [
+            "Phase 2 and Phase 3 gate CLIs run from repository root without import-path errors.",
+            "The complete lightweight test suite has no failing test and measured evidence is not confused with simulated evidence.",
+            "Gate P3 records measured pass/fail/not-verified results instead of literal unexecuted True values.",
+            "CI runs the complete lightweight suite with an explicit optional-service skip policy.",
+        ],
+        "checks": [
+            "python scripts/validation/validate_provisional_phase2_gate.py --help",
+            "python scripts/validation/gate_p3_validator.py --help",
+            "python -m unittest discover -s tests -v",
+            "python scripts/validation/validate_ci_guardrails.py",
+            "powershell -ExecutionPolicy Bypass -File .agents/skills/stwi-release-qa/scripts/verify_project.ps1",
+            "git diff --check",
+        ],
+        "expected_state": "Human Review",
+        "gap_check": "blocked for review after in-scope Hermes rework retained broad formatting churn",
+    },
+    {
+        "seed": "STWI-SYM-032",
+        "title": "Enforce hard deadline and immutable terminal job states",
+        "state": "Backlog",
+        "labels": [
+            "stwi-agent",
+            "lane:api",
+            "phase:4",
+            "task:refactor",
+            "contract-risk",
+            "reasoning:high",
+        ],
+        "owner": "OrchestratorReleaseAgent",
+        "scope": "Tier-4 orchestrator, API, job store, interfaces, tests, and DOC-04",
+        "dependencies": ["STWI-SYM-031 is accepted"],
+        "criteria": [
+            "Blocking model/RAG/safety dependencies have bounded deadline or cancellation behavior.",
+            "Allowed job transitions are explicit and terminal states cannot be overwritten by a late worker.",
+            "SSE observes the job state without creating a conflicting timeout state.",
+            "Timeout and dependency failures never return recommended_action.",
+        ],
+        "checks": [
+            "python -m unittest tests.t4_orchestrator.test_t4_deadline_state_machine",
+            "python -m unittest tests.t4_orchestrator.test_t4_runtime_boundaries",
+            "python -m unittest tests.t4_orchestrator.test_t4_api_http",
+            "python -m unittest tests.contracts.test_project_contract",
+            "git diff --check",
+        ],
+        "expected_state": "Human Review",
+        "gap_check": "inferred; implementation strategy requires high-reasoning review",
+    },
+    {
+        "seed": "STWI-SYM-033",
+        "title": "Type and validate scenario actions at the API boundary",
+        "state": "In Review",
+        "labels": [
+            "stwi-agent",
+            "lane:api",
+            "phase:4",
+            "task:refactor",
+            "needs-human-review",
+            "contract-risk",
+            "reasoning:high",
+        ],
+        "owner": "OrchestratorReleaseAgent",
+        "scope": "typed Tier-4 contracts, adapters, focused tests, and synchronized API artifacts",
+        "criteria": [
+            "Candidate action, nodes, horizons, scenario time, tenant context, and policy values are typed and boundary-validated.",
+            "The accepted JSON shape remains wire-compatible unless a separate contract change is approved.",
+            "Unknown nodes/fields and out-of-range values fail closed with no recommended_action.",
+            "Demo behavior does not claim a fabricated causal relationship from synthetic data.",
+        ],
+        "checks": [
+            "python -m unittest tests.t4_orchestrator.test_t4_request_validation",
+            "python -m unittest tests.t4_orchestrator.test_t4_contracts",
+            "python -m unittest tests.t4_orchestrator.test_t4_api_http",
+            "python scripts/validation/validate_docs.py",
+            "git diff --check",
+        ],
+        "expected_state": "Human Review before implementation approval",
+        "gap_check": "inferred; typed action variants need explicit review",
+    },
+    {
+        "seed": "STWI-SYM-034",
+        "title": "Fix dashboard async lifecycle and demo terminal branches",
+        "state": "Backlog",
+        "labels": [
+            "stwi-agent",
+            "lane:frontend",
+            "lane:api",
+            "phase:4",
+            "task:refactor",
+        ],
+        "owner": "FrontendAgent",
+        "scope": "demo static UI, bounded API/demo adapters, demo tests, and runbooks",
+        "dependencies": ["STWI-SYM-032", "approved STWI-SYM-033"],
+        "criteria": [
+            "The UI waits through queued/running via SSE reconnect or bounded polling fallback without null-result crashes.",
+            "Approve/reject is enabled only for reviewable terminal results; failed/expired cannot be approved.",
+            "Provisional evidence covers succeeded, safety/OOD review, missing citation, and failed/expired branches.",
+            "Desktop/mobile/keyboard QA shows trace, versions, uncertainty/OOD, citations, and no automatic actuation.",
+        ],
+        "checks": [
+            "python -m unittest tests.demo.test_mvp_smoke",
+            "python -m unittest tests.t4_orchestrator.test_t4_api_http",
+            "python scripts/demo/run_mvp_smoke.py",
+            "node --check src/stwi/t4_orchestrator/static/dashboard.js",
+            "git diff --check",
+        ],
+        "expected_state": "Human Review after browser QA",
+        "gap_check": "blocked on dependencies",
+    },
+    {
+        "seed": "STWI-SYM-035",
+        "title": "Reconcile API documentation, report claims, and PDF layout",
+        "state": "Backlog",
+        "labels": [
+            "stwi-agent",
+            "lane:release",
+            "lane:qa",
+            "phase:4",
+            "task:review",
+            "needs-human-review",
+        ],
+        "owner": "ReleaseQaAgent",
+        "scope": "DOC-04, demo guides, report/API appendix, affected slides, and release notes",
+        "dependencies": ["STWI-SYM-033", "STWI-SYM-034"],
+        "criteria": [
+            "SLA, normalization, endpoints, examples, and statuses match the contract and implemented API.",
+            "No production or measured-SLA claim appears without evidence; version/date/status wording requires Human Review.",
+            "Header, endpoint, and appendix table overlaps are removed on affected PDF pages.",
+            "Report, slides, and dashboard guide retain provisional, human-approval, and no-actuation wording.",
+        ],
+        "checks": [
+            "python scripts/validation/validate_docs.py",
+            "python -m unittest tests.contracts.test_project_contract",
+            "python scripts/validation/validate_slides_static.py",
+            "powershell -ExecutionPolicy Bypass -File .agents/skills/stwi-release-qa/scripts/verify_project.ps1 -BuildPdf",
+            "git diff --check",
+        ],
+        "expected_state": "Human Review",
+        "gap_check": "inferred; cover status wording requires approval",
+    },
+    {
+        "seed": "STWI-SYM-036",
+        "title": "Run hardened offline MVP demo acceptance",
+        "state": "Backlog",
+        "labels": [
+            "stwi-agent",
+            "lane:qa",
+            "lane:release",
+            "phase:4",
+            "task:qa",
+            "needs-human-review",
+        ],
+        "owner": "ReleaseQaAgent and LeadCoordinator",
+        "scope": "acceptance evidence and Symphony tracker artifacts only; no feature implementation",
+        "dependencies": ["STWI-SYM-031 through STWI-SYM-035 accepted"],
+        "criteria": [
+            "Full lightweight tests and release verifier pass with every skip listed.",
+            "Browser and CLI evidence cover success, safety/OOD review, missing citation, and failure/expiry.",
+            "Every flow records no automatic actuation, valid action semantics, trace/version evidence, and no raw video or secrets.",
+            "Acceptance lists all remaining real data/model/service/benchmark/auth/deployment gates.",
+        ],
+        "checks": [
+            "python -m unittest discover -s tests -v",
+            "python scripts/demo/run_mvp_smoke.py",
+            "python scripts/validation/validate_slides_static.py",
+            "powershell -ExecutionPolicy Bypass -File .agents/skills/stwi-release-qa/scripts/verify_project.ps1 -BuildPdf",
+            "git diff --check",
+        ],
+        "expected_state": "Human Review",
+        "gap_check": "blocked on dependencies",
+    },
+    {
+        "seed": "STWI-SYM-037",
+        "title": "Bind production runtime provenance and policy to promoted artifacts",
+        "state": "Backlog",
+        "labels": [
+            "stwi-agent",
+            "lane:ml",
+            "lane:simulation",
+            "lane:api",
+            "phase:4",
+            "task:refactor",
+            "contract-risk",
+            "reasoning:high",
+        ],
+        "owner": "MLSimulationAgent and OrchestratorReleaseAgent",
+        "scope": "runtime composition, artifact loaders/registry, focused tests, and runbooks",
+        "dependencies": ["STWI-SYM-003", "STWI-SYM-004", "STWI-SYM-007", "STWI-SYM-013"],
+        "criteria": [
+            "Production loads version, checksum, data version, calibration/OOD thresholds, and promotion status from validated artifacts.",
+            "Missing, stale, checksum-mismatched, uncalibrated, or provisional artifacts fail closed.",
+            "Provisional/demo composition remains isolated and visibly labeled.",
+            "Audit records match the exact artifacts used for inference.",
+        ],
+        "checks": [
+            "python -m unittest tests.t4_orchestrator.test_t4_runtime_boundaries",
+            "python -m unittest tests.vision.test_vision_relabel_and_promotion",
+            "python -m unittest tests.t2_forecast.test_surrogate_safety",
+            "python -m unittest tests.contracts.test_project_contract",
+            "git diff --check",
+        ],
+        "expected_state": "Human Review",
+        "gap_check": "blocked on promoted artifacts",
+    },
+    {
+        "seed": "STWI-SYM-038",
+        "title": "Harden T3 service boundary and redact internal errors",
+        "state": "Backlog",
+        "labels": [
+            "stwi-agent",
+            "lane:rag",
+            "lane:legal",
+            "lane:api",
+            "phase:3",
+            "task:refactor",
+            "external-service",
+            "legal-review",
+        ],
+        "owner": "KnowledgeRagAgent",
+        "scope": "T3 facade, Qdrant retriever, Timescale executor/query builder, tests, harness, and DOC-03",
+        "dependencies": ["STWI-SYM-007"],
+        "criteria": [
+            "Production requires environment/approved secret configuration and has no embedded dev credential fallback.",
+            "Effective-date filtering and hybrid retrieval use pinned-client-supported APIs proven by integration tests.",
+            "SQL stays typed, parameterized, allowlisted, tenant/job filtered, and read-only.",
+            "Client failures expose stable error codes and trace_id rather than raw exception, DSN, SQL, or service text.",
+        ],
+        "checks": [
+            "python -m unittest discover -s tests/t3_knowledge -v",
+            "docker compose -f infra/harness/compose.phase3.yaml config --quiet",
+            "python scripts/validation/gate_p3_validator.py",
+            "python scripts/validation/validate_docs.py",
+            "git diff --check",
+        ],
+        "expected_state": "Human Review after service-backed tests",
+        "gap_check": "blocked on external-service approval",
+    },
+    {
+        "seed": "STWI-SYM-039",
+        "title": "Prove measured end-to-end SLA on the contract profile",
+        "state": "In Review",
+        "labels": [
+            "stwi-agent",
+            "lane:qa",
+            "lane:release",
+            "lane:ml",
+            "phase:4",
+            "task:validate",
+            "needs-human-review",
+            "external-service",
+        ],
+        "owner": "ReleaseQaAgent and MLSimulationAgent",
+        "scope": "benchmark harness/docs and private ignored benchmark output only",
+        "dependencies": ["STWI-SYM-005", "STWI-SYM-008", "STWI-SYM-037", "STWI-SYM-038"],
+        "criteria": [
+            "Measure on 8 CPU cores, 32 GB RAM, and 12-16 GB GPU VRAM with recorded versions and representative load.",
+            "Evidence is measured and records warmup/runs, payload, concurrency, p50/p95/p99, and failures.",
+            "Surrogate P99 < 500 ms, E2E P95 <= 30 seconds, and hard deadline/P99 <= 180 seconds or report FAIL without threshold weakening.",
+            "Keep raw results private and publish only reviewed aggregate claims.",
+        ],
+        "checks": [
+            "python scripts/validation/validate_surrogate_benchmark_evidence.py",
+            "python scripts/validation/validate_docs.py",
+            "python -m unittest tests.contracts.test_project_contract",
+            "git diff --check",
+        ],
+        "expected_state": "Human Review",
+        "gap_check": "blocked until contract-profile hardware is available",
+    },
+    {
+        "seed": "STWI-SYM-040",
+        "title": "Implement approved auth, RBAC, and tenant boundary",
+        "state": "Backlog",
+        "labels": [
+            "stwi-agent",
+            "lane:api",
+            "phase:4",
+            "task:refactor",
+            "needs-human-review",
+            "contract-risk",
+        ],
+        "owner": "OrchestratorReleaseAgent",
+        "scope": "must be bounded from the approved TRA-13 design; no inferred provider or dependency",
+        "dependencies": ["Human-approved TRA-13 / STWI-SYM-017 design"],
+        "criteria": [
+            "Request-body tenant/operator values cannot elevate privilege or cross tenant boundaries.",
+            "Approved role boundaries apply to POST, GET, SSE, and operator-decision endpoints.",
+            "Auth failures are auditable and redact secrets; anonymous/dev behavior is impossible in production.",
+            "Negative tests cover tenant spoofing, wrong roles, SSE reconnect, and decision submission.",
+        ],
+        "expected_state": "Human Review",
+        "gap_check": "blocked until implementation mechanism is explicitly approved",
+    },
+    {
+        "seed": "STWI-SYM-041",
+        "title": "Build the approved production deployment baseline",
+        "state": "Backlog",
+        "labels": [
+            "stwi-agent",
+            "lane:release",
+            "lane:api",
+            "phase:4",
+            "task:refactor",
+            "needs-human-review",
+            "contract-risk",
+        ],
+        "owner": "OrchestratorReleaseAgent and ReleaseQaAgent",
+        "scope": "bounded after deployment-option approval; expected infra, runbooks, health/readiness, and deployment tests",
+        "dependencies": ["STWI-SYM-008", "STWI-SYM-018", "approved STWI-SYM-021", "STWI-SYM-038", "STWI-SYM-040"],
+        "criteria": [
+            "Production starts with only approved stack components and no provisional/in-memory adapter or store.",
+            "No dev secret, public database port, raw exception, or docs-only health check is production evidence.",
+            "Processes use least privilege and reproducibly pinned dependencies/images without a new platform.",
+            "Backup/restore, migration, restart recovery, monitoring, retention, rate limit, and rollback have executable evidence or Human Review gates.",
+        ],
+        "expected_state": "Human Review",
+        "gap_check": "blocked on deployment and auth approvals",
+    },
+    {
+        "seed": "STWI-SYM-042",
+        "title": "Run final production release-readiness QA",
+        "state": "Backlog",
+        "labels": [
+            "stwi-agent",
+            "lane:qa",
+            "lane:release",
+            "task:qa",
+            "needs-human-review",
+        ],
+        "owner": "ReleaseQaAgent and LeadCoordinator",
+        "scope": "release evidence, approved runbooks, tracker mirror, and private ignored results only",
+        "dependencies": ["all open P1 vision/data/ML/RAG/runtime/SLA/auth/deployment gates"],
+        "criteria": [
+            "Attach exact test, service, security, SLA, browser, PDF/slide, recovery, backup/restore, and rollback evidence.",
+            "Production mode rejects every provisional, missing, uncalibrated, checksum-invalid, or expired artifact/dependency.",
+            "No open P1 blocker, unexplained service skip, privacy breach, invalid citation, automatic actuation, or executable needs_review action remains.",
+            "Return a Human Review go/no-go recommendation without merging, releasing, or deploying automatically.",
+        ],
+        "checks": [
+            "python -m unittest discover -s tests -v",
+            "python scripts/validation/validate_docs.py",
+            "python scripts/validation/validate_slides_static.py",
+            "powershell -ExecutionPolicy Bypass -File .agents/skills/stwi-release-qa/scripts/verify_project.ps1 -BuildPdf",
+            "git diff --check",
+        ],
+        "expected_state": "Human Review",
+        "gap_check": "blocked until every dependency is reviewable",
+    },
+    {
         "seed": "STWI-SYM-013",
         "title": (
             "Complete vision artifact metadata for latency, thresholds, "
@@ -427,10 +998,27 @@ def build_description(item: dict[str, Any]) -> str:
         "",
         f"Owner role: {item['owner']}",
         f"Allowed scope: {item['scope']}",
-        "",
-        "Acceptance criteria:",
     ]
+    dependencies = item.get("dependencies")
+    if dependencies:
+        lines.extend(["", "Dependencies:"])
+        lines.extend(f"- {dependency}" for dependency in dependencies)
+    forbidden = item.get("forbidden")
+    if forbidden:
+        lines.extend(["", "Forbidden changes:"])
+        lines.extend(f"- {change}" for change in forbidden)
+    lines.extend(["", "Acceptance criteria:"])
     lines.extend(f"- {criterion}" for criterion in item["criteria"])
+    checks = item.get("checks")
+    if checks:
+        lines.extend(["", "Exact checks:"])
+        lines.extend(f"- `{check}`" for check in checks)
+    expected_state = item.get("expected_state")
+    if expected_state:
+        lines.extend(["", f"Expected final state: {expected_state}"])
+    gap_check = item.get("gap_check")
+    if gap_check:
+        lines.extend([f"Gap check: {gap_check}"])
     lines.extend(
         [
             "",
@@ -461,13 +1049,23 @@ def issue_exists(
                 { description: { containsIgnoreCase: $term } }
               ]
             }
-          ) { nodes { id identifier title url state { name } } }
+          ) { nodes { id identifier title description url state { name } } }
         }
         """,
         {"teamId": team_id, "projectId": project_id, "term": seed},
     )
+    expected_seed_line = f"Seed: {seed}".casefold()
+    expected_title = title.casefold()
     for issue in data["issues"]["nodes"]:
-        return issue["url"]
+        description_lines = {
+            line.strip().casefold()
+            for line in (issue.get("description") or "").splitlines()
+        }
+        if (
+            issue["title"].casefold() == expected_title
+            or expected_seed_line in description_lines
+        ):
+            return issue["url"]
 
     data = gql(
         """

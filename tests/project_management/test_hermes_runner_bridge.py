@@ -22,6 +22,8 @@ def load_module():
 
 PACKET = """# Current Hermes Dispatch Packet
 
+Status: ready for Hermes sidecar
+
 ## Ticket
 
 `TRA-99` / `STWI-SYM-099` - Test bridge packet
@@ -124,14 +126,47 @@ class HermesRunnerBridgeTest(unittest.TestCase):
 
     def test_renders_command_placeholders(self) -> None:
         command = self.bridge.render_command(
-            ["hermes", "--oneshot", "{prompt_file}", "--packet", "{packet_file}"],
+            ["hermes", "--oneshot", "{prompt}", "--packet", "{packet_file}"],
+            "bounded prompt",
             Path("prompt.md"),
             Path("packet.md"),
         )
 
         self.assertEqual(
             command,
-            ["hermes", "--oneshot", "prompt.md", "--packet", "packet.md"],
+            ["hermes", "--oneshot", "bounded prompt", "--packet", "packet.md"],
+        )
+
+    def test_scope_matching_supports_recursive_allowed_path(self) -> None:
+        self.assertTrue(
+            self.bridge.path_is_allowed(
+                "tests/validation/test_gate.py", ["tests/validation/**"]
+            )
+        )
+        self.assertFalse(
+            self.bridge.path_is_allowed(
+                "project_contract.json", ["tests/validation/**"]
+            )
+        )
+
+    def test_report_requires_all_handoff_fields(self) -> None:
+        report = "\n".join(self.bridge.REQUIRED_REPORT_FIELDS)
+
+        self.assertEqual(self.bridge.validate_report(report), [])
+        self.assertIn(
+            "Checks:", self.bridge.validate_report(report.replace("Checks:", ""))
+        )
+
+    def test_existing_dirty_paths_can_be_checked_before_rework(self) -> None:
+        allowed = ["scripts/validation/**", "tests/validation/**"]
+        existing = [
+            "scripts/validation/gate.py",
+            "tests/validation/test_gate.py",
+        ]
+
+        self.assertEqual(
+            [path for path in existing if not self.bridge.path_is_allowed(path, allowed)],
+            [],
         )
 
     def test_permission_denied_candidate_is_treated_as_callable(self) -> None:
@@ -149,6 +184,12 @@ class HermesRunnerBridgeTest(unittest.TestCase):
             self.assertTrue(self.bridge.candidate_path_exists("C:/hermes.exe"))
         finally:
             self.bridge.Path = original_path
+
+    def test_external_code_transfer_requires_explicit_approval(self) -> None:
+        with self.assertRaises(SystemExit):
+            self.bridge.require_external_code_transfer(False)
+
+        self.bridge.require_external_code_transfer(True)
 
 
 if __name__ == "__main__":

@@ -47,6 +47,7 @@ from stwi.t4_orchestrator.fake_adapters import (
     SurrogateScenario,
 )
 from stwi.t4_orchestrator.safety_loop import CounterfactualSafetyLoop
+from stwi.t4_orchestrator.runtime_artifacts import RuntimeArtifactSet
 
 logger = logging.getLogger(__name__)
 
@@ -100,14 +101,16 @@ class WhatIfOrchestrator:
         surrogate_node_overrides: dict[str, SurrogateScenario] | None = None,
         settings: RuntimeSettings | None = None,
         timeout_seconds: float = 180.0,
+        runtime_artifacts: RuntimeArtifactSet | None = None,
     ) -> None:
         self._settings = settings or get_runtime_settings()
         if not self._settings.allow_provisional_adapters and (
-            baseline is None or surrogate is None or t3 is None
+            baseline is None or surrogate is None or t3 is None or runtime_artifacts is None
         ):
             raise RuntimeError(
                 "Production runtime requires explicit baseline, surrogate, and "
-                "T3 adapters; provisional fake defaults are disabled."
+                "T3 adapters plus validated runtime artifacts; provisional "
+                "defaults are disabled."
             )
         if not self._settings.allow_provisional_adapters and any(
             _is_provisional_adapter(adapter)
@@ -128,6 +131,21 @@ class WhatIfOrchestrator:
             self._surrogate = surrogate
             self._t3 = t3
         self._timeout_seconds = timeout_seconds
+        self._runtime_artifacts = runtime_artifacts
+        self._model_version = (
+            runtime_artifacts.model_version if runtime_artifacts else MODEL_VERSION
+        )
+        self._data_version = (
+            runtime_artifacts.data_version if runtime_artifacts else DATA_VERSION
+        )
+        self._uncertainty_threshold = (
+            runtime_artifacts.surrogate.uncertainty_threshold
+            if runtime_artifacts
+            else 0.7
+        )
+        self._ood_threshold = (
+            runtime_artifacts.surrogate.ood_threshold if runtime_artifacts else 0.5
+        )
 
     @property
     def uses_provisional_adapters(self) -> bool:
@@ -219,9 +237,9 @@ class WhatIfOrchestrator:
         from stwi.t2_forecast.safety import gate_surrogate_result
         gate = gate_surrogate_result(
             uncertainty_score=max_unc,
-            uncertainty_threshold=0.7,
+            uncertainty_threshold=self._uncertainty_threshold,
             ood_score=max_ood,
-            ood_threshold=0.5,
+            ood_threshold=self._ood_threshold,
         )
         if gate.status == "needs_review":
             state.status = JobStatus.NEEDS_REVIEW
@@ -277,6 +295,8 @@ class WhatIfOrchestrator:
         loop = CounterfactualSafetyLoop(
             surrogate=self._surrogate,
             vc_threshold=state.request.vc_threshold,
+            uncertainty_threshold=self._uncertainty_threshold,
+            ood_threshold=self._ood_threshold,
         )
         outcome = loop.run(
             scenario_results=state.scenario_results,
@@ -305,11 +325,22 @@ class WhatIfOrchestrator:
             job_id=state.job_id,
             tenant_id=req.tenant_id,
             scenario_time=req.scenario_time,
-            model_version=MODEL_VERSION,
+            model_version=self._model_version,
             corpus_parser_version=CORPUS_PARSER_VERSION,
             status=state.status,
             status_reason=state.needs_review_reason or state.error_message or state.status.value,
             safety_iterations=len(state.safety_checks),
+            artifact_provenance=(
+                self._runtime_artifacts.audit_dict()
+                if self._runtime_artifacts
+                else {
+                    "runtime": {
+                        "artifact_name": "provisional_demo_composition",
+                        "model_version": MODEL_VERSION,
+                        "data_version": DATA_VERSION,
+                    }
+                }
+            ),
         )
 
         baseline_summary = self._summarize_baseline(state.baseline_results)
@@ -348,8 +379,8 @@ class WhatIfOrchestrator:
             safety_iterations=len(state.safety_checks),
             safety_checks=state.safety_checks,
             audit_record=audit,
-            model_version=MODEL_VERSION,
-            data_version=DATA_VERSION,
+            model_version=self._model_version,
+            data_version=self._data_version,
             completed_at=now,
         )
 

@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping
 
+from stwi.utils.file_hash import sha256_file
+
 
 DEFAULT_OFFICIAL_MANIFEST = Path(
     "data/derived/private/vision_models/official/model_artifact.json"
@@ -54,6 +56,8 @@ class LocalVisionModelArtifact:
             raise LocalVisionModelError("model artifact is not promoted as official MVP primary")
         if not self.weights.is_file():
             raise LocalVisionModelError(f"missing weights: {self.weights}")
+        if sha256_file(self.weights) != self.weights_sha256:
+            raise LocalVisionModelError("official model weights checksum mismatch")
         required = {"car", "motorcycle", "bus", "truck"}
         mapped = {value for value in self.stwi_class_map.values() if value}
         missing = required - mapped

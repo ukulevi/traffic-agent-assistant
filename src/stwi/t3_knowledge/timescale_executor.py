@@ -19,6 +19,7 @@ Dependencies (not in pyproject base):
 from __future__ import annotations
 
 import logging
+import uuid
 from typing import Any
 
 from stwi.contracts.knowledge import (
@@ -80,22 +81,26 @@ class TimescaleQueryExecutor:
         # Build parameterized SQL
         try:
             sql, params = self._builder.build(query)
-        except ValueError as exc:
+        except ValueError:
+            trace_id = str(uuid.uuid4())
             return SimulationQueryResult(
                 structured_failure=StructuredFailure(
                     code=FailureCode.QUERY_INVALID,
-                    message=str(exc),
-                    details={"query": query.model_dump(mode="json")},
+                    message="Simulation query was rejected by policy.",
+                    details={},
+                    trace_id=trace_id,
                 )
             )
 
         # Validate SQL safety (defence in depth)
         if not self._builder.validate_sql_safety(sql):
+            trace_id = str(uuid.uuid4())
             return SimulationQueryResult(
                 structured_failure=StructuredFailure(
                     code=FailureCode.QUERY_INVALID,
                     message="SQL failed safety validation",
-                    details={"sql_preview": sql[:200]},
+                    details={},
+                    trace_id=trace_id,
                 )
             )
 
@@ -122,14 +127,19 @@ class TimescaleQueryExecutor:
                 rows = [dict(zip(col_names, r)) for r in raw_rows]
                 return SimulationQueryResult(rows=rows)
         except Exception as exc:
-            err_msg = str(exc)
-            code = FailureCode.TIMEOUT if "timeout" in err_msg.lower() else FailureCode.QUERY_INVALID
-            logger.exception("TimescaleDB query failed: %s", exc)
+            trace_id = str(uuid.uuid4())
+            code = (
+                FailureCode.TIMEOUT
+                if "timeout" in type(exc).__name__.lower()
+                else FailureCode.QUERY_INVALID
+            )
+            logger.error("TimescaleDB query failed trace_id=%s", trace_id)
             return SimulationQueryResult(
                 structured_failure=StructuredFailure(
                     code=code,
-                    message=f"Database error: {err_msg[:200]}",
+                    message="Simulation database request failed.",
                     details={},
+                    trace_id=trace_id,
                 )
             )
 

@@ -1,8 +1,9 @@
 # STWI Model Registry Evidence Format
 
 This guide defines a project-native evidence format for STWI artifacts.
-It is documentation only; no new registry service, MLflow installation,
-or runtime code change is required to use this format.
+The filesystem format remains service-free; production runtime validation is
+implemented by `stwi.t4_orchestrator.runtime_artifacts` and does not add MLflow
+or another registry service.
 
 Use it when recording, reviewing, or promoting:
 
@@ -323,6 +324,15 @@ STWI runtime boundaries remain unchanged:
 - surrogate ensemble estimates scenario impact only,
 - no automatic actuation is allowed from any model registry evidence file,
 - fail-closed and `needs_review` behavior must be preserved.
+
+For baseline and surrogate production manifests, the runtime loader additionally
+requires `artifact_name`, `artifact_path`, `artifact_sha256`, `model_version`,
+`data_version`, `expires_at`, `promotion.status=promoted`,
+`promotion.provisional=false`, and `calibration.status=calibrated`. Calibration
+must contain bounded `uncertainty_threshold` and `ood_threshold`. Missing,
+expired, provisional, uncalibrated, or checksum-mismatched evidence prevents
+production composition. Audit records store both artifact and manifest SHA-256
+values so the evidence matches the exact inference inputs.
 
 ## 7. Privacy and security rules
 

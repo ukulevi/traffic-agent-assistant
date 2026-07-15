@@ -11,10 +11,13 @@ from pathlib import Path
 import numpy as np
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "src"
+SCRIPTS = ROOT / "scripts"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
 
 from validation.validate_surrogate_benchmark_evidence import (  # noqa: E402
     _load_contract_profile,

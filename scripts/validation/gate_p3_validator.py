@@ -30,7 +30,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "src"))
 
 from stwi.contracts.knowledge import FailureCode, RetrievalQuery
 from stwi.t3_knowledge.citation_validator import CitationValidator
@@ -38,7 +39,7 @@ from stwi.t3_knowledge.corpus_ingestion import ingest_minimal_corpus
 from stwi.t3_knowledge.fake_retriever import FakeRetriever
 
 # ── import retrieval test questions ───────────────────────────────────
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tests"))
+sys.path.insert(0, str(ROOT / "tests" / "t3_knowledge"))
 from test_t3_retrieval_questions import RETRIEVAL_QUESTIONS  # noqa: E402
 
 
@@ -309,14 +310,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--corpus-dir",
         type=Path,
-        default=Path(__file__).resolve().parents[1]
-        / "data" / "derived" / "private" / "phase3_knowledge" / "corpus",
+        default=ROOT / "data" / "derived" / "private" / "phase3_knowledge" / "corpus",
     )
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=Path(__file__).resolve().parents[1]
-        / "data" / "derived" / "private" / "phase3_knowledge",
+        default=ROOT / "data" / "derived" / "private" / "phase3_knowledge",
     )
     args = parser.parse_args()
     sys.exit(main(args.corpus_dir, args.output_dir))
