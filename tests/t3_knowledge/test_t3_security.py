@@ -19,6 +19,7 @@ class TestSQLQueryBuilderSecurity(unittest.TestCase):
         query = SimulationQuery(
             job_id=uuid4(),
             metrics=[Metric.TRAFFIC_VOLUME_5M],
+            tenant_id="tenant-abc",
         )
         sql, params = self.builder.build(query)
         self.assertTrue(sql.upper().startswith("SELECT"))
@@ -48,6 +49,7 @@ class TestSQLQueryBuilderSecurity(unittest.TestCase):
             metrics=[Metric.TRAFFIC_VOLUME_5M],
             node_ids=["node-a", "node-b"],
             horizons_minutes=[5, 10],
+            tenant_id="tenant-abc",
         )
         sql, params = self.builder.build(query)
         # SQL should contain parameter placeholders
@@ -79,6 +81,7 @@ class TestSQLQueryBuilderSecurity(unittest.TestCase):
             job_id=uuid4(),
             metrics=[Metric.TRAFFIC_VOLUME_5M, Metric.AVG_SPEED_KMH],
             aggregation=Aggregation.AVG,
+            tenant_id="tenant-abc",
         )
         sql, _ = self.builder.build(query)
         self.assertIn("AVG(traffic_volume_5m) AS avg_traffic_volume_5m", sql)
@@ -103,15 +106,14 @@ class TestTenantIsolation(unittest.TestCase):
         self.assertIn("tenant_id", sql)
         self.assertIn("tenant-abc", params)
 
-    def test_default_tenant_used(self):
-        """Default tenant applied when not specified."""
+    def test_missing_tenant_is_rejected(self):
+        """Queries without a server-resolved tenant must fail closed."""
         query = SimulationQuery(
             job_id=uuid4(),
             metrics=[Metric.TRAFFIC_VOLUME_5M],
         )
-        sql, params = self.builder.build(query)
-        self.assertIn("tenant_id", sql)
-        self.assertIn("default", params)
+        with self.assertRaisesRegex(ValueError, "tenant_id must be resolved"):
+            self.builder.build(query)
 
 
 class TestRetrievalTestSuites(unittest.TestCase):
