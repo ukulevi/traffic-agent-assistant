@@ -63,6 +63,15 @@ Không chunk thuần theo câu. Mỗi chunk phải giữ nguyên điều/khoản
 
 Qdrant dùng dense embedding BGE-m3 và sparse/keyword signal cho hybrid retrieval. Query phải filter `effective_from <= scenario_time`, `effective_to` null hoặc lớn hơn scenario time, và `superseded=false`.
 
+Production adapter chỉ nhận Qdrant/TimescaleDB từ cấu hình được phê duyệt:
+`STWI_QDRANT_URL`, tùy chọn `STWI_QDRANT_API_KEY`, và `STWI_TSDB_DSN`.
+Không có DSN/password phát triển mặc định. Hybrid retrieval dùng RRF API của
+`qdrant-client==1.9.2`, tương thích Qdrant server 1.9.7 đã pin trong harness;
+dense/sparse batch search được hợp nhất bằng reciprocal-rank fusion và
+effective-date filter được
+kiểm tra bằng client engine thực trong test, còn service harness vẫn là gate
+riêng khi Docker/Qdrant/TimescaleDB khả dụng.
+
 ### 1.4. Retrieval pipeline
 
 ```mermaid
@@ -150,6 +159,7 @@ Case lịch sử/corner case là collection riêng có scenario features, outcom
 | Tin công khai bị nâng thành SOP | Bắt buộc owner, số hiệu/version, ngày duyệt và phạm vi trước khi promotion |
 | Rò rỉ case vận hành | RBAC, tenant filter, audit log và ẩn danh |
 | Corpus lỗi thời | Owner pháp lý và lịch kiểm tra hàng tháng trong MVP |
+| Lộ lỗi hạ tầng | Client chỉ nhận mã lỗi ổn định và `trace_id`; không trả raw exception, DSN, SQL, API key hoặc service text |
 
 ## 6. Acceptance gates
 
