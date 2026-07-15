@@ -20,7 +20,9 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from datetime import datetime
+import os
 from typing import Any
+import uuid
 from uuid import UUID
 
 from stwi.contracts.knowledge import (
@@ -215,19 +217,20 @@ class RealT3Adapter(T3Adapter):
 
     def __init__(
         self,
-        qdrant_url: str = "http://localhost:6333",
+        qdrant_url: str | None = None,
         tsdb_dsn: str | None = None,
         corpus_dir: Any = None,
     ) -> None:
-        import os
         from pathlib import Path
         from stwi.t3_knowledge.qdrant_retriever import QdrantRetriever
         from stwi.t3_knowledge.timescale_executor import TimescaleQueryExecutor
 
-        if tsdb_dsn is None:
-            tsdb_dsn = os.environ.get(
-                "STWI_TSDB_DSN",
-                "postgresql://stwi_reader_user:stwi_reader_dev_password@localhost/stwi",
+        qdrant_url = qdrant_url or os.environ.get("STWI_QDRANT_URL")
+        tsdb_dsn = tsdb_dsn or os.environ.get("STWI_TSDB_DSN")
+        if not qdrant_url or not tsdb_dsn:
+            raise RuntimeError(
+                "RealT3Adapter requires STWI_QDRANT_URL and STWI_TSDB_DSN "
+                "or explicit approved configuration."
             )
 
         if corpus_dir is None:
@@ -237,7 +240,10 @@ class RealT3Adapter(T3Adapter):
             )
         chunks, _ = ingest_minimal_corpus(Path(corpus_dir))
 
-        self._retriever = QdrantRetriever(url=qdrant_url)
+        self._retriever = QdrantRetriever(
+            url=qdrant_url,
+            api_key=os.environ.get("STWI_QDRANT_API_KEY"),
+        )
         self._retriever.ensure_collection()
         self._validator = CitationValidator()
         for chunk in chunks:
@@ -334,11 +340,13 @@ class T3KnowledgeTier:
         """Query T3 for legal evidence supporting a scenario decision."""
         try:
             return self._adapter.get_legal_evidence(query_text, scenario_time, jurisdiction)
-        except Exception as exc:
+        except Exception:
+            trace_id = str(uuid.uuid4())
             return StructuredFailure(
                 code=FailureCode.MISSING_EVIDENCE,
-                message=f"T3 internal error: {exc}",
+                message="Legal evidence service is unavailable.",
                 details={},
+                trace_id=trace_id,
             )
 
     def query_simulation_data(
@@ -354,11 +362,13 @@ class T3KnowledgeTier:
             return self._adapter.get_simulation_data(
                 job_id, tenant_id, metrics, node_ids, horizons_minutes
             )
-        except Exception as exc:
+        except Exception:
+            trace_id = str(uuid.uuid4())
             return StructuredFailure(
                 code=FailureCode.QUERY_INVALID,
-                message=f"T3 simulation query error: {exc}",
+                message="Simulation evidence service is unavailable.",
                 details={},
+                trace_id=trace_id,
             )
 
 

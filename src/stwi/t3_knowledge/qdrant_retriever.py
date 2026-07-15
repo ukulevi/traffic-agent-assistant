@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import uuid
 from datetime import datetime
 from typing import Any
 
@@ -170,8 +171,6 @@ class QdrantRetriever:
 
     def retrieve(self, query: RetrievalQuery) -> RetrievalResult:
         """Hybrid retrieval: dense + sparse, with effective-date + jurisdiction filter."""
-        from qdrant_client.models import FieldCondition, Filter, MatchValue, Prefetch, SearchRequest
-
         # Prompt injection detection (mirrors FakeRetriever policy)
         suspicious_patterns = [
             "ignore previous instructions",
@@ -185,10 +184,37 @@ class QdrantRetriever:
                 return RetrievalResult(
                     structured_failure=StructuredFailure(
                         code=FailureCode.PROMPT_INJECTION,
-                        message=f"Query contains suspicious pattern: {pattern}",
-                        details={"query_text": query.query_text[:100]},
+                        message="Query was rejected by retrieval safety policy.",
+                        details={"matched_policy": pattern},
                     )
                 )
+
+        try:
+            return self._retrieve_validated(query)
+        except Exception:
+            trace_id = str(uuid.uuid4())
+            logger.error("Qdrant retrieval failed trace_id=%s", trace_id)
+            return RetrievalResult(
+                structured_failure=StructuredFailure(
+                    code=FailureCode.TIMEOUT,
+                    message="Legal retrieval service is unavailable.",
+                    details={},
+                    trace_id=trace_id,
+                )
+            )
+
+    def _retrieve_validated(self, query: RetrievalQuery) -> RetrievalResult:
+        """Execute a validated query; public boundary redacts every failure."""
+        from qdrant_client.models import (
+            DatetimeRange,
+            FieldCondition,
+            Filter,
+            MatchValue,
+            NamedSparseVector,
+            NamedVector,
+            SearchRequest,
+            SparseVector,
+        )
 
         client = self._get_client()
         jurisdiction = query.jurisdiction or "VN"
@@ -200,9 +226,11 @@ class QdrantRetriever:
             FieldCondition(key="superseded", match=MatchValue(value=False)),
         ]
         # Note: Qdrant range filter on ISO date strings works lexicographically for YYYY-MM-DD
-        from qdrant_client.models import FieldCondition, Range
         must_conditions.append(
-            FieldCondition(key="effective_from", range=Range(lte=scenario_date))
+            FieldCondition(
+                key="effective_from",
+                range=DatetimeRange(lte=query.scenario_time.date()),
+            )
         )
 
         q_filter = Filter(must=must_conditions)
@@ -210,41 +238,44 @@ class QdrantRetriever:
         dense_vec = self._embed(query.query_text)
         sparse_raw = self._build_sparse_vector(query.query_text)
 
-        try:
-            from qdrant_client.models import SparseVector as QSparseVector
-
-            results = client.query_points(
-                collection_name=self._collection,
-                prefetch=[
-                    Prefetch(
-                        query=dense_vec,
-                        using="dense",
-                        filter=q_filter,
-                        limit=query.limit * 2,
-                    ),
-                    Prefetch(
-                        query=QSparseVector(
+        batches = client.search_batch(
+            collection_name=self._collection,
+            requests=[
+                SearchRequest(
+                    vector=NamedVector(name="dense", vector=dense_vec),
+                    filter=q_filter,
+                    limit=query.limit * 2,
+                    with_payload=True,
+                ),
+                SearchRequest(
+                    vector=NamedSparseVector(
+                        name="sparse",
+                        vector=SparseVector(
                             indices=sparse_raw["indices"],
                             values=sparse_raw["values"],
                         ),
-                        using="sparse",
-                        filter=q_filter,
-                        limit=query.limit * 2,
                     ),
-                ],
-                query=dense_vec,  # RRF fusion
-                using="dense",
-                limit=query.limit,
-            ).points
-        except Exception as exc:
-            logger.exception("Qdrant retrieval failed: %s", exc)
-            return RetrievalResult(
-                structured_failure=StructuredFailure(
-                    code=FailureCode.TIMEOUT,
-                    message=f"Qdrant retrieval error: {exc}",
-                    details={},
-                )
-            )
+                    filter=q_filter,
+                    limit=query.limit * 2,
+                    with_payload=True,
+                ),
+            ],
+        )
+        # Reciprocal-rank fusion is deterministic and compatible with the
+        # Qdrant 1.9.7 server pinned by the integration harness.
+        fused_scores: dict[Any, float] = {}
+        points: dict[Any, Any] = {}
+        for batch in batches:
+            for rank, point in enumerate(batch, start=1):
+                fused_scores[point.id] = fused_scores.get(point.id, 0.0) + 1.0 / (60 + rank)
+                points[point.id] = point
+        results = [
+            points[point_id]
+            for point_id, _score in sorted(
+                fused_scores.items(),
+                key=lambda item: (-item[1], str(item[0])),
+            )[: query.limit]
+        ]
 
         # Build citations from payload, filter expired effective_to
         citations: list[Citation] = []
