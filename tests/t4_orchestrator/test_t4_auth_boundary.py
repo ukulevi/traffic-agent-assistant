@@ -14,6 +14,7 @@ except ImportError:
 
 from stwi.config.runtime import RuntimeMode, RuntimeSettings
 from stwi.t4_orchestrator.auth import (
+    PrincipalResolutionError,
     PrincipalRole,
     ProvisionalBodyPrincipalResolver,
     ServerPrincipal,
@@ -51,6 +52,42 @@ def app_for(store: InMemoryJobStore, principal: ServerPrincipal) -> object:
 
 @unittest.skipUnless(HAS_FASTAPI, "fastapi not installed")
 class TestAuthBoundary(unittest.TestCase):
+    def test_missing_trusted_principal_fails_closed_with_stable_code(self) -> None:
+        from stwi.t4_orchestrator.api import create_app
+
+        class MissingPrincipalResolver:
+            def resolve(self, **_hints: object) -> ServerPrincipal:
+                raise PrincipalResolutionError("upstream token details must not leak")
+
+        app = create_app(
+            store=InMemoryJobStore(),
+            orchestrator=WhatIfOrchestrator(
+                surrogate=FakeSurrogateForecaster(default_scenario=safe_scenario())
+            ),
+            principal_resolver=MissingPrincipalResolver(),
+        )
+        response = TestClient(app).post("/api/v1/what-if-jobs", json=body())
+
+        self.assertEqual(response.status_code, 401)
+        detail = response.json()["detail"]
+        self.assertEqual(detail["code"], "AUTH_PRINCIPAL_REQUIRED")
+        self.assertIn("trace_id", detail)
+        self.assertNotIn("token details", response.text)
+
+    def test_create_returns_resolved_identity_metadata(self) -> None:
+        principal = ServerPrincipal(
+            tenant_id=TENANT,
+            operator_id="operator-a",
+            roles=frozenset({PrincipalRole.OPERATOR}),
+        )
+        response = TestClient(app_for(InMemoryJobStore(), principal)).post(
+            "/api/v1/what-if-jobs", json=body()
+        )
+
+        self.assertEqual(response.status_code, 202)
+        self.assertEqual(response.json()["tenant_id"], TENANT)
+        self.assertEqual(response.json()["operator_id"], "operator-a")
+
     def test_create_rejects_client_tenant_mismatch(self) -> None:
         client = TestClient(
             app_for(
@@ -90,6 +127,31 @@ class TestAuthBoundary(unittest.TestCase):
         response = other_client.get(f"/api/v1/what-if-jobs/{job_id}")
 
         self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()["detail"]["code"], "AUTH_TENANT_DENIED")
+
+    def test_sse_reconnect_rejects_cross_tenant_principal(self) -> None:
+        store = InMemoryJobStore()
+        owner = ServerPrincipal(
+            tenant_id=TENANT,
+            operator_id="operator-a",
+            roles=frozenset({PrincipalRole.OPERATOR}),
+        )
+        job_id = TestClient(app_for(store, owner)).post(
+            "/api/v1/what-if-jobs", json=body()
+        ).json()["job_id"]
+        other = ServerPrincipal(
+            tenant_id="tenant-b",
+            operator_id="readonly-b",
+            roles=frozenset({PrincipalRole.READONLY}),
+        )
+
+        response = TestClient(app_for(store, other)).get(
+            f"/api/v1/what-if-jobs/{job_id}/events",
+            headers={"Last-Event-ID": "1"},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()["detail"]["code"], "AUTH_TENANT_DENIED")
 
     def test_analyst_cannot_record_operator_decision(self) -> None:
         store = InMemoryJobStore()

@@ -1,7 +1,7 @@
 # STWI — Auth, RBAC, and Tenant-Boundary Design
 
 **Ticket:** `TRA-13` / `STWI-SYM-017`
-**Status:** Approved design; implementation tracked by `TRA-30`.
+**Status:** Approved and implemented by `TRA-30`; duplicate rollout scope is tracked by `TRA-49`.
 **Scope:** Defines the approved boundary. `TRA-30` adds a resolver seam without
 selecting an IdP, storing credentials, or adding a dependency.
 
@@ -220,6 +220,9 @@ offline evidence remains reproducible. That resolver is never production
 identity evidence and does not satisfy any future deployment authentication
 requirement. Production composition rejects both body-derived and static
 principal resolvers even when they are injected explicitly.
+POST, GET, SSE reconnect, and operator-decision endpoints enforce tenant and
+role checks. Denials return stable `AUTH_*` codes plus a `trace_id`; logs omit
+tenant hints, operator hints, credentials, and raw resolver exception text.
 
 ## 11. References
 
