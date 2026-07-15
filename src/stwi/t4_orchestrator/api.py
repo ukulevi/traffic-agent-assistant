@@ -132,22 +132,52 @@ def create_app(
                 tenant_hint=tenant_hint,
                 operator_hint=operator_hint,
             )
-        except PrincipalResolutionError as exc:
+        except (PrincipalResolutionError, RuntimeError, ValueError) as exc:
+            trace_id = str(uuid.uuid4())
+            logger.warning(
+                "Auth boundary denied request code=AUTH_PRINCIPAL_REQUIRED trace_id=%s",
+                trace_id,
+            )
             raise HTTPException(
                 status_code=401,
-                detail="Trusted principal is required",
+                detail={
+                    "code": "AUTH_PRINCIPAL_REQUIRED",
+                    "message": "Trusted principal is required",
+                    "trace_id": trace_id,
+                },
             ) from exc
 
     def require_roles(principal: ServerPrincipal, *roles: PrincipalRole) -> None:
         if not principal.has_any_role(*roles):
+            trace_id = str(uuid.uuid4())
+            logger.warning(
+                "Auth boundary denied request code=AUTH_ROLE_DENIED trace_id=%s",
+                trace_id,
+            )
             raise HTTPException(
                 status_code=403,
-                detail="Principal role is not authorized",
+                detail={
+                    "code": "AUTH_ROLE_DENIED",
+                    "message": "Principal role is not authorized",
+                    "trace_id": trace_id,
+                },
             )
 
     def require_tenant(principal: ServerPrincipal, tenant_id: str) -> None:
         if principal.tenant_id != tenant_id:
-            raise HTTPException(status_code=403, detail="Cross-tenant access is denied")
+            trace_id = str(uuid.uuid4())
+            logger.warning(
+                "Auth boundary denied request code=AUTH_TENANT_DENIED trace_id=%s",
+                trace_id,
+            )
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "code": "AUTH_TENANT_DENIED",
+                    "message": "Cross-tenant access is denied",
+                    "trace_id": trace_id,
+                },
+            )
 
     app = FastAPI(
         title="STWI What-If API",
@@ -218,6 +248,9 @@ def create_app(
             content={
                 "job_id": envelope.job_id,
                 "status": JobStatus.QUEUED.value,
+                "tenant_id": principal.tenant_id,
+                "operator_id": principal.operator_id,
+                "runtime_mode": _settings.mode.value,
                 "message": (
                     "Job accepted. Poll GET /api/v1/what-if-jobs/{job_id} "
                     "or stream GET /api/v1/what-if-jobs/{job_id}/events"
@@ -277,7 +310,19 @@ def create_app(
         require_tenant(principal, envelope.tenant_id)
         require_roles(principal, PrincipalRole.OPERATOR, PrincipalRole.ADMIN)
         if decision_request.operator_id != principal.operator_id:
-            raise HTTPException(status_code=403, detail="Operator identity mismatch")
+            trace_id = str(uuid.uuid4())
+            logger.warning(
+                "Auth boundary denied request code=AUTH_OPERATOR_MISMATCH trace_id=%s",
+                trace_id,
+            )
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "code": "AUTH_OPERATOR_MISMATCH",
+                    "message": "Operator identity mismatch",
+                    "trace_id": trace_id,
+                },
+            )
         if envelope.status not in (
             JobStatus.SUCCEEDED,
             JobStatus.NEEDS_REVIEW,
