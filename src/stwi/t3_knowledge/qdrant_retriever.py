@@ -7,14 +7,15 @@ and superseded=False per project_contract.json policy.
 This module is ONLY imported in integration tests and production code.
 Pure contract tests must use FakeRetriever instead.
 
-Dependencies (install separately, not in pyproject base):
-    pip install qdrant-client>=1.9 fastembed>=0.3
+Dependencies (install through the project knowledge extra):
+    pip install -e .[knowledge]
 """
 
 from __future__ import annotations
 
 import hashlib
 import logging
+import os
 import uuid
 from datetime import datetime
 from typing import Any
@@ -39,6 +40,7 @@ EMBEDDING_DIM = 1024
 
 # Reranker model (version-pinned per contract requirement)
 RERANKER_MODEL = "BAAI/bge-reranker-v2-m3"
+EMBEDDING_MODEL = "BAAI/bge-m3"
 
 
 class QdrantRetriever:
@@ -56,10 +58,15 @@ class QdrantRetriever:
         url: str = "http://localhost:6333",
         api_key: str | None = None,
         collection: str = LEGAL_COLLECTION,
+        embedding_device: str | None = None,
     ) -> None:
         self._url = url
         self._api_key = api_key
         self._collection = collection
+        self._embedding_device = (
+            embedding_device
+            or os.environ.get("STWI_EMBEDDING_DEVICE", "cpu")
+        )
         self._client: Any = None
         self._encoder: Any = None
 
@@ -77,23 +84,33 @@ class QdrantRetriever:
         return self._client
 
     def _get_encoder(self) -> Any:
-        """Lazy-init BGE-m3 encoder via fastembed."""
+        """Lazy-init the contract BGE-m3 encoder."""
         if self._encoder is None:
             try:
-                from fastembed import TextEmbedding
+                from sentence_transformers import SentenceTransformer
             except ImportError as exc:
                 raise ImportError(
-                    "fastembed is required for QdrantRetriever. "
-                    "Install with: pip install fastembed>=0.3"
+                    "sentence-transformers is required for BGE-m3. "
+                    "Install the project knowledge extra."
                 ) from exc
-            self._encoder = TextEmbedding(model_name="BAAI/bge-m3")
+            self._encoder = SentenceTransformer(
+                EMBEDDING_MODEL,
+                device=self._embedding_device,
+            )
         return self._encoder
 
     def _embed(self, text: str) -> list[float]:
         """Embed text with BGE-m3."""
         encoder = self._get_encoder()
-        vectors = list(encoder.embed([text]))
-        return list(vectors[0])
+        vectors = encoder.encode(
+            [text],
+            normalize_embeddings=True,
+            convert_to_numpy=True,
+        )
+        vector = vectors[0]
+        if len(vector) != EMBEDDING_DIM:
+            raise ValueError("BGE-m3 embedding dimension does not match contract")
+        return vector.astype(float).tolist()
 
     def ensure_collection(self) -> None:
         """Create collection if it does not exist."""
@@ -308,4 +325,10 @@ class QdrantRetriever:
         return RetrievalResult(citations=citations)
 
 
-__all__ = ["QdrantRetriever", "LEGAL_COLLECTION", "CASE_COLLECTION", "EMBEDDING_DIM"]
+__all__ = [
+    "QdrantRetriever",
+    "LEGAL_COLLECTION",
+    "CASE_COLLECTION",
+    "EMBEDDING_DIM",
+    "EMBEDDING_MODEL",
+]

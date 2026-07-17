@@ -19,6 +19,18 @@ Sau khi service health, export `STWI_QDRANT_URL`, `STWI_QDRANT_API_KEY` và
 không phải cấu hình production; không mở bind address ra ngoài loopback hoặc
 đưa secret vào Git.
 
+Để chạy một lượt kiểm thử local không lưu secret ra đĩa, dùng runner sau. Nó
+tạo credential ngẫu nhiên trong process, đợi cả hai service healthy, chạy test
+real-adapter và mặc định `down -v` trong `finally` kể cả khi test lỗi:
+
+```powershell
+powershell -File scripts/infra/run_phase3_integration_harness.ps1 `
+  -PythonPath <path-to-project-python>
+```
+
+Chỉ dùng `-KeepServices` khi cần debug có chủ đích; sau đó phải tự chạy
+`docker compose -f infra/harness/compose.phase3.yaml down -v`.
+
 ## Yêu cầu
 
 - Docker Desktop đang chạy với Linux containers.

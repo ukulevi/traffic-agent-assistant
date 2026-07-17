@@ -209,7 +209,7 @@ class RealT3Adapter(T3Adapter):
     """Production T3 adapter using Qdrant + TimescaleDB.
 
     Requires:
-        pip install qdrant-client>=1.9 fastembed>=0.3 'psycopg[binary]>=3.1'
+        pip install -e .[knowledge]
 
     And running Docker services:
         docker compose -f infra/harness/compose.phase3.yaml up -d

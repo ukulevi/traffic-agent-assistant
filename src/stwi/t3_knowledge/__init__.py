@@ -34,7 +34,7 @@ from stwi.t3_knowledge.query_builder import SQLQueryBuilder
 from stwi.t3_knowledge.source_registry import DEFAULT_TRUSTED_SOURCES, SourceTier
 from stwi.t3_knowledge.timescale_executor import DuckDBFakeExecutor
 
-# Real adapters (require optional deps: qdrant-client, fastembed, psycopg)
+# Real adapters (require optional deps: qdrant-client, sentence-transformers, psycopg)
 # Imported lazily so contract tests don't need these installed.
 __all__ = [
     # Contracts
