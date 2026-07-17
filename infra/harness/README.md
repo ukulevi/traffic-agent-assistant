@@ -2,6 +2,23 @@
 
 Cấu hình này chạy image chính thức của [Harness Open Source](https://github.com/harness/harness) tách biệt với runtime STWI. Database và repository được giữ trong các Docker named volume `stwi-harness-data` và `stwi-harness-git`. Cấu hình mặc định không cấp quyền truy cập Docker daemon cho Harness.
 
+## Phase 3 integration services
+
+`compose.phase3.yaml` chỉ dành cho integration test Qdrant/TimescaleDB trên máy
+phát triển. Nó bind service vào loopback mặc định, yêu cầu password/API key từ
+private env file và không có development password. Sao chép
+`.env.phase3.example` thành một tệp private (không commit), thay toàn bộ giá trị
+mẫu, rồi chạy:
+
+```powershell
+docker compose --env-file <private-env-file> -f infra/harness/compose.phase3.yaml up -d
+```
+
+Sau khi service health, export `STWI_QDRANT_URL`, `STWI_QDRANT_API_KEY` và
+`STWI_TSDB_DSN` từ cùng private env file trước khi chạy test integration. Đây
+không phải cấu hình production; không mở bind address ra ngoài loopback hoặc
+đưa secret vào Git.
+
 ## Yêu cầu
 
 - Docker Desktop đang chạy với Linux containers.

@@ -3,24 +3,29 @@ name: stwi-phase3
 # Phase 3 integration services for T3 Knowledge tier.
 # Provides Qdrant (vector DB) and TimescaleDB (read-only simulation results).
 #
-# Usage:
-#   docker compose -f infra/harness/compose.phase3.yaml up -d
-#   docker compose -f infra/harness/compose.phase3.yaml down -v
+# Usage (local integration only):
+#   Copy infra/harness/.env.phase3.example to a private env file, set all
+#   required secrets, then run:
+#   docker compose --env-file <private-env-file> -f infra/harness/compose.phase3.yaml up -d
+#   docker compose --env-file <private-env-file> -f infra/harness/compose.phase3.yaml down -v
 #
-# Health checks: both services must pass before running integration tests.
+# Services bind to loopback by default. This is an isolated integration harness,
+# not a production deployment profile.
 
 services:
   qdrant:
     image: qdrant/qdrant:v1.9.7
     container_name: stwi-qdrant
-    restart: unless-stopped
+    restart: "no"
     ports:
-      - "${QDRANT_HTTP_PORT:-6333}:6333"
-      - "${QDRANT_GRPC_PORT:-6334}:6334"
+      - "${STWI_HARNESS_BIND_ADDRESS:-127.0.0.1}:${QDRANT_HTTP_PORT:-6333}:6333"
+      - "${STWI_HARNESS_BIND_ADDRESS:-127.0.0.1}:${QDRANT_GRPC_PORT:-6334}:6334"
     volumes:
       - qdrant-storage:/qdrant/storage
     environment:
       QDRANT__LOG_LEVEL: INFO
+      QDRANT__SERVICE__API_KEY: ${STWI_QDRANT_API_KEY:?set STWI_QDRANT_API_KEY in a private env file}
+      QDRANT__SERVICE__READ_ONLY_API_KEY: ${STWI_QDRANT_READ_ONLY_API_KEY:?set STWI_QDRANT_READ_ONLY_API_KEY in a private env file}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
       interval: 10s
@@ -31,18 +36,19 @@ services:
   timescaledb:
     image: timescale/timescaledb:2.14.2-pg16
     container_name: stwi-timescaledb
-    restart: unless-stopped
+    restart: "no"
     ports:
-      - "${TSDB_PORT:-5432}:5432"
+      - "${STWI_HARNESS_BIND_ADDRESS:-127.0.0.1}:${TSDB_PORT:-5432}:5432"
     volumes:
       - timescaledb-data:/var/lib/postgresql/data
       - ./timescaledb-init:/docker-entrypoint-initdb.d:ro
     environment:
-      POSTGRES_DB: ${TSDB_DB:-stwi}
-      POSTGRES_USER: ${TSDB_USER:-stwi_admin}
-      POSTGRES_PASSWORD: ${TSDB_PASSWORD:-stwi_dev_password}
+      POSTGRES_DB: ${STWI_TSDB_DB:-stwi}
+      POSTGRES_USER: ${STWI_TSDB_ADMIN_USER:-stwi_admin}
+      POSTGRES_PASSWORD: ${STWI_TSDB_PASSWORD:?set STWI_TSDB_PASSWORD in a private env file}
+      STWI_READER_PASSWORD: ${STWI_READER_PASSWORD:?set STWI_READER_PASSWORD in a private env file}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${TSDB_USER:-stwi_admin} -d ${TSDB_DB:-stwi}"]
+      test: ["CMD-SHELL", "pg_isready -U ${STWI_TSDB_ADMIN_USER:-stwi_admin} -d ${STWI_TSDB_DB:-stwi}"]
       interval: 10s
       timeout: 5s
       retries: 5

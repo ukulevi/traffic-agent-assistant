@@ -4,13 +4,14 @@ These tests SKIP automatically when the required services or optional
 dependencies are not available.  They are NOT counted towards contract
 test coverage — use test_t3_contracts.py for that.
 
-Run against live Docker services:
-    docker compose -f infra/harness/compose.phase3.yaml up -d
+Run against live Docker services after supplying a private env file:
+    docker compose --env-file <private-env-file> -f infra/harness/compose.phase3.yaml up -d
     python -m unittest tests.test_t3_integration -v
 
 Environment variables (optional overrides):
-    STWI_QDRANT_URL       default http://localhost:6333
-    STWI_TSDB_DSN         default postgresql://stwi_reader_user:stwi_reader_dev_password@localhost/stwi
+    STWI_QDRANT_URL       required when running Qdrant tests
+    STWI_QDRANT_API_KEY   required write key for this isolated test collection
+    STWI_TSDB_DSN         required reader-role DSN for TimescaleDB tests
 """
 
 from __future__ import annotations
@@ -25,11 +26,9 @@ from stwi.t3_knowledge.corpus_ingestion import ingest_law_35_2024_qh15, ingest_l
 from stwi.t3_knowledge.query_builder import SQLQueryBuilder
 from stwi.t3_knowledge.timescale_executor import DuckDBFakeExecutor
 
-QDRANT_URL = os.environ.get("STWI_QDRANT_URL", "http://localhost:6333")
-TSDB_DSN = os.environ.get(
-    "STWI_TSDB_DSN",
-    "postgresql://stwi_reader_user:stwi_reader_dev_password@localhost/stwi",
-)
+QDRANT_URL = os.environ.get("STWI_QDRANT_URL")
+QDRANT_API_KEY = os.environ.get("STWI_QDRANT_API_KEY")
+TSDB_DSN = os.environ.get("STWI_TSDB_DSN")
 
 TEST_JOB_ID = UUID("00000000-0000-0000-0000-000000000001")
 TEST_TENANT = "test-tenant"
@@ -37,9 +36,15 @@ TEST_TENANT = "test-tenant"
 
 def _qdrant_available() -> bool:
     """Check if Qdrant is reachable."""
+    if not QDRANT_URL or not QDRANT_API_KEY:
+        return False
     try:
         import urllib.request
-        urllib.request.urlopen(f"{QDRANT_URL}/healthz", timeout=2)
+        request = urllib.request.Request(
+            f"{QDRANT_URL}/healthz",
+            headers={"api-key": QDRANT_API_KEY},
+        )
+        urllib.request.urlopen(request, timeout=2)
         return True
     except Exception:
         return False
@@ -63,6 +68,8 @@ def _qdrant_client_available() -> bool:
 
 
 def _tsdb_available() -> bool:
+    if not TSDB_DSN:
+        return False
     """Check if TimescaleDB is reachable."""
     if not _psycopg_available():
         return False
@@ -168,13 +175,17 @@ class TestDuckDBFakeExecutor(unittest.TestCase):
 # ============================================================
 
 @unittest.skipUnless(_qdrant_client_available(), "qdrant-client/fastembed not installed")
-@unittest.skipUnless(_qdrant_available(), "Qdrant service not reachable at " + QDRANT_URL)
+@unittest.skipUnless(_qdrant_available(), "Qdrant service/configuration unavailable")
 class TestQdrantRetrieverIntegration(unittest.TestCase):
     """Integration tests against a live Qdrant instance."""
 
     def setUp(self):
         from stwi.t3_knowledge.qdrant_retriever import QdrantRetriever
-        self.retriever = QdrantRetriever(url=QDRANT_URL, collection="stwi_legal_test")
+        self.retriever = QdrantRetriever(
+            url=QDRANT_URL,
+            api_key=QDRANT_API_KEY,
+            collection="stwi_legal_test",
+        )
         self.retriever.ensure_collection()
         # Index synthetic test chunks
         for chunk in ingest_law_35_2024_qh15() + ingest_law_36_2024_qh15():
