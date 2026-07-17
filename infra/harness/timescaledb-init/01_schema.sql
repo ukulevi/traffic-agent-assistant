@@ -19,15 +19,6 @@ BEGIN
 END
 $$;
 
--- Create login user for the reader role (password overridden via env in production)
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'stwi_reader_user') THEN
-    CREATE USER stwi_reader_user WITH PASSWORD 'stwi_reader_dev_password';
-  END IF;
-END
-$$;
-
 GRANT stwi_reader TO stwi_reader_user;
 
 -- Default statement timeout: 10 s for all reader connections
