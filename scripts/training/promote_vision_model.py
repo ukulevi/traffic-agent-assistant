@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from stwi.tooling.vision_training.promotion import (
+    DEFAULT_MVP_MAP50,
     REQUIRED_STWI_CLASSES,
     metric_value,
     promote_artifact,
@@ -22,7 +23,7 @@ def main() -> int:
         type=Path,
         default=Path("data/derived/private/vision_models/official"),
     )
-    parser.add_argument("--min-map50", type=float, default=0.85)
+    parser.add_argument("--min-map50", type=float, default=DEFAULT_MVP_MAP50)
     parser.add_argument("--approver", required=True)
     parser.add_argument("--notes", required=True)
     args = parser.parse_args()

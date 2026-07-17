@@ -8,6 +8,10 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from stwi.utils.file_hash import sha256_file
+from stwi.tooling.vision_training.promotion import (
+    DEFAULT_MVP_MAP50,
+    metric_value,
+)
 
 
 DEFAULT_OFFICIAL_MANIFEST = Path(
@@ -54,6 +58,13 @@ class LocalVisionModelArtifact:
             raise LocalVisionModelError("official model requires finalized privacy review")
         if self.promotion_status != "official_mvp_primary":
             raise LocalVisionModelError("model artifact is not promoted as official MVP primary")
+        map50 = metric_value(
+            dict(self.metrics), ("metrics/mAP50(B)", "metrics/mAP50")
+        )
+        if map50 is None or map50 < DEFAULT_MVP_MAP50:
+            raise LocalVisionModelError(
+                "official model does not meet the MVP mAP50 promotion gate"
+            )
         if not self.weights.is_file():
             raise LocalVisionModelError(f"missing weights: {self.weights}")
         if sha256_file(self.weights) != self.weights_sha256:

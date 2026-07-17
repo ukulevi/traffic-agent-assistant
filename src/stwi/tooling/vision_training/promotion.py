@@ -13,6 +13,7 @@ from stwi.utils.file_hash import sha256_file
 
 
 REQUIRED_STWI_CLASSES = {"car", "motorcycle", "bus", "truck"}
+DEFAULT_MVP_MAP50 = 0.85
 
 
 def is_finite_number(value: Any, *, minimum: float = 0.0, maximum: float | None = None) -> bool:
