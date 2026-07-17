@@ -1,18 +1,19 @@
 {
   "schema_version": "1.0",
-  "registry_purpose": "Project-owned SOP candidates; draft documents are never indexed.",
+  "registry_purpose": "Project-owned playbook/SOP candidates; draft documents are never indexed.",
   "documents": [
     {
       "document_id": "stwi-demo-operator-sop-v1",
-      "title": "SOP demo: Operator SmartTraffic What-If",
+      "title": "Demo Operator Playbook: SmartTraffic What-If",
       "version": "1.0",
-      "owner": "pending_user_approval",
-      "approval_status": "draft",
-      "approval_date": null,
-      "approved_for_index": false,
-      "scope": "Offline MVP demonstration only; decision-support and no automatic actuation.",
+      "owner": "STWI Project Owner",
+      "approved_by": "STWI Project Owner",
+      "approval_status": "approved",
+      "approval_date": "2026-07-17",
+      "approved_for_index": true,
+      "scope": "Solo academic/demo project using synthetic simulation data; decision-support only, no production claims and no automatic actuation.",
       "source_path": "docs/ops/demo_operator_sop_v1.md",
-      "content_hash": "pending_validation"
+      "content_hash": "sha256:cc78c12d453b3b7f11447ad234d55a4fea841d0f00a11d09154af143309ba895"
     }
   ]
 }
