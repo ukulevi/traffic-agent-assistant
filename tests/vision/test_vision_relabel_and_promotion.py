@@ -53,6 +53,7 @@ from stwi.tooling.vision_training.external_models import (
     write_stream_with_sha256,
 )
 from stwi.tooling.vision_training.promotion import (
+    DEFAULT_MVP_MAP50,
     promote_artifact,
     validate_artifact_for_promotion,
 )
@@ -305,4 +306,31 @@ class VisionRelabelAndPromotionTest(unittest.TestCase):
 
             weights.write_bytes(b"tampered")
             with self.assertRaisesRegex(LocalVisionModelError, "checksum mismatch"):
+                load_official_vision_model_artifact(manifest_path)
+
+    def test_official_loader_rejects_below_gate_metric(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            weights = root / "best.pt"
+            weights.write_bytes(b"weights")
+            manifest = {
+                "model_version": "below-gate",
+                "weights": str(weights),
+                "weights_sha256": sha256_file(weights),
+                "dataset_version": "unit_v001",
+                "classes": ["bus", "car", "motorbike", "truck"],
+                "stwi_class_map": {
+                    "bus": "bus",
+                    "car": "car",
+                    "motorbike": "motorcycle",
+                    "truck": "truck",
+                },
+                "privacy_status": "visual_spot_reviewed_agent",
+                "promotion_status": "official_mvp_primary",
+                "metrics": {"metrics/mAP50(B)": DEFAULT_MVP_MAP50 - 0.01},
+            }
+            manifest_path = root / "model_artifact.json"
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+            with self.assertRaisesRegex(LocalVisionModelError, "mAP50 promotion gate"):
                 load_official_vision_model_artifact(manifest_path)

@@ -755,6 +755,19 @@ Every training run writes `stwi_model_artifact.json` with:
 
 ## Promotion Gate
 
+The local runtime independently rechecks the MVP promotion metric. A manifest
+labelled `official_mvp_primary` is rejected when its recorded `mAP50` is below
+`0.85`, even if its weight checksum and class map are valid. Do not lower this
+gate to make a demo appear ready. Check the current private artifact without
+reading frames or loading the detector:
+
+```powershell
+python scripts/validation/validate_official_vision_artifact.py
+```
+
+`blocked` means camera evidence must remain degraded/offline for the demo until
+a reviewed, properly promoted candidate passes the gate.
+
 Promote the model only when:
 
 - validation/test metrics are recorded and not overclaimed;
