@@ -1,12 +1,26 @@
 {
   "schema_version": "1.0",
-  "policy_id": "phase2-mock-first-v1",
-  "purpose": "Temporary Phase-2 baseline and GCN-LSTM implementation while real adjacent-road camera and sensor coverage is unavailable.",
+  "policy_id": "phase2-simulation-first-demo-v1",
+  "purpose": "Approved simulation-first scope for a solo academic/demo project with no field deployment claim.",
+  "data_classification": "synthetic_simulation_demo_only",
+  "demo_scope_approved": true,
+  "production_scope_deferred": true,
   "approved_forecast_inputs": [
     {
       "dataset_id": "stwi_phase1_mock_v1",
       "path": "data/derived/private/phase1_mock",
-      "scope": "development, contract tests, baseline and GCN-LSTM smoke training only"
+      "scope": "offline demo, contract tests, baseline evaluation and GCN-LSTM training only",
+      "source_kind": "deterministic analytical traffic simulation",
+      "production_representativeness": "not_claimed"
+    }
+  ],
+  "approved_scenario_inputs": [
+    {
+      "dataset_id": "stwi_sumo_mock20_v1",
+      "path": "data/derived/private/phase2_sumo",
+      "scope": "offline SUMO scenario training and synthetic uncertainty/OOD calibration only",
+      "source_kind": "offline_eclipse_sumo_runs",
+      "field_calibrated": false
     }
   ],
   "prohibited_forecast_inputs": [
@@ -21,19 +35,39 @@
     {
       "dataset_id": "rtsp_quarantine_frames",
       "reason": "frames must be converted to approved 5-minute aggregates before forecast use"
+    },
+    {
+      "dataset_id": "detector_training_frames",
+      "reason": "independent detector-training images are not chronological network observations and cannot supply speed without tracking and geometric calibration"
     }
   ],
   "surrogate_policy": {
     "training_allowed": false,
-    "reason": "No calibrated SUMO scenario dataset is available",
-    "required_source": "offline calibrated SUMO runs"
+    "training_allowed_after_gate": true,
+    "reason": "Training becomes eligible only after the versioned SUMO scenario dataset passes the synthetic demo validation gate.",
+    "required_source": "validated offline Eclipse SUMO runs",
+    "calibration_scope": "synthetic_simulation_demo_only"
   },
-  "replacement_gate": [
+  "demo_acceptance": [
     "approved 20-node registry and capacity table",
-    "versioned real 5-minute aggregates",
+    "versioned synthetic 5-minute volume and speed aggregates",
     "chronological train/validation/test split",
     "train-only scaler",
-    "quality and missing-mask report"
+    "quality and missing-mask report",
+    "visible simulation-only disclosure",
+    "no automatic actuation"
+  ],
+  "production_deferred_requirements": [
+    "versioned real 5-minute aggregates",
+    "field-calibrated SUMO demand, speed and signal plans",
+    "standard-profile performance evidence",
+    "approved production deployment baseline"
+  ],
+  "prohibited_claims": [
+    "production forecast accuracy",
+    "field-calibrated SUMO",
+    "real sensor observations",
+    "production-ready recommendations"
   ],
   "external_release": false
 }

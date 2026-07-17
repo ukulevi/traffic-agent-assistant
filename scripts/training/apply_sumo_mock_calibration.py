@@ -79,7 +79,7 @@ def main() -> int:
     manifest["calibration"] = {
         "volume_expansion_factor": factor,
         "normalized_error": selected["normalized_error"],
-        "scope": "synthetic_mock_only",
+        "scope": "synthetic_simulation_demo_only",
     }
     manifest["artifacts"]["scenario_dataset.npz"] = sha256_file(dataset_path)
     manifest["artifacts"]["calibration_report.json"] = sha256_file(

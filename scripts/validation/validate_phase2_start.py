@@ -1,4 +1,4 @@
-"""Validate that mock-first Phase 2 has started without weakening gates."""
+"""Validate the approved simulation-first demo Phase 2 boundary."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
@@ -117,7 +117,7 @@ def main() -> int:
     forecast_kpi_pass = improvement >= 0.20 and test_improvement >= 0.20
     report = {
         "schema_version": "1.0",
-        "status": "phase2_started_mock_only",
+        "status": "phase2_started_simulation_demo_only",
         "validated_at_utc": datetime.now(timezone.utc).isoformat(),
         "dataset_id": manifest["dataset_id"],
         "data_policy": policy["policy_id"],
@@ -142,7 +142,9 @@ def main() -> int:
         ),
         "production_ready": False,
         "surrogate_status": "blocked_until_calibrated_sumo_dataset",
-        "real_data_replacement_required": True,
+        "demo_scope_approved": True,
+        "real_data_replacement_required_for_demo": False,
+        "real_data_replacement_required_for_production": True,
     }
     output = args.training.parent / "phase2_readiness_report.json"
     temporary = output.with_suffix(".json.tmp")

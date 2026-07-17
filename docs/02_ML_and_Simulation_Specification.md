@@ -41,6 +41,20 @@ Mạng đường thật có hướng, nhưng GCN MVP sử dụng adjacency trọ
 
 ## 2. Dữ liệu, split và baseline
 
+### 2.0. Phạm vi demo simulation-first
+
+Đối với solo academic/demo project đã được owner phê duyệt, GCN–LSTM có thể
+được huấn luyện trên time-series tổng hợp có nhãn
+`synthetic_simulation_demo_only`; surrogate có thể được huấn luyện và
+calibration trên SUMO validation split. Mọi metric chỉ có ý nghĩa trong
+synthetic holdout. Dữ liệu thật và benchmark phần cứng chuẩn vẫn là yêu cầu
+riêng nếu sau này mở lại production scope, nhưng không chặn demo hiện tại.
+
+Detector-training frames không được xem là time-series 5 phút. Chỉ output đã
+qua tracking, ROI và geometric calibration mới có thể trở thành camera
+aggregate; nếu thiếu các bước đó thì speed phải unavailable và source phải
+degraded/offline.
+
 ### 2.1. Split chống leakage
 
 - Train/validation/test được chia theo thời gian, không random từng row.

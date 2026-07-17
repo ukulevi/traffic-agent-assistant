@@ -1,17 +1,18 @@
 {
   "schema_version": "1.0",
-  "handoff_id": "phase3-mock-first-v1",
+  "handoff_id": "phase3-simulation-first-demo-v1",
   "handoff_document": "docs/handoffs/PHASE3_AGENT_HANDOFF.md",
-  "gate_report": "data/derived/private/phase2_surrogate/provisional_gate_p2_report.json",
-  "forecast_checkpoint": "data/derived/private/phase2_forecast/gcn_lstm_mock_v2/model.pt",
-  "surrogate_checkpoint": "data/derived/private/phase2_surrogate/v3/ensemble.pt",
+  "gate_report": "data/derived/private/phase2_surrogate/demo_gate_p2_report.json",
+  "forecast_checkpoint": "data/derived/private/phase2_forecast/gcn_lstm_simulation_demo_v1/model.pt",
+  "surrogate_checkpoint": "data/derived/private/phase2_surrogate/simulation_demo_v1/ensemble.pt",
   "scenario_dataset": "data/derived/private/phase2_sumo/scenario_dataset.npz",
   "phase3_handoff_allowed": true,
   "allowed_scope": [
     "Phase-3 legal corpus ingestion",
     "constrained SimulationQuery development",
     "RAG and citation contract tests",
-    "mock-only T2-to-T3 integration"
+    "simulation-only T2-to-T3 integration",
+    "solo academic/demo operator workflow"
   ],
   "prohibited_claims": [
     "production forecast accuracy",
@@ -21,7 +22,13 @@
   ],
   "fail_closed": true,
   "human_approval_required": true,
-  "real_data_rework_required": true,
+  "demo_scope_approved": true,
+  "demo_profile_gate_passed": true,
+  "standard_benchmark_gate_passed": false,
+  "benchmark_profile_deferred_for_production": true,
+  "production_scope_deferred": true,
+  "real_data_rework_required_for_demo": false,
+  "real_data_rework_required_for_production": true,
   "gate_p3_acceptance": {
     "retrieval_questions_min": 50,
     "citation_precision_min": 0.95,

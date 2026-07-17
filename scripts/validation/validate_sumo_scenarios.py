@@ -27,6 +27,10 @@ def main() -> int:
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     if manifest.get("source") != "offline_eclipse_sumo_runs":
         errors.append("scenario source is not offline Eclipse SUMO")
+    if manifest.get("data_classification") != "synthetic_simulation_demo_only":
+        errors.append("scenario data classification is not simulation-only")
+    if manifest.get("production_ready") is not False:
+        errors.append("synthetic scenario dataset must not claim production readiness")
     network = args.dataset / "mock_20_node.net.xml"
     if sha256_file(network) != manifest.get("network_sha256"):
         errors.append("SUMO network hash mismatch")
@@ -110,7 +114,7 @@ def main() -> int:
         "split_counts": {name: int(len(indices)) for name, indices in splits.items()},
         "event_coverage_each_split": True,
         "family_leakage": False,
-        "calibration_scope": "synthetic_mock_only",
+        "calibration_scope": "synthetic_simulation_demo_only",
         "calibration_normalized_error": calibration["selected_normalized_error"],
         "production_ready": False,
     }
