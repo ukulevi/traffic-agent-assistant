@@ -26,6 +26,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -49,6 +51,47 @@ CITATION_PRECISION_MIN = 0.95
 UNSUPPORTED_CLAIM_RATE_MAX = 0.0
 # FakeRetriever must also fail closed for unanswerable/pre-effective queries.
 FALSE_POSITIVE_RATE_MAX = 0.0
+
+
+def run_unittest_module(module: str) -> dict[str, object]:
+    """Run one required test module and return redacted verification evidence."""
+    environment = os.environ.copy()
+    source_root = str(ROOT / "src")
+    environment["PYTHONPATH"] = os.pathsep.join(
+        value for value in (source_root, environment.get("PYTHONPATH")) if value
+    )
+    try:
+        completed = subprocess.run(
+            [sys.executable, "-m", "unittest", module],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            timeout=120,
+            check=False,
+            env=environment,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return {
+            "module": module,
+            "status": "not_verified",
+        }
+
+    return {
+        "module": module,
+        "status": "pass" if completed.returncode == 0 else "fail",
+        "returncode": completed.returncode,
+    }
+
+
+def run_required_verification() -> dict[str, dict[str, object]]:
+    """Execute the test evidence that the P3 gate previously asserted."""
+    contract = run_unittest_module("tests.t3_knowledge.test_t3_contracts")
+    security = run_unittest_module("tests.t3_knowledge.test_t3_security")
+    return {
+        "fake_adapter": contract,
+        "security": security,
+        "no_raw_sql": security,
+    }
 
 
 def evaluate_retrieval(
@@ -217,6 +260,7 @@ def main(corpus_dir: Path, output_dir: Path) -> int:
     # ── Run retrieval evaluation ──────────────────────────────────────
     print(f"Running {len(RETRIEVAL_QUESTIONS)} retrieval questions...")
     eval_report = evaluate_retrieval(retriever, validator)
+    verification = run_required_verification()
 
     # ── Gate criteria ─────────────────────────────────────────────────
     gate_criteria = {
@@ -229,10 +273,9 @@ def main(corpus_dir: Path, output_dir: Path) -> int:
         "citation_precision_ok": eval_report["citation_precision"] >= CITATION_PRECISION_MIN,
         "unsupported_claim_ok": eval_report["unsupported_claim_rate"] <= UNSUPPORTED_CLAIM_RATE_MAX,
         "false_positive_ok": eval_report["false_positive_rate"] <= FALSE_POSITIVE_RATE_MAX,
-        # These are verified by contract tests; asserted true here if tests pass
-        "fake_adapter_pass": True,   # test_t3_contracts.py
-        "security_pass": True,       # test_t3_security.py
-        "no_raw_sql_path": True,     # SQLQueryBuilder never accepts raw SQL from LLM
+        "fake_adapter_pass": verification["fake_adapter"]["status"] == "pass",
+        "security_pass": verification["security"]["status"] == "pass",
+        "no_raw_sql_path": verification["no_raw_sql"]["status"] == "pass",
     }
     gate_pass = all(gate_criteria.values())
 
@@ -250,6 +293,7 @@ def main(corpus_dir: Path, output_dir: Path) -> int:
             "false_positive_rate_note": "Unanswerable/pre-effective queries must return no citations.",
         },
         "gate_criteria": gate_criteria,
+        "verification": verification,
         "corpus": corpus_report,
         "retrieval": {
             "total_questions": eval_report["total_questions"],
