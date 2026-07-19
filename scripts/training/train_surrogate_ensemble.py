@@ -15,7 +15,7 @@ from typing import Any
 import numpy as np
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
@@ -88,6 +88,10 @@ def main() -> int:
     )
     if manifest.get("validation", {}).get("status") != "provisional_pass":
         raise ValueError("SUMO scenario validation must pass first")
+    if manifest.get("data_classification") != "synthetic_simulation_demo_only":
+        raise ValueError("surrogate demo training requires simulation-only data")
+    if manifest.get("production_ready") is not False:
+        raise ValueError("synthetic SUMO data must not claim production readiness")
     with np.load(
         args.dataset / "scenario_dataset.npz", allow_pickle=False
     ) as dataset:
@@ -368,6 +372,9 @@ def main() -> int:
         "status": "provisional_trained",
         "trained_at_utc": datetime.now(timezone.utc).isoformat(),
         "dataset_id": manifest["dataset_id"],
+        "data_policy": manifest["data_policy"],
+        "data_classification": manifest["data_classification"],
+        "production_representativeness": "not_claimed",
         "models": model_reports,
         "ensemble_weights": {
             name: float(weights[index])

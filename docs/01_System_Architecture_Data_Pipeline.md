@@ -22,6 +22,21 @@
 - Không tuyên bố inference thị giác đồng thời trên 1.000 video stream.
 - Video được xử lý tại biên; chỉ aggregate và audit metadata được truyền/lưu.
 
+### 1.1. Chế độ simulation-first cho demo cá nhân
+
+Khi không có phần cứng hiện trường, dữ liệu cảm biến thật hoặc RTSP hợp lệ,
+demo được phép dùng dataset tổng hợp có version với phân loại
+`synthetic_simulation_demo_only`. Chế độ này giữ nguyên mạng 20 node, tensor,
+missing mask, API và safety contract, nhưng không được dùng để tuyên bố độ chính
+xác production, calibration hiện trường hoặc dữ liệu cảm biến thật.
+
+Baseline forecast dùng time-series tổng hợp 5 phút từ generator có seed và
+provenance. Surrogate dùng các lượt chạy Eclipse SUMO offline. Ảnh/frame dùng
+để huấn luyện detector không phải chuỗi quan sát giao thông; chúng không được
+đưa trực tiếp vào GCN–LSTM hoặc dùng để suy ra tốc độ khi thiếu tracking và
+homography. Trong demo, camera không đủ gate phải hiển thị `degraded` hoặc
+`simulation_only` thay vì phát hành aggregate hợp lệ giả.
+
 ## 2. Thu thập dữ liệu
 
 ### 2.1. CCTV

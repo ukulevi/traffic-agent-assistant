@@ -1,4 +1,4 @@
-"""Generate provisional Phase-2 scenarios from real offline SUMO runs."""
+"""Generate provisional Phase-2 scenarios from offline SUMO runs."""
 
 from __future__ import annotations
 
@@ -391,7 +391,7 @@ def main() -> int:
     )
     calibration = {
         "schema_version": "1.0",
-        "calibration_scope": "synthetic_mock_observations_only",
+        "calibration_scope": "synthetic_simulation_demo_only",
         "production_calibration": False,
         "observed_mean_volume_speed": observed_mean.tolist(),
         "candidate_runs": calibration_runs,
@@ -425,6 +425,8 @@ def main() -> int:
         "dataset_id": "stwi_sumo_mock20_v1",
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "source": "offline_eclipse_sumo_runs",
+        "data_policy": "phase2-simulation-first-demo-v1",
+        "data_classification": "synthetic_simulation_demo_only",
         "sumo_version": runtime.version,
         "network_nodes": len(nodes),
         "network_sha256": sha256_file(network_path),
@@ -434,7 +436,8 @@ def main() -> int:
         "node_order": registry["node_order"],
         "output_order": ["volume_5m", "avg_speed_kmh", "vc_ratio"],
         "split_policy": "scenario family by affected-node geographic holdout",
-        "calibration_scope": "synthetic_mock_only",
+        "calibration_scope": "synthetic_simulation_demo_only",
+        "production_representativeness": "not_claimed",
         "production_ready": False,
         "artifacts": {
             name: sha256_file(args.output / name)

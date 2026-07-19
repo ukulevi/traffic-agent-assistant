@@ -13,7 +13,7 @@ from pathlib import Path
 import numpy as np
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
@@ -31,6 +31,16 @@ def prepare_output(output: Path, replace: bool) -> None:
             raise ValueError("refusing to replace a non-training directory")
         shutil.rmtree(output)
     output.mkdir(parents=True)
+
+
+def limit_indices(indices: np.ndarray, limit: int, *, name: str) -> np.ndarray:
+    """Apply a CLI window limit; zero means use the complete split."""
+    if limit < 0:
+        raise ValueError(f"{name} must be zero or a positive integer")
+    selected = indices if limit == 0 else indices[:limit]
+    if len(selected) == 0:
+        raise ValueError(f"{name} selected an empty split")
+    return selected
 
 
 def main() -> int:
@@ -54,7 +64,8 @@ def main() -> int:
     args = parser.parse_args()
     if args.epochs < 1 or args.batch_size < 1:
         raise ValueError("epochs and batch-size must be positive")
-    prepare_output(args.output, args.replace)
+    if args.max_train_windows < 0 or args.max_val_windows < 0:
+        raise ValueError("window limits must be zero or positive")
 
     try:
         import torch
@@ -77,8 +88,12 @@ def main() -> int:
         Y = tensors["Y"]
         train_indices = tensors["train_indices"]
         val_indices = tensors["val_indices"]
-    train_indices = train_indices[:args.max_train_windows]
-    val_indices = val_indices[:args.max_val_windows]
+    train_indices = limit_indices(
+        train_indices, args.max_train_windows, name="max-train-windows"
+    )
+    val_indices = limit_indices(
+        val_indices, args.max_val_windows, name="max-val-windows"
+    )
     target_mean = Y[train_indices].mean(axis=(0, 1, 2)).astype(np.float32)
     target_std = Y[train_indices].std(axis=(0, 1, 2)).astype(np.float32)
     target_std = np.where(target_std < 1e-6, 1.0, target_std)
@@ -156,6 +171,9 @@ def main() -> int:
         "contract_version": contract["contract_version"],
         "dataset_id": manifest["dataset_id"],
     }
+    # Do not remove a previous valid artifact until training and validation
+    # have both completed successfully.
+    prepare_output(args.output, args.replace)
     checkpoint_path = args.output / "model.pt"
     torch.save(checkpoint, checkpoint_path)
     report = {
@@ -163,7 +181,13 @@ def main() -> int:
         "status": "smoke_pass",
         "trained_at_utc": datetime.now(timezone.utc).isoformat(),
         "dataset_id": manifest["dataset_id"],
-        "data_policy": "phase2-mock-first-v1",
+        "data_policy": manifest.get(
+            "data_policy", "phase2-simulation-first-demo-v1"
+        ),
+        "data_classification": manifest.get(
+            "data_classification", "synthetic_simulation_demo_only"
+        ),
+        "production_representativeness": "not_claimed",
         "epochs": args.epochs,
         "train_windows": int(len(train_indices)),
         "validation_windows": int(len(val_indices)),

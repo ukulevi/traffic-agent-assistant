@@ -114,6 +114,16 @@ or base64 visualization outputs.
 
 See [docs/guides/mvp_demo_runbook.md](./docs/guides/mvp_demo_runbook.md) for the deterministic offline demo flow and aggregate-only evidence boundary.
 
+The approved solo-project demo is simulation-first: versioned synthetic
+five-minute time series feed the baseline model and offline Eclipse SUMO runs
+feed the scenario surrogate. This mode never claims real sensor observations,
+field calibration, production accuracy, or automatic actuation. Validate the
+boundary with:
+
+```powershell
+python scripts/validation/validate_demo_simulation_scope.py
+```
+
 ## AI agent
 
 Quy tắc làm việc bền vững nằm trong [AGENTS.md](./AGENTS.md). Các workflow Codex project-local nằm trong [.agents/skills](./.agents/skills): triển khai, review và release QA.

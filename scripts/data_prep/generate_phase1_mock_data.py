@@ -13,7 +13,7 @@ from pathlib import Path
 import numpy as np
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
@@ -174,6 +174,16 @@ def main() -> int:
     manifest = {
         "schema_version": "1.0",
         "dataset_id": "stwi_phase1_mock_v1",
+        "data_policy": "phase2-simulation-first-demo-v1",
+        "data_classification": "synthetic_simulation_demo_only",
+        "source_provenance": {
+            "kind": "deterministic_analytical_traffic_simulation",
+            "camera_frames_used": False,
+            "field_sensor_observations_used": False,
+        },
+        "demo_scope_approved": True,
+        "production_representativeness": "not_claimed",
+        "production_ready": False,
         "contract_version": contract["contract_version"],
         "network_version": network.version,
         "seed": args.seed,

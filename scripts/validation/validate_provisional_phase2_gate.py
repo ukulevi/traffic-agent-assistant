@@ -29,6 +29,19 @@ def _check_benchmark_profile(benchmark: dict) -> list[str]:
     return _validate(benchmark, _load_contract_profile())
 
 
+def _validate_demo_policy(policy: dict) -> list[str]:
+    errors = []
+    if policy.get("policy_id") != "phase2-simulation-first-demo-v1":
+        errors.append("demo-only gate requires the approved simulation policy")
+    if policy.get("demo_scope_approved") is not True:
+        errors.append("demo scope is not approved")
+    if policy.get("production_scope_deferred") is not True:
+        errors.append("production scope must remain deferred")
+    if policy.get("data_classification") != "synthetic_simulation_demo_only":
+        errors.append("demo data classification is not simulation-only")
+    return errors
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -42,6 +55,14 @@ def main() -> int:
     parser.add_argument(
         "--surrogate", type=Path,
         default=Path("data/derived/private/phase2_surrogate/v3"),
+    )
+    parser.add_argument(
+        "--policy", type=Path,
+        default=Path("data/manifests/phase2_temporary_data_policy.json"),
+    )
+    parser.add_argument(
+        "--demo-only", action="store_true",
+        help="Allow an approved local demo profile without claiming standard-profile compliance.",
     )
     args = parser.parse_args()
     try:
@@ -72,13 +93,20 @@ def main() -> int:
     benchmark = json.loads(
         (args.surrogate / "benchmark_report.json").read_text(encoding="utf-8")
     )
+    policy = json.loads(args.policy.read_text(encoding="utf-8"))
     errors: list[str] = []
+    if args.demo_only:
+        errors.extend(_validate_demo_policy(policy))
     if forecast.get("forecast_kpi_status") != "pass":
         errors.append("forecast did not improve over baselines by 20%")
     if sumo.get("status") != "provisional_pass":
         errors.append("SUMO scenario validation did not pass")
     if surrogate.get("status") != "provisional_trained":
         errors.append("surrogate ensemble was not trained")
+    if surrogate.get("data_policy") != policy.get("policy_id"):
+        errors.append("surrogate data policy does not match the active policy")
+    if surrogate.get("data_classification") != "synthetic_simulation_demo_only":
+        errors.append("surrogate data classification is not simulation-only")
     if set(surrogate.get("models", {})) != {"mlp", "cnn1d", "transformer"}:
         errors.append("heterogeneous surrogate set is incomplete")
     if uncertainty.get("validation_coverage", 0) < 0.89:
@@ -89,7 +117,7 @@ def main() -> int:
         errors.append("surrogate P99 benchmark failed")
 
     benchmark_profile_errors = _check_benchmark_profile(benchmark)
-    if benchmark_profile_errors:
+    if benchmark_profile_errors and not args.demo_only:
         errors.extend(benchmark_profile_errors)
 
     for split, metrics in surrogate.get("splits", {}).items():
@@ -161,7 +189,10 @@ def main() -> int:
 
     report = {
         "schema_version": "1.0",
-        "status": "provisional_pass_for_phase3",
+        "status": (
+            "demo_pass_for_phase3"
+            if args.demo_only else "provisional_pass_for_phase3"
+        ),
         "validated_at_utc": datetime.now(timezone.utc).isoformat(),
         "forecast_gate": {
             "validation_improvement": forecast[
@@ -176,7 +207,7 @@ def main() -> int:
             "scenario_count": sumo["scenario_count"],
             "family_count": sumo["family_count"],
             "calibration_error": sumo["calibration_normalized_error"],
-            "scope": "synthetic_mock_only",
+            "scope": "synthetic_simulation_demo_only",
             "status": "provisional_pass",
         },
         "surrogate_gate": {
@@ -186,8 +217,15 @@ def main() -> int:
             ],
             "p99_ms": benchmark["p99_ms"],
             "benchmark_profile_match": not benchmark_profile_errors,
+            "demo_profile_only": args.demo_only,
+            "standard_profile_rework": (
+                benchmark_profile_errors if args.demo_only else []
+            ),
             "checkpoint_load": "pass",
-            "status": "provisional_pass",
+            "status": (
+                "demo_profile_pass"
+                if args.demo_only else "provisional_pass"
+            ),
         },
         "safety_gate": {
             "ood_probe": ood_decision.status,
@@ -196,15 +234,20 @@ def main() -> int:
             "status": "pass",
         },
         "phase3_handoff_allowed": True,
+        "demo_scope_approved": args.demo_only,
+        "standard_benchmark_gate_passed": not benchmark_profile_errors,
         "production_ready": False,
         "mandatory_rework": [
-            "replace mock observations with real 5-minute aggregates",
-            "recalibrate SUMO against field counts, speed, and signal plans",
-            "retrain forecast and surrogate models",
-            "rerun uncertainty calibration and standard-profile benchmark"
+            "production only: replace synthetic observations with real 5-minute aggregates",
+            "production only: recalibrate SUMO against field counts, speed, and signal plans",
+            "production only: retrain forecast and surrogate models",
+            "production only: rerun uncertainty calibration and standard-profile benchmark"
         ],
     }
-    output = args.surrogate.parent / "provisional_gate_p2_report.json"
+    output = args.surrogate.parent / (
+        "demo_gate_p2_report.json"
+        if args.demo_only else "provisional_gate_p2_report.json"
+    )
     output.write_text(
         json.dumps(report, indent=2) + "\n", encoding="utf-8"
     )
