@@ -1,23 +1,28 @@
-# SOP demo: Operator SmartTraffic What-If
+# Demo Operator Playbook: SmartTraffic What-If
 
 | Thuộc tính | Giá trị |
 |---|---|
 | Mã tài liệu | `stwi-demo-operator-sop-v1` |
 | Phiên bản | 1.0 |
-| Trạng thái | Draft — chưa được phê duyệt để index hoặc vận hành thật |
-| Owner | Chờ project owner chỉ định rõ |
-| Phạm vi | Demo MVP offline, decision-support only |
+| Trạng thái | Đã phê duyệt cho demo và làm corpus candidate; không phải SOP vận hành hiện trường |
+| Owner/Approver | STWI Project Owner |
+| Ngày phê duyệt | 2026-07-17 |
+| Phạm vi | Demo MVP dùng dữ liệu mô phỏng, decision-support only |
 
 ## 1. Mục đích và giới hạn
 
-Quy trình này giúp operator trình diễn luồng What-If một cách có kiểm soát.
+Playbook này giúp operator trình diễn luồng What-If một cách có kiểm soát trong
+dự án học thuật/demo do một project owner thực hiện.
 STWI chỉ trình bày bằng chứng và phương án để con người cân nhắc. Nó không gửi
 lệnh điều khiển đèn, camera hay bất kỳ thiết bị hiện trường nào.
 
-Nếu dữ liệu mang nhãn `public_proxy_demo_only`, operator phải hiển thị rõ đó là
-traffic data proxy công khai, không đại diện cho mạng tại Việt Nam và không
-phải bằng chứng calibration cho một can thiệp thực địa. Không được thay nhãn
-mock hoặc public-proxy thành dữ liệu cảm biến thực.
+Dataset mặc định của demo mang nhãn `synthetic_simulation_demo_only`. Operator
+phải hiển thị rõ các giá trị traffic volume và speed là dữ liệu mô phỏng, không
+phải quan sát cảm biến thực và không chứng minh độ chính xác production. Frame
+huấn luyện detector không được dùng để dựng chuỗi thời gian forecast. Nếu dùng
+`public_proxy_demo_only` trong một thử nghiệm riêng, phải nêu rõ dữ liệu đó
+không đại diện cho mạng tại Việt Nam và không phải bằng chứng calibration thực
+địa.
 
 ## 2. Điều kiện trước khi demo
 
@@ -48,10 +53,10 @@ citation đã xem và giới hạn demo. Kết quả chỉ được dùng minh h
 trợ quyết định; không dùng để xác nhận điều hành hiện trường hay tuân thủ pháp
 lý.
 
-## 5. Điều kiện phê duyệt và index
+## 5. Điều kiện index
 
-Trước khi tài liệu này có thể trở thành corpus candidate, project owner phải
-điền owner, approver, ngày phê duyệt, scope cuối cùng và content hash trong
-`docs/ops/internal_sop_registry.json`, sau đó chạy validator. Việc validator
-pass chỉ cho phép bắt đầu một quy trình corpus/index riêng; nó không tự index
-vào Qdrant.
+Owner, approver, ngày phê duyệt, scope và content hash phải khớp với
+`docs/ops/internal_sop_registry.json`. Validator pass chỉ xác nhận tài liệu đủ
+điều kiện làm corpus candidate; một quy trình ingest/index riêng vẫn phải chạy
+và ghi lại collection/version. Phê duyệt này không biến playbook thành SOP vận
+hành thật và không mở quyền tự động điều khiển thiết bị.
