@@ -27,7 +27,9 @@ services:
       QDRANT__SERVICE__API_KEY: ${STWI_QDRANT_API_KEY:?set STWI_QDRANT_API_KEY in a private env file}
       QDRANT__SERVICE__READ_ONLY_API_KEY: ${STWI_QDRANT_READ_ONLY_API_KEY:?set STWI_QDRANT_READ_ONLY_API_KEY in a private env file}
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      # The pinned Qdrant image includes Bash but not curl/wget. The runner's
+      # host-side integration probe separately verifies /healthz + API key.
+      test: ["CMD", "bash", "-c", ":> /dev/tcp/127.0.0.1/6333"]
       interval: 10s
       timeout: 5s
       retries: 5

@@ -28,8 +28,10 @@ class TestProductionConfiguration(unittest.TestCase):
 
 
 class _Encoder:
-    def embed(self, _texts: list[str]):
-        return [[0.0] * 1024]
+    def encode(self, _texts: list[str], **_kwargs):
+        import numpy as np
+
+        return np.zeros((1, 1024), dtype=np.float32)
 
 
 class _QdrantClient:

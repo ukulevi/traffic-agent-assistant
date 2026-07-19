@@ -61,7 +61,7 @@ def _psycopg_available() -> bool:
 def _qdrant_client_available() -> bool:
     try:
         import qdrant_client  # noqa: F401
-        import fastembed  # noqa: F401
+        import sentence_transformers  # noqa: F401
         return True
     except ImportError:
         return False
@@ -174,22 +174,26 @@ class TestDuckDBFakeExecutor(unittest.TestCase):
 # Qdrant real adapter (skip if unavailable)
 # ============================================================
 
-@unittest.skipUnless(_qdrant_client_available(), "qdrant-client/fastembed not installed")
+@unittest.skipUnless(
+    _qdrant_client_available(),
+    "qdrant-client/sentence-transformers not installed",
+)
 @unittest.skipUnless(_qdrant_available(), "Qdrant service/configuration unavailable")
 class TestQdrantRetrieverIntegration(unittest.TestCase):
     """Integration tests against a live Qdrant instance."""
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         from stwi.t3_knowledge.qdrant_retriever import QdrantRetriever
-        self.retriever = QdrantRetriever(
+        cls.retriever = QdrantRetriever(
             url=QDRANT_URL,
             api_key=QDRANT_API_KEY,
             collection="stwi_legal_test",
         )
-        self.retriever.ensure_collection()
+        cls.retriever.ensure_collection()
         # Index synthetic test chunks
         for chunk in ingest_law_35_2024_qh15() + ingest_law_36_2024_qh15():
-            self.retriever.index_chunk(chunk)
+            cls.retriever.index_chunk(chunk)
 
     def test_retrieve_returns_citations(self):
         query = RetrievalQuery(

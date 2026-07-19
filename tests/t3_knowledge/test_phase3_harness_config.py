@@ -20,6 +20,9 @@ class Phase3HarnessConfigTest(unittest.TestCase):
         self.reader_init = (
             ROOT / "infra/harness/timescaledb-init/00_create_reader_user.sh"
         ).read_text(encoding="utf-8")
+        self.runner = (
+            ROOT / "scripts/infra/run_phase3_integration_harness.ps1"
+        ).read_text(encoding="utf-8")
 
     def test_no_default_database_or_reader_passwords(self) -> None:
         combined = self.compose + self.schema + self.reader_init
@@ -32,6 +35,14 @@ class Phase3HarnessConfigTest(unittest.TestCase):
         self.assertIn("${STWI_HARNESS_BIND_ADDRESS:-127.0.0.1}", self.compose)
         self.assertIn("${STWI_QDRANT_API_KEY:?", self.compose)
         self.assertIn("${STWI_QDRANT_READ_ONLY_API_KEY:?", self.compose)
+        self.assertIn("/dev/tcp/127.0.0.1/6333", self.compose)
+        self.assertNotIn('["CMD", "curl"', self.compose)
+
+    def test_runner_uses_ephemeral_secrets_and_always_cleans_up(self) -> None:
+        self.assertIn("New-EphemeralSecret", self.runner)
+        self.assertIn('"down" "-v" "--remove-orphans"', self.runner)
+        self.assertIn("finally", self.runner)
+        self.assertNotIn("changeit", self.runner.lower())
         self.assertNotIn('"${QDRANT_HTTP_PORT:-6333}:6333"', self.compose)
 
     def test_reader_password_is_injected_not_literal(self) -> None:
