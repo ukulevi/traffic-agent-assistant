@@ -137,6 +137,30 @@ class HermesRunnerBridgeTest(unittest.TestCase):
             ["hermes", "--oneshot", "bounded prompt", "--packet", "packet.md"],
         )
 
+    def test_path_runner_keeps_nous_step_model_override(self) -> None:
+        original_which = self.bridge.shutil.which
+        original_exists = self.bridge.candidate_path_exists
+        self.bridge.shutil.which = lambda _name: "hermes"
+        self.bridge.candidate_path_exists = lambda _path: False
+        try:
+            command = self.bridge.resolve_default_runner_command()
+        finally:
+            self.bridge.shutil.which = original_which
+            self.bridge.candidate_path_exists = original_exists
+
+        self.assertEqual(
+            command,
+            (
+                "hermes",
+                "--provider",
+                "nous",
+                "--model",
+                "stepfun/step-3.7-flash:free",
+                "--oneshot",
+                "{prompt}",
+            ),
+        )
+
     def test_scope_matching_supports_recursive_allowed_path(self) -> None:
         self.assertTrue(
             self.bridge.path_is_allowed(

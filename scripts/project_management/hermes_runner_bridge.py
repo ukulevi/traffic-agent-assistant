@@ -83,7 +83,15 @@ def resolve_default_runner_command() -> tuple[str, ...] | None:
         return MACOS_RUNNER_COMMAND
     runner = shutil.which("hermes")
     if runner:
-        return (runner, "--oneshot", "{prompt_file}")
+        return (
+            runner,
+            "--provider",
+            "nous",
+            "--model",
+            "stepfun/step-3.7-flash:free",
+            "--oneshot",
+            "{prompt}",
+        )
     return None
 
 
