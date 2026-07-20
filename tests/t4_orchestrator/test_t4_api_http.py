@@ -28,6 +28,7 @@ except ImportError:
     HAS_FASTAPI = False
 
 from stwi.t4_orchestrator.contracts import JobStatus
+from stwi.config.runtime import RuntimeMode, RuntimeSettings
 from stwi.t4_orchestrator.fake_adapters import (
     FakeSurrogateForecaster,
     safe_scenario,
@@ -55,15 +56,15 @@ def make_body(**overrides) -> dict:
     return defaults
 
 
-def make_client(scenario=None) -> TestClient:
+def make_client(scenario=None, settings=None) -> TestClient:
     from stwi.t4_orchestrator.api import create_app
 
     store = InMemoryJobStore()
     surrogate = FakeSurrogateForecaster(
         default_scenario=scenario or safe_scenario(),
     )
-    orchestrator = WhatIfOrchestrator(surrogate=surrogate)
-    app = create_app(store=store, orchestrator=orchestrator)
+    orchestrator = WhatIfOrchestrator(surrogate=surrogate, settings=settings)
+    app = create_app(store=store, orchestrator=orchestrator, settings=settings)
     return TestClient(app)
 
 
@@ -114,6 +115,19 @@ class TestCreateJob(unittest.TestCase):
         client = make_client()
         resp = client.post("/api/v1/what-if-jobs", json=make_body(vc_threshold=1.5))
         self.assertEqual(resp.status_code, 422)
+
+    def test_demo_mode_rejects_node_outside_mock_network(self):
+        settings = RuntimeSettings(mode=RuntimeMode.DEMO, job_concurrency=1)
+        client = make_client(settings=settings)
+        resp = client.post(
+            "/api/v1/what-if-jobs",
+            json=make_body(
+                candidate_action={"node_id": "node-unknown", "green_time_ratio": 0.7},
+                node_ids=["node-unknown"],
+            ),
+        )
+        self.assertEqual(resp.status_code, 422)
+        self.assertEqual(resp.json()["detail"]["code"], "DEMO_NODE_UNKNOWN")
 
 
 @unittest.skipUnless(HAS_FASTAPI, "fastapi not installed")
@@ -261,6 +275,18 @@ class TestOperatorDecision(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
         self.assertEqual(data["operator_decision"]["decision"], "rejected")
+
+    def test_approve_needs_review_job_is_rejected(self):
+        client = make_client(unsafe_vc_scenario())
+        job_id = self._create_completed_job(client)
+
+        resp = client.post(
+            f"/api/v1/what-if-jobs/{job_id}/operator-decision",
+            json={"operator_id": "operator-2", "decision": "approved"},
+        )
+
+        self.assertEqual(resp.status_code, 409)
+        self.assertEqual(resp.json()["detail"]["code"], "APPROVAL_NOT_ALLOWED")
 
     def test_decision_on_nonexistent_job_returns_404(self):
         client = make_client()

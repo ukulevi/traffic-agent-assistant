@@ -99,10 +99,10 @@ MVP không có actuator. Ngay cả `succeeded` vẫn cần operator phê duyệt
   "tenant_id": "test-tenant",
   "scenario_time": "2026-06-21T08:00:00+07:00",
   "candidate_action": {
-    "node_id": "node-A",
+    "node_id": "node_00",
     "green_time_ratio": 0.7
   },
-  "node_ids": ["node-A", "node-B"],
+  "node_ids": ["node_00", "node_01"],
   "scenario_query": "Tai nạn tại node A; đánh giá phương án phân luồng sang B",
   "horizons_minutes": [5, 10, 15, 30],
   "jurisdiction": "VN",
@@ -136,7 +136,7 @@ MVP không có actuator. Ngay cả `succeeded` vẫn cần operator phê duyệt
   "tenant_id": "test-tenant",
   "scenario_time": "2026-06-21T08:00:00+07:00",
   "recommended_action": {
-    "node_id": "node-A",
+    "node_id": "node_00",
     "green_time_ratio": 0.7,
     "action_kind": "recommended_action",
     "executable": false,
@@ -220,7 +220,7 @@ MVP không có actuator. Ngay cả `succeeded` vẫn cần operator phê duyệt
   "scenario_time": "2026-06-21T08:00:00+07:00",
   "recommended_action": null,
   "candidate_action": {
-    "node_id": "node-A",
+    "node_id": "node_00",
     "green_time_ratio": 0.7,
     "action_kind": "candidate_action",
     "executable": false,
@@ -324,6 +324,10 @@ Error codes tối thiểu: `INVALID_SCENARIO`, `UNKNOWN_NODE`, `SIMULATION_UNAVA
 1. API examples parse được và đúng status/field contract.
 2. `recommended_action` không xuất hiện ở bất kỳ status nào ngoài `succeeded`.
 3. `needs_review` luôn có `candidate_action.executable=false`.
+4. `candidate_action.node_id` phải thuộc `node_ids`; demo mode chỉ nhận node
+   trong mạng synthetic có version `node_00` đến `node_19`.
+5. Quyết định `approved` chỉ hợp lệ khi job là `succeeded`; các terminal state
+   khác chỉ có thể bị từ chối hoặc yêu cầu chỉnh sửa trong audit.
 4. OOD, thiếu citation, policy fail và timeout đều được test.
 5. SSE reconnect không chạy lặp job.
 6. Operator approval và audit log được kiểm thử.

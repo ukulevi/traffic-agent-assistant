@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 # =============================================================================
@@ -34,12 +34,26 @@ class JobStatus(str, Enum):
 # Request
 # =============================================================================
 
+class CandidateAction(BaseModel):
+    """Typed, non-executable signal-plan candidate evaluated by STWI."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    node_id: str = Field(..., min_length=1, max_length=64)
+    green_time_ratio: float = Field(..., ge=0.0, le=1.0)
+
+
 class WhatIfJobRequest(BaseModel):
     """Input specification for a what-if scenario job."""
 
-    tenant_id: str = Field(..., description="Tenant scope for row ownership and audit")
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    tenant_id: str = Field(
+        ..., min_length=1, max_length=128,
+        description="Tenant scope for row ownership and audit",
+    )
     scenario_time: datetime = Field(..., description="Time context for legal/temporal filtering")
-    candidate_action: dict[str, Any] = Field(
+    candidate_action: CandidateAction = Field(
         ..., description="Proposed action (e.g. {'node_id': 'A', 'green_time_ratio': 0.7})"
     )
     node_ids: list[str] = Field(..., min_length=1, description="Network nodes to evaluate")
@@ -52,11 +66,22 @@ class WhatIfJobRequest(BaseModel):
         max_length=12,
         description="Forecast horizons in minutes",
     )
-    jurisdiction: str = Field("VN", description="Jurisdiction for legal corpus filtering")
+    jurisdiction: str = Field(
+        "VN", min_length=1, max_length=32,
+        description="Jurisdiction for legal corpus filtering",
+    )
     vc_threshold: float = Field(
         0.9, ge=0.0, le=1.0,
         description="Volume-capacity ratio safety threshold (configurable policy)"
     )
+
+    @model_validator(mode="after")
+    def validate_action_scope(self) -> WhatIfJobRequest:
+        if any(not node_id for node_id in self.node_ids):
+            raise ValueError("node_ids must not contain blank identifiers")
+        if self.candidate_action.node_id not in self.node_ids:
+            raise ValueError("candidate_action.node_id must be present in node_ids")
+        return self
 
 
 class OperatorDecision(str, Enum):
@@ -245,6 +270,7 @@ class JobEnvelope(BaseModel):
 
 __all__ = [
     "JobStatus",
+    "CandidateAction",
     "WhatIfJobRequest",
     "WhatIfJobResult",
     "OperatorDecision",

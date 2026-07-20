@@ -20,9 +20,11 @@ class TestMvpSmoke(unittest.TestCase):
 
         self.assertFalse(evidence["live_services_contacted"])
         self.assertFalse(evidence["raw_video_retained"])
-        self.assertEqual(len(evidence["cases"]), 2)
+        self.assertEqual(len(evidence["cases"]), 4)
         self.assertEqual(evidence["cases"][0]["terminal_status"], "succeeded")
-        self.assertEqual(evidence["cases"][1]["terminal_status"], "needs_review")
+        self.assertTrue(
+            all(case["terminal_status"] == "needs_review" for case in evidence["cases"][1:])
+        )
         for case in evidence["cases"]:
             self.assertTrue(case["provisional"])
             self.assertFalse(case["applied_by_system"])
