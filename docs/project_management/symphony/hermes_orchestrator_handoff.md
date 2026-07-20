@@ -54,6 +54,27 @@ The bridge:
   `Allowed Files`, or the final report contract is incomplete
 - writes machine-readable evidence for Codex/human review
 
+## Parallel Hermes Batch Sidecar
+
+Do not increase Symphony's native `max_concurrent_agents` to run Hermes. That
+setting controls only the Codex app-server protocol. Use the batch sidecar for
+up to two explicitly independent Hermes packets instead:
+
+```powershell
+python scripts/project_management/hermes_batch_dispatch.py `
+  --manifest docs/project_management/symphony/hermes_batch_manifest.example.json
+
+python scripts/project_management/hermes_batch_dispatch.py `
+  --manifest <approved-manifest.json> `
+  --execute --allow-external-code-transfer
+```
+
+The first command validates only. Execution requires a packet-local
+`## External Code Transfer Approval` section containing `Approved: yes`, a
+`hermes-approved` label, a clean isolated workspace per ticket, and disjoint
+non-wildcard `Allowed Files`. It invokes Hermes native with Nous
+`stepfun/step-3.7-flash:free`; no Codex app-server worker is started.
+
 ## Executor Labels
 
 - `hermes-approved`: native Hermes sidecar only.
