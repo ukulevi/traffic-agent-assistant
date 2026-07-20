@@ -27,11 +27,19 @@ DEFAULT_PACKET = ROOT / "docs/project_management/symphony/current_dispatch_packe
 DEFAULT_ARTIFACT_DIR = ROOT / "docs/project_management/symphony/hermes_runs"
 WINDOWS_RUNNER_COMMAND = (
     r"C:\Users\PC\AppData\Local\hermes\hermes-agent\venv\Scripts\hermes.exe",
+    "--provider",
+    "nous",
+    "--model",
+    "stepfun/step-3.7-flash:free",
     "--oneshot",
     "{prompt}",
 )
 MACOS_RUNNER_COMMAND = (
     "/Applications/Hermes.app/Contents/MacOS/hermes",
+    "--provider",
+    "nous",
+    "--model",
+    "stepfun/step-3.7-flash:free",
     "--oneshot",
     "{prompt}",
 )
@@ -75,7 +83,15 @@ def resolve_default_runner_command() -> tuple[str, ...] | None:
         return MACOS_RUNNER_COMMAND
     runner = shutil.which("hermes")
     if runner:
-        return (runner, "--oneshot", "{prompt_file}")
+        return (
+            runner,
+            "--provider",
+            "nous",
+            "--model",
+            "stepfun/step-3.7-flash:free",
+            "--oneshot",
+            "{prompt}",
+        )
     return None
 
 

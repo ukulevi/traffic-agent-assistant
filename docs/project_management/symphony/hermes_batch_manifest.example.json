@@ -1,0 +1,17 @@
+{
+  "max_concurrent_workers": 2,
+  "jobs": [
+    {
+      "ticket": "TRA-XX",
+      "packet": "packets/TRA-XX.md",
+      "workspace": "C:/Users/PC/.codex/symphony/workspaces/TRA-XX",
+      "labels": ["stwi-agent", "hermes-approved", "lane:frontend"]
+    },
+    {
+      "ticket": "TRA-YY",
+      "packet": "packets/TRA-YY.md",
+      "workspace": "C:/Users/PC/.codex/symphony/workspaces/TRA-YY",
+      "labels": ["stwi-agent", "hermes-approved", "lane:qa"]
+    }
+  ]
+}
