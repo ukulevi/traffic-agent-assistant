@@ -19,9 +19,9 @@ def _request_body() -> dict[str, Any]:
     return {
         "tenant_id": "demo-operator",
         "scenario_time": "2025-06-01T08:00:00+00:00",
-        "candidate_action": {"node_id": "node-A", "green_time_ratio": 0.7},
-        "node_ids": ["node-A"],
-        "scenario_query": "Danh gia kich ban su co tai nut node-A.",
+        "candidate_action": {"node_id": "node_00", "green_time_ratio": 0.7},
+        "node_ids": ["node_00"],
+        "scenario_query": "quyền nghĩa vụ người sử dụng đường tại node_00",
     }
 
 
@@ -100,7 +100,12 @@ def _run_case(name: str, scenario: object, expected_status: str, decision: str) 
 
 def run_smoke(output: Path) -> dict[str, Any]:
     """Run safe and fail-closed flows, then write aggregate-only evidence."""
-    from stwi.t4_orchestrator.fake_adapters import safe_scenario, unsafe_vc_scenario
+    from stwi.t4_orchestrator.fake_adapters import (
+        high_uncertainty_scenario,
+        ood_scenario,
+        safe_scenario,
+        unsafe_vc_scenario,
+    )
 
     evidence = {
         "harness": "stwi_offline_mvp_smoke_v1",
@@ -109,7 +114,14 @@ def run_smoke(output: Path) -> dict[str, Any]:
         "raw_video_retained": False,
         "cases": [
             _run_case("safe_approval", safe_scenario(), "succeeded", "approved"),
-            _run_case("unsafe_rejection", unsafe_vc_scenario(), "needs_review", "rejected"),
+            _run_case("unsafe_vc_rejection", unsafe_vc_scenario(), "needs_review", "rejected"),
+            _run_case("ood_rejection", ood_scenario(), "needs_review", "rejected"),
+            _run_case(
+                "uncertainty_rejection",
+                high_uncertainty_scenario(),
+                "needs_review",
+                "rejected",
+            ),
         ],
     }
     output.parent.mkdir(parents=True, exist_ok=True)

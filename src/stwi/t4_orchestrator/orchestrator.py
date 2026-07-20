@@ -25,10 +25,11 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
-from stwi.config.runtime import RuntimeSettings, get_runtime_settings
+from stwi.config.runtime import RuntimeMode, RuntimeSettings, get_runtime_settings
 from stwi.t3_knowledge.tier3_facade import T3KnowledgeTier, T3LegalEvidence
 from stwi.t4_orchestrator.contracts import (
     AuditRecord,
+    CandidateAction,
     JobStatus,
     SafetyCheckResult,
     WhatIfJobRequest,
@@ -122,9 +123,16 @@ class WhatIfOrchestrator:
             )
         if self._settings.allow_provisional_adapters:
             self._baseline = baseline or FakeBaselineForecaster()
-            self._surrogate = surrogate or FakeSurrogateForecaster(
-                node_overrides=surrogate_node_overrides
-            )
+            if surrogate is not None:
+                self._surrogate = surrogate
+            elif self._settings.mode == RuntimeMode.DEMO:
+                from stwi.t4_orchestrator.demo_adapters import DemoSurrogateForecaster
+
+                self._surrogate = DemoSurrogateForecaster()
+            else:
+                self._surrogate = FakeSurrogateForecaster(
+                    node_overrides=surrogate_node_overrides
+                )
             self._t3 = t3 or T3KnowledgeTier()
         else:
             self._baseline = baseline
@@ -223,10 +231,11 @@ class WhatIfOrchestrator:
     def _node_scenario(self, state: OrchestratorState) -> None:
         """Run surrogate forecast with candidate action; check OOD/uncertainty."""
         req = state.request
+        candidate_action = req.candidate_action.model_dump()
         state.scenario_results = self._surrogate.predict(
             node_ids=req.node_ids,
             horizons_minutes=req.horizons_minutes,
-            candidate_action=req.candidate_action,
+            candidate_action=candidate_action,
             scenario_time=req.scenario_time,
         )
 
@@ -386,13 +395,13 @@ class WhatIfOrchestrator:
 
     def _operator_action_payload(
         self,
-        action: dict[str, Any],
+        action: CandidateAction,
         executable: bool,
         action_kind: str,
     ) -> dict[str, Any]:
         """Attach decision-support guardrails to an operator-facing action."""
         return {
-            **action,
+            **action.model_dump(),
             "action_kind": action_kind,
             "executable": executable,
             "requires_operator_approval": True,

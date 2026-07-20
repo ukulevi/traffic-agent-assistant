@@ -334,6 +334,37 @@ class TestWhatIfJobRequest(unittest.TestCase):
         req = make_request()
         self.assertEqual(req.vc_threshold, 0.9)
 
+    def test_candidate_action_requires_typed_fields(self):
+        with self.assertRaises(Exception):
+            make_request(candidate_action={"node_id": "node-A"})
+        with self.assertRaises(Exception):
+            make_request(candidate_action={"green_time_ratio": 0.7})
+
+    def test_candidate_action_rejects_ratio_outside_contract(self):
+        with self.assertRaises(Exception):
+            make_request(
+                candidate_action={"node_id": "node-A", "green_time_ratio": -0.01}
+            )
+        with self.assertRaises(Exception):
+            make_request(
+                candidate_action={"node_id": "node-A", "green_time_ratio": 1.01}
+            )
+
+    def test_candidate_action_node_must_be_evaluated(self):
+        with self.assertRaises(Exception):
+            make_request(
+                candidate_action={"node_id": "node-B", "green_time_ratio": 0.7},
+                node_ids=["node-A"],
+            )
+
+    def test_request_rejects_whitespace_only_identifiers_and_query(self):
+        with self.assertRaises(Exception):
+            make_request(tenant_id="   ")
+        with self.assertRaises(Exception):
+            make_request(node_ids=["   "])
+        with self.assertRaises(Exception):
+            make_request(scenario_query="   ")
+
 
 if __name__ == "__main__":
     unittest.main()

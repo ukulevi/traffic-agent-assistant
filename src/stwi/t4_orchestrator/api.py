@@ -26,7 +26,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import AsyncGenerator
 
-from stwi.config.runtime import RuntimeSettings, get_runtime_settings
+from stwi.config.runtime import RuntimeMode, RuntimeSettings, get_runtime_settings
 from stwi.t4_orchestrator.auth import (
     PrincipalResolutionError,
     PrincipalResolver,
@@ -38,6 +38,7 @@ from stwi.t4_orchestrator.contracts import (
     JobEnvelope,
     JobEvent,
     JobStatus,
+    OperatorDecision,
     OperatorDecisionRequest,
     WhatIfJobRequest,
 )
@@ -211,6 +212,20 @@ def create_app(
             PrincipalRole.ADMIN,
         )
         require_tenant(principal, request.tenant_id)
+        if _settings.mode == RuntimeMode.DEMO:
+            from stwi.t4_orchestrator.demo_adapters import demo_node_ids
+
+            allowed_nodes = set(demo_node_ids())
+            unknown_nodes = sorted(set(request.node_ids) - allowed_nodes)
+            if unknown_nodes:
+                raise HTTPException(
+                    status_code=422,
+                    detail={
+                        "code": "DEMO_NODE_UNKNOWN",
+                        "message": "Node is not present in the versioned demo network",
+                        "unknown_node_ids": unknown_nodes,
+                    },
+                )
         resolved_request = request.model_copy(update={"tenant_id": principal.tenant_id})
         envelope = _store.create(resolved_request)
 
@@ -332,6 +347,17 @@ def create_app(
             raise HTTPException(
                 status_code=409,
                 detail="Operator decision is allowed only after a terminal job status",
+            )
+        if (
+            decision_request.decision == OperatorDecision.APPROVED
+            and envelope.status != JobStatus.SUCCEEDED
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "APPROVAL_NOT_ALLOWED",
+                    "message": "Only succeeded jobs may be approved",
+                },
             )
         record = _store.record_operator_decision(
             job_id=job_id,

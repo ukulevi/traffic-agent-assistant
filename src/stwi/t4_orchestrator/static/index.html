@@ -3,71 +3,155 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#075985">
     <title>STWI · What-If Operator</title>
     <link rel="stylesheet" href="dashboard.css">
   </head>
   <body>
-    <header class="topbar">
-      <div><strong>STWI</strong><span>What-If · Decision support</span></div>
-      <p class="provisional">Demo offline · Mọi quyết định cần operator phê duyệt</p>
-    </header>
-    <main class="dashboard">
-      <aside class="input-column" aria-labelledby="scenario-title">
-        <form id="scenario-form" class="panel scenario-form">
-          <div class="eyebrow">Bước 1 · Input</div>
-          <h1 id="scenario-title">Tạo kịch bản</h1>
-          <p class="muted">Gửi một giả định để đánh giá; hệ thống không điều khiển hiện trường.</p>
-          <label>Tenant<input id="tenant-id" name="tenant" value="demo-operator" required></label>
-          <label>Node<input id="node-id" name="node" value="node-A" required></label>
-          <label>Green time ratio<input id="green-time" name="green" type="number" min="0" max="1" step="0.05" value="0.7" required></label>
-          <label>Mô tả tình huống<textarea id="scenario-query" name="query" required>Đánh giá kịch bản sự cố tại node-A.</textarea></label>
-          <button type="submit">Đánh giá What-If</button>
-          <p id="form-error" class="error" role="alert"></p>
-        </form>
-        <section class="policy-note" aria-label="Safety policy">
-          <strong>Safety policy</strong>
-          <span>V/C = 0.9 là policy MVP có thể cấu hình, không phải quy định pháp luật.</span>
-        </section>
-      </aside>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="/demo/" aria-label="STWI What-If Operator">
+          <span class="brand-mark" aria-hidden="true">ST</span>
+          <span><strong>SmartTraffic</strong><small>What-If Operator</small></span>
+        </a>
+        <div class="topbar-meta">
+          <span id="runtime-state" class="mode-pill"><span class="status-dot" aria-hidden="true"></span><span id="runtime-label">Đang kiểm tra runtime</span></span>
+          <span class="human-badge"><span aria-hidden="true">◆</span> Human approval required</span>
+        </div>
+      </header>
 
-      <section class="result-column" aria-live="polite" aria-labelledby="result-title">
-        <section class="panel result-hero">
-          <div class="result-heading">
-            <div><div class="eyebrow">Bước 2 · Kết quả</div><h2 id="result-title">Chưa có kết quả</h2></div>
-            <span id="job-status" class="status">Chưa gửi</span>
+      <main class="page-wrap">
+        <section class="hero" aria-labelledby="page-title">
+          <div>
+            <p class="eyebrow">DECISION SUPPORT · OFFLINE MVP</p>
+            <h1 id="page-title">Đánh giá kịch bản giao thông<br><span>trước khi hành động</span></h1>
+            <p class="hero-copy">Mô phỏng tác động của một thay đổi tại nút giao, xem bằng chứng và để operator đưa ra quyết định cuối cùng.</p>
           </div>
-          <p id="plain-language-result" class="result-summary">Gửi kịch bản để xem tác động, căn cứ và quyết định hỗ trợ.</p>
-          <div id="action-card" class="action-card is-hidden">
-            <div><span id="action-label" class="eyebrow"></span><p id="action-text"></p></div>
-            <span class="approval-required">Cần operator phê duyệt</span>
+          <div class="hero-note">
+            <span class="note-icon" aria-hidden="true">i</span>
+            <div><strong>Phạm vi demo</strong><p>Dữ liệu tổng hợp 5 phút · Không điều khiển thiết bị hiện trường</p></div>
           </div>
-          <p id="review-reason" class="review-reason">Kết quả fail-closed sẽ nêu rõ lý do cần xem xét.</p>
         </section>
 
-        <section class="metrics-grid" aria-label="Forecast metrics">
-          <article class="metric-card"><span>traffic_volume_5m</span><strong id="forecast-volume">—</strong><small>xe/5 phút</small></article>
-          <article class="metric-card"><span>avg_speed_kmh</span><strong id="forecast-speed">—</strong><small>km/h</small></article>
-          <article class="metric-card"><span>V/C tối đa</span><strong id="vc-ratio">—</strong><small>Ngưỡng policy: 0.9</small></article>
-          <article class="metric-card"><span>Capacity</span><strong id="capacity-version">—</strong><small>capacity_version</small></article>
+        <section class="metric-strip" aria-label="Thông tin phiên demo">
+          <div class="metric"><span class="metric-icon data-icon" aria-hidden="true">◌</span><div><strong>20</strong><span>node chức năng</span></div></div>
+          <div class="metric"><span class="metric-icon model-icon" aria-hidden="true">⌁</span><div><strong>30 phút</strong><span>cửa sổ dự báo</span></div></div>
+          <div class="metric"><span class="metric-icon safety-icon" aria-hidden="true">✓</span><div><strong>Fail-closed</strong><span>Counterfactual Safety Loop</span></div></div>
+          <div class="metric metric-warning"><span class="metric-icon review-icon" aria-hidden="true">!</span><div><strong>Operator</strong><span>luôn phê duyệt cuối</span></div></div>
         </section>
 
-        <section class="panel evidence-panel" aria-labelledby="evidence-title">
-          <div class="section-heading"><div><div class="eyebrow">Evidence</div><h2 id="evidence-title">Căn cứ & provenance</h2></div><span id="evidence-status" class="evidence-status">Chờ kết quả</span></div>
-          <p id="evidence-message" class="muted">Citation hợp lệ mới cho phép hiển thị recommendation.</p>
-          <ul id="citations" class="citation-list"></ul>
-        </section>
+        <details class="variable-guide">
+          <summary>
+            <span class="guide-summary">
+              <span class="guide-icon" aria-hidden="true">?</span>
+              <span><strong>Giải thích biến và giá trị</strong><small>Nên xem trước khi chạy demo lần đầu</small></span>
+            </span>
+            <span class="guide-toggle"><span class="guide-open-label">Mở</span><span class="guide-close-label">Đóng</span></span>
+          </summary>
+          <div class="glossary-grid">
+            <article><code>tenant_id</code><strong>Phạm vi dữ liệu</strong><p>Nhóm sở hữu job và audit record. <code>demo-operator</code> chỉ là giá trị giả lập, không phải tài khoản production.</p></article>
+            <article><code>node_id</code><strong>Nút giao cần đánh giá</strong><p>Mã của một node trong mạng synthetic có version. Demo dùng <code>node_00</code> đến <code>node_19</code>.</p></article>
+            <article><code>green_time_ratio</code><strong>Tỷ lệ thời gian đèn xanh</strong><p>Giá trị từ 0 đến 1. <code>0.70</code> nghĩa là 70% chu kỳ trong kịch bản; đây không phải lệnh điều khiển thiết bị.</p></article>
+            <article><code>scenario_query</code><strong>Câu hỏi phân tích</strong><p>Mô tả sự cố hoặc thay đổi cần đánh giá. Hệ thống dùng nội dung này để phân tích và truy xuất bằng chứng pháp lý/SOP.</p></article>
+            <article><code>job_id / trace_id</code><strong>Định danh và truy vết</strong><p><code>job_id</code> dùng để theo dõi một lần chạy; <code>trace_id</code> nối các bước trong audit trail khi cần kiểm tra lại.</p></article>
+            <article><code>model / data</code><strong>Phiên bản tái lập</strong><p>Cho biết model và dataset nào đã tạo kết quả. Hai giá trị này cần được ghi lại khi so sánh các lần chạy.</p></article>
+            <article><code>V/C</code><strong>Mức sử dụng năng lực</strong><p>V/C = 0.9 là policy cấu hình của demo, không phải quy định pháp luật.</p></article>
+            <article><code>action payload</code><strong>Kết quả không thực thi</strong><p><code>recommended_action</code> chỉ có khi job <code>succeeded</code>; <code>candidate_action</code> dùng cho <code>needs_review</code>. Operator vẫn phải quyết định.</p></article>
+          </div>
+        </details>
 
-        <section class="panel decision-panel">
-          <h2>Quyết định operator</h2>
-          <p>Chỉ ghi audit; không có lệnh tự động đến thiết bị hiện trường.</p>
-          <div class="decision-actions"><button id="approve" type="button" disabled>Ghi nhận phê duyệt</button><button id="reject" class="secondary" type="button" disabled>Ghi nhận từ chối</button></div>
-          <p id="decision-result" role="status"></p>
-        </section>
+        <div class="dashboard-grid">
+          <section class="panel scenario-panel" aria-labelledby="scenario-title">
+            <div class="panel-heading">
+              <div><span class="step-label">01 · INPUT</span><h2 id="scenario-title">Tạo kịch bản What-If</h2></div>
+              <span class="panel-status">Mô phỏng</span>
+            </div>
+            <p class="panel-intro">Mô tả thay đổi cần đánh giá. Hệ thống sẽ tạo job bất đồng bộ và trả về bằng chứng audit.</p>
+            <form id="scenario-form">
+              <label>Bộ kiểm thử demo
+                <select id="demo-preset" name="preset" aria-describedby="preset-expectation">
+                  <option value="safe">Luồng bình thường · succeeded</option>
+                  <option value="unsafe-vc">V/C vượt policy · needs_review</option>
+                  <option value="ood">Ngoài phân phối · needs_review</option>
+                  <option value="uncertainty">Độ bất định cao · needs_review</option>
+                  <option value="missing-evidence">Thiếu căn cứ · needs_review</option>
+                  <option value="extreme">Green time cực trị · needs_review</option>
+                  <option value="custom">Tùy chỉnh thủ công</option>
+                </select>
+                <small id="preset-expectation" class="preset-expectation">Kỳ vọng: kết quả synthetic đạt các kiểm tra của profile mô phỏng.</small>
+              </label>
+              <div class="field-grid">
+                <label>Tenant demo<input id="tenant-id" name="tenant" value="demo-operator" autocomplete="off" required><small>Phạm vi sở hữu dữ liệu; không dùng định danh production</small></label>
+                <label>Nút giao
+                  <select id="node-id" name="node" required>
+                    <option value="node_00">node_00</option><option value="node_01">node_01</option><option value="node_02">node_02</option><option value="node_03">node_03</option><option value="node_04">node_04</option>
+                    <option value="node_05">node_05</option><option value="node_06">node_06</option><option value="node_07">node_07</option><option value="node_08">node_08</option><option value="node_09">node_09</option>
+                    <option value="node_10">node_10</option><option value="node_11">node_11</option><option value="node_12">node_12</option><option value="node_13">node_13</option><option value="node_14">node_14</option>
+                    <option value="node_15">node_15</option><option value="node_16">node_16</option><option value="node_17">node_17</option><option value="node_18">node_18</option><option value="node_19">node_19</option>
+                  </select>
+                  <small>Chỉ chọn node thuộc mạng synthetic <code>mock-network-20-v1</code></small>
+                </label>
+              </div>
+              <label>Green time ratio <output class="label-value" id="green-value" for="green-time">0.70 · 70%</output><input id="green-time" name="green" type="range" min="0" max="1" step="0.05" value="0.7" aria-describedby="green-help"><small id="green-help">0 = không có green time; 1 = toàn bộ chu kỳ · Chỉ dùng trong mô phỏng</small></label>
+              <label>Mô tả tình huống<textarea id="scenario-query" name="query" required>Đánh giá quyền và nghĩa vụ người sử dụng đường tại node_00.</textarea><small>Câu hỏi dùng cho phân tích và truy xuất bằng chứng pháp lý/SOP</small></label>
+              <div class="form-footer"><p class="privacy-note"><span aria-hidden="true">▣</span> Chỉ aggregate · Không lưu hình ảnh thô</p><button id="submit-button" type="submit"><span>Chạy mô phỏng</span><span aria-hidden="true">→</span></button></div>
+              <p id="form-error" class="error" role="alert"></p>
+            </form>
+          </section>
 
-        <details class="panel details-panel"><summary>Lifecycle, trace và versions</summary><dl class="details"><div><dt>Job</dt><dd id="job-id">—</dd></div><div><dt>Trạng thái server</dt><dd id="terminal-status">—</dd></div><div><dt>Timestamp</dt><dd id="result-timestamp">—</dd></div><div><dt>trace_id</dt><dd id="trace-id">—</dd></div><div><dt>Model / data</dt><dd id="versions">—</dd></div></dl><h3>Sự kiện</h3><ol id="events" class="events"></ol></details>
-        <details class="panel details-panel"><summary>JSON kết quả (audit)</summary><pre id="json-view">—</pre></details>
-      </section>
-    </main>
+          <section class="panel lifecycle-panel" aria-labelledby="lifecycle-title" aria-live="polite">
+            <div class="panel-heading">
+              <div><span class="step-label">02 · OBSERVE</span><h2 id="lifecycle-title">Theo dõi job</h2></div>
+              <span id="job-status" class="status status-idle">Chưa gửi</span>
+            </div>
+            <div class="job-summary">
+              <div><span>Job ID</span><code id="job-id">—</code></div>
+              <div><span>Trace ID</span><code id="trace-id">Chưa có trace</code></div>
+              <div><span>Model / data</span><code id="versions">—</code></div>
+              <div><span>Trạng thái server</span><code id="terminal-status">—</code></div>
+              <div><span>Timestamp</span><code id="result-timestamp">—</code></div>
+            </div>
+            <div class="timeline-heading"><h3>Lifecycle events</h3><span id="event-count">0 sự kiện</span></div>
+            <ol id="events" class="timeline" aria-label="Các sự kiện của job"></ol>
+            <div id="empty-events" class="empty-state"><span class="empty-icon" aria-hidden="true">⌁</span><strong>Chưa có job đang chạy</strong><span>Gửi một kịch bản để bắt đầu theo dõi.</span></div>
+          </section>
+        </div>
+
+        <div class="result-grid">
+          <section class="panel safety-panel" aria-labelledby="safety-title">
+            <div class="panel-heading"><div><span class="step-label">03 · SAFETY</span><h2 id="safety-title">Đánh giá an toàn</h2></div><span class="shield" aria-hidden="true">✓</span></div>
+            <div id="safety-state" class="safety-state safety-idle"><span class="state-icon" aria-hidden="true">○</span><div><strong>Đang chờ kết quả</strong><p id="review-reason">Safety checks sẽ xuất hiện sau khi job hoàn tất.</p></div></div>
+            <section id="result-interpretation" class="interpretation interpretation-idle" aria-labelledby="interpretation-title" aria-live="polite">
+              <div class="interpretation-heading"><span class="interpretation-icon" aria-hidden="true">i</span><div><span class="interpretation-label">DIỄN GIẢI DỄ HIỂU</span><h3 id="interpretation-title">Chưa có kết quả để diễn giải</h3></div></div>
+              <p id="interpretation-summary">Sau khi mô phỏng hoàn tất, khu vực này sẽ giải thích kết quả bằng ngôn ngữ thông thường.</p>
+              <p id="interpretation-impact" class="interpretation-impact">Các thông số kỹ thuật vẫn được giữ phía dưới để phục vụ kiểm tra và audit.</p>
+              <div class="interpretation-next"><strong>Việc tiếp theo</strong><span id="interpretation-next-step">Hãy chạy một kịch bản What-If.</span></div>
+            </section>
+            <section class="forecast-metrics" aria-label="Chỉ số dự báo tổng hợp">
+              <article><span>traffic_volume_5m</span><strong id="forecast-volume">—</strong><small>xe/5 phút</small></article>
+              <article><span>avg_speed_kmh</span><strong id="forecast-speed">—</strong><small>km/h</small></article>
+              <article><span>V/C tối đa</span><strong id="vc-ratio">—</strong><small>Ngưỡng policy: 0.9</small></article>
+              <article><span>Capacity</span><strong id="capacity-version">—</strong><small>capacity_version</small></article>
+            </section>
+            <details class="evidence-details">
+              <summary>Căn cứ và provenance <span id="evidence-status">Chờ kết quả</span></summary>
+              <p id="evidence-message">Citation hợp lệ mới cho phép hiển thị recommendation.</p>
+              <ul id="citations" class="citation-list"></ul>
+            </details>
+            <div class="action-block"><div class="action-label"><span>Action payload</span><span id="action-kind" class="non-executable">NON-EXECUTABLE</span></div><pre id="action-view">—</pre></div>
+            <details class="json-details"><summary>JSON kết quả (audit)</summary><pre id="json-view">—</pre></details>
+          </section>
+          <section class="panel decision-panel" aria-labelledby="decision-title">
+            <div class="panel-heading"><div><span class="step-label">04 · HUMAN DECISION</span><h2 id="decision-title">Quyết định operator</h2></div><span class="audit-label">Audit only</span></div>
+            <p class="decision-copy">Kết quả chỉ là bằng chứng hỗ trợ. Chọn một quyết định để ghi vào audit trail; không có lệnh nào được gửi đến thiết bị.</p>
+            <div class="decision-actions"><button id="approve" type="button" disabled><span aria-hidden="true">✓</span> Phê duyệt</button><button id="reject" class="secondary" type="button" disabled><span aria-hidden="true">×</span> Từ chối</button></div>
+            <div id="decision-result" class="decision-result" role="status" aria-live="polite">Đang chờ operator xem xét.</div>
+          </section>
+        </div>
+
+        <footer class="page-footer"><span><strong>STWI</strong> · SmartTraffic What-If</span><span>Simulation-first demo · <a href="/docs" aria-label="Xem tài liệu API">API docs</a></span></footer>
+      </main>
+    </div>
     <script src="dashboard.js"></script>
   </body>
 </html>
