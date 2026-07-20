@@ -21,6 +21,7 @@ const interpretationSummary = document.querySelector("#interpretation-summary");
 const interpretationImpact = document.querySelector("#interpretation-impact");
 const interpretationNextStep = document.querySelector("#interpretation-next-step");
 const actionView = document.querySelector("#action-view");
+const actionKind = document.querySelector("#action-kind");
 const decisionResult = document.querySelector("#decision-result");
 const runtimeState = document.querySelector("#runtime-state");
 const runtimeLabel = document.querySelector("#runtime-label");
@@ -51,6 +52,7 @@ let activeJobId = null;
 let activeStatus = "idle";
 let runtimeAvailable = null;
 let activeJurisdiction = "VN";
+let eventSource = null;
 
 const DEMO_PRESETS = {
   safe: {
@@ -88,6 +90,78 @@ const DEMO_PRESETS = {
 function setText(selector, value, fallback = "—") {
   const node = document.querySelector(selector);
   if (node) node.textContent = value || fallback;
+}
+
+function formatValue(value) {
+  return typeof value === "number"
+    ? value.toLocaleString("vi-VN", { maximumFractionDigits: 2 })
+    : (value ?? "—");
+}
+
+function validCitation(citation) {
+  return Boolean(
+    citation
+    && (citation.source || citation.source_url || citation.title || citation.document_number)
+    && (citation.provision || citation.article || !citation.document_number)
+    && (citation.effective_from || !citation.document_number)
+  );
+}
+
+function provenanceIsComplete(result) {
+  return Boolean(result?.trace_id || result?.audit_record?.trace_id)
+    && Boolean(result?.model_version)
+    && Boolean(result?.data_version)
+    && Boolean(result?.completed_at || result?.created_at)
+    && Array.isArray(result?.citations)
+    && result.citations.length > 0
+    && result.citations.every(validCitation);
+}
+
+function displayStatusFor(result, serverStatus) {
+  const complete = provenanceIsComplete(result);
+  return serverStatus === "succeeded" && !complete ? "needs_review" : serverStatus;
+}
+
+function metricsFrom(result) {
+  return result?.scenario_summary || result?.forecast_summary || result?.scenario_metrics || {};
+}
+
+function renderCitations(citations, complete) {
+  const list = document.querySelector("#citations");
+  list.replaceChildren();
+  setText("#evidence-status", complete ? "Provenance đầy đủ" : "Thiếu provenance");
+  setText(
+    "#evidence-message",
+    complete
+      ? "Citation có nguồn, điều khoản và mốc hiệu lực để operator đối chiếu."
+      : "Không đủ citation/provenance để xác nhận recommendation; giao diện fail-closed."
+  );
+  for (const citation of citations || []) {
+    const item = document.createElement("li");
+    const heading = document.createElement("strong");
+    const detail = document.createElement("div");
+    heading.textContent = citation.title || citation.document_number || citation.source || "Citation";
+    detail.textContent = [
+      citation.provision || citation.article,
+      citation.effective_from ? `Hiệu lực: ${citation.effective_from}` : null,
+      citation.source || citation.source_url,
+    ].filter(Boolean).join(" · ");
+    item.append(heading, detail);
+    list.append(item);
+  }
+}
+
+function renderAuditDetails(result, serverStatus) {
+  const metrics = metricsFrom(result);
+  const complete = provenanceIsComplete(result);
+  setText("#terminal-status", serverStatus);
+  setText("#result-timestamp", result?.completed_at || result?.created_at);
+  setText("#forecast-volume", formatValue(metrics.traffic_volume_5m ?? metrics.avg_volume));
+  setText("#forecast-speed", formatValue(metrics.avg_speed_kmh ?? metrics.avg_speed));
+  setText("#vc-ratio", formatValue(metrics.max_vc_ratio ?? metrics.vc_ratio));
+  setText("#capacity-version", metrics.capacity_version || result?.capacity_version);
+  setText("#json-view", JSON.stringify(result || {}, null, 2));
+  renderCitations(result?.citations, complete);
 }
 
 function statusClass(status) {
@@ -180,9 +254,12 @@ function applyPreset(presetName) {
   greenValue.textContent = `${preset.ratio.toFixed(2)} · ${Math.round(preset.ratio * 100)}%`;
 }
 
-function actionFor(result) {
+function actionFor(result, displayStatus = result?.status) {
   if (!result) return null;
-  return result.status === "needs_review" ? result.candidate_action : result.recommended_action;
+  const action = displayStatus === "succeeded" ? result.recommended_action
+    : displayStatus === "needs_review" ? result.candidate_action
+      : null;
+  return action?.executable === false && action?.automatic_actuation === false ? action : null;
 }
 
 function readableReviewReason(reason) {
@@ -233,7 +310,7 @@ function metricText(result) {
 
 function setInterpretation(result, status) {
   interpretationState.className = "interpretation";
-  const action = actionFor(result) || {};
+  const action = actionFor(result, status) || {};
   const nodeId = String(action.node_id || "nút giao đã chọn");
   const ratio = Number(action.green_time_ratio);
   const ratioText = Number.isFinite(ratio) ? `${Math.round(ratio * 100)}% chu kỳ xanh` : "phương án đã nhập";
@@ -293,8 +370,38 @@ function setSafety(result, status) {
     safetyReason.textContent = "Safety checks sẽ xuất hiện sau khi job hoàn tất.";
   }
   setInterpretation(result, status);
-  const action = actionFor(result);
+  const action = actionFor(result, status);
+  actionKind.textContent = status === "succeeded"
+    ? "recommended_action · non-executable"
+    : status === "needs_review"
+      ? "candidate_action · non-executable"
+      : "NON-EXECUTABLE";
   actionView.textContent = action ? JSON.stringify(action, null, 2) : "Không có action được trả về.";
+}
+
+function closeEventStream() {
+  if (eventSource) {
+    eventSource.close();
+    eventSource = null;
+  }
+}
+
+function streamJobEvents(jobId) {
+  closeEventStream();
+  eventSource = new EventSource(`/api/v1/what-if-jobs/${encodeURIComponent(jobId)}/events`);
+  const handleEvent = (event) => {
+    try {
+      const payload = JSON.parse(event.data);
+      addEvent(payload.status || payload.event || event.type || "progress");
+      if (payload.status && TERMINAL_STATUSES.has(payload.status)) closeEventStream();
+    } catch {
+      addEvent("error");
+    }
+  };
+  eventSource.onmessage = handleEvent;
+  eventSource.addEventListener("status", handleEvent);
+  eventSource.addEventListener("result", handleEvent);
+  eventSource.onerror = closeEventStream;
 }
 
 async function loadEvents(jobId) {
@@ -346,6 +453,7 @@ async function submitScenario(event) {
     return;
   }
   activeJobId = null;
+  closeEventStream();
   setError();
   resetEvents();
   setDecisionEnabled(false);
@@ -355,6 +463,14 @@ async function submitScenario(event) {
   setText("#job-id", "");
   setText("#trace-id", "", "Chưa có trace");
   setText("#versions", "");
+  setText("#terminal-status", "");
+  setText("#result-timestamp", "");
+  setText("#forecast-volume", "");
+  setText("#forecast-speed", "");
+  setText("#vc-ratio", "");
+  setText("#capacity-version", "");
+  setText("#json-view", "");
+  renderCitations([], false);
   decisionResult.className = "decision-result";
   decisionResult.textContent = "Đang chờ operator xem xét.";
 
@@ -378,15 +494,21 @@ async function submitScenario(event) {
     const accepted = await response.json();
     activeJobId = accepted.job_id;
     setText("#job-id", activeJobId);
+    streamJobEvents(activeJobId);
     const job = await fetchTerminalJob(activeJobId);
     const result = job.result || null;
+    const displayStatus = displayStatusFor(result, job.status);
+    closeEventStream();
+    setStatus(displayStatus);
     setText("#trace-id", result?.audit_record?.trace_id, "Không có trace");
     setText("#versions", result ? `${result.model_version} / ${result.data_version}` : "—");
-    setSafety(result, job.status);
-    await loadEvents(activeJobId);
-    if (eventsNode.children.length === 0) addEvent(job.status);
-    setDecisionEnabled(true, job.status);
+    renderAuditDetails(result, job.status);
+    setSafety(result, displayStatus);
+    if (eventsNode.children.length === 0) await loadEvents(activeJobId);
+    if (eventsNode.children.length === 0) addEvent(displayStatus);
+    setDecisionEnabled(true, displayStatus);
   } catch (error) {
+    closeEventStream();
     setStatus("failed");
     setSafety(null, "failed");
     setError(error instanceof Error ? error.message : "Không thể hoàn thành job.");

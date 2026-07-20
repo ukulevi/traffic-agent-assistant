@@ -1,0 +1,31 @@
+/* TRA-56: STWI dashboard design tokens (derived from project_contract.json). */
+:root {
+  --stwi-primary-700: #006699;
+  --stwi-primary-800: #004d73;
+  --stwi-primary-100: #d9f0fa;
+  --stwi-canvas: #f6f9fb;
+  --stwi-surface: #ffffff;
+  --stwi-border: #c9d7df;
+  --stwi-text: #14232c;
+  --stwi-muted: #52636d;
+  --stwi-data: #b45309;
+  --stwi-ml: #1d4ed8;
+  --stwi-rag: #15803d;
+  --stwi-safety: #7e22ce;
+  --stwi-success: #166534;
+  --stwi-warning: #9a6700;
+  --stwi-danger: #b42318;
+  --stwi-focus: #0b7fab;
+  --stwi-radius: 12px;
+  --stwi-shadow: 0 2px 10px rgb(20 35 44 / 10%);
+  --stwi-font-ui: "Be Vietnam Pro", system-ui, sans-serif;
+  --stwi-font-data: "Azeret Mono", ui-monospace, monospace;
+  --stwi-target-min: 44px;
+}
+
+.stwi-focusable:focus-visible { outline: 3px solid var(--stwi-focus); outline-offset: 2px; }
+.stwi-data { color: var(--stwi-data); }
+.stwi-ml { color: var(--stwi-ml); }
+.stwi-rag { color: var(--stwi-rag); }
+.stwi-safety { color: var(--stwi-safety); }
+.stwi-mono { font-family: var(--stwi-font-data); overflow-wrap: anywhere; }

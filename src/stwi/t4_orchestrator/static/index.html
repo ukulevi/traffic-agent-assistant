@@ -55,7 +55,7 @@
             <article><code>scenario_query</code><strong>Câu hỏi phân tích</strong><p>Mô tả sự cố hoặc thay đổi cần đánh giá. Hệ thống dùng nội dung này để phân tích và truy xuất bằng chứng pháp lý/SOP.</p></article>
             <article><code>job_id / trace_id</code><strong>Định danh và truy vết</strong><p><code>job_id</code> dùng để theo dõi một lần chạy; <code>trace_id</code> nối các bước trong audit trail khi cần kiểm tra lại.</p></article>
             <article><code>model / data</code><strong>Phiên bản tái lập</strong><p>Cho biết model và dataset nào đã tạo kết quả. Hai giá trị này cần được ghi lại khi so sánh các lần chạy.</p></article>
-            <article><code>V/C</code><strong>Mức sử dụng năng lực</strong><p>Tỷ số nhu cầu trên năng lực. Ngưỡng <code>0.9</code> là policy cấu hình của demo, không phải quy định pháp luật.</p></article>
+            <article><code>V/C</code><strong>Mức sử dụng năng lực</strong><p>V/C = 0.9 là policy cấu hình của demo, không phải quy định pháp luật.</p></article>
             <article><code>action payload</code><strong>Kết quả không thực thi</strong><p><code>recommended_action</code> chỉ có khi job <code>succeeded</code>; <code>candidate_action</code> dùng cho <code>needs_review</code>. Operator vẫn phải quyết định.</p></article>
           </div>
         </details>
@@ -94,7 +94,7 @@
               </div>
               <label>Green time ratio <output class="label-value" id="green-value" for="green-time">0.70 · 70%</output><input id="green-time" name="green" type="range" min="0" max="1" step="0.05" value="0.7" aria-describedby="green-help"><small id="green-help">0 = không có green time; 1 = toàn bộ chu kỳ · Chỉ dùng trong mô phỏng</small></label>
               <label>Mô tả tình huống<textarea id="scenario-query" name="query" required>Đánh giá quyền và nghĩa vụ người sử dụng đường tại node_00.</textarea><small>Câu hỏi dùng cho phân tích và truy xuất bằng chứng pháp lý/SOP</small></label>
-              <div class="form-footer"><p class="privacy-note"><span aria-hidden="true">▣</span> Chỉ aggregate · Không lưu video thô</p><button id="submit-button" type="submit"><span>Chạy mô phỏng</span><span aria-hidden="true">→</span></button></div>
+              <div class="form-footer"><p class="privacy-note"><span aria-hidden="true">▣</span> Chỉ aggregate · Không lưu hình ảnh thô</p><button id="submit-button" type="submit"><span>Chạy mô phỏng</span><span aria-hidden="true">→</span></button></div>
               <p id="form-error" class="error" role="alert"></p>
             </form>
           </section>
@@ -108,6 +108,8 @@
               <div><span>Job ID</span><code id="job-id">—</code></div>
               <div><span>Trace ID</span><code id="trace-id">Chưa có trace</code></div>
               <div><span>Model / data</span><code id="versions">—</code></div>
+              <div><span>Trạng thái server</span><code id="terminal-status">—</code></div>
+              <div><span>Timestamp</span><code id="result-timestamp">—</code></div>
             </div>
             <div class="timeline-heading"><h3>Lifecycle events</h3><span id="event-count">0 sự kiện</span></div>
             <ol id="events" class="timeline" aria-label="Các sự kiện của job"></ol>
@@ -125,7 +127,19 @@
               <p id="interpretation-impact" class="interpretation-impact">Các thông số kỹ thuật vẫn được giữ phía dưới để phục vụ kiểm tra và audit.</p>
               <div class="interpretation-next"><strong>Việc tiếp theo</strong><span id="interpretation-next-step">Hãy chạy một kịch bản What-If.</span></div>
             </section>
-            <div class="action-block"><div class="action-label"><span>Action payload</span><span class="non-executable">NON-EXECUTABLE</span></div><pre id="action-view">—</pre></div>
+            <section class="forecast-metrics" aria-label="Chỉ số dự báo tổng hợp">
+              <article><span>traffic_volume_5m</span><strong id="forecast-volume">—</strong><small>xe/5 phút</small></article>
+              <article><span>avg_speed_kmh</span><strong id="forecast-speed">—</strong><small>km/h</small></article>
+              <article><span>V/C tối đa</span><strong id="vc-ratio">—</strong><small>Ngưỡng policy: 0.9</small></article>
+              <article><span>Capacity</span><strong id="capacity-version">—</strong><small>capacity_version</small></article>
+            </section>
+            <details class="evidence-details">
+              <summary>Căn cứ và provenance <span id="evidence-status">Chờ kết quả</span></summary>
+              <p id="evidence-message">Citation hợp lệ mới cho phép hiển thị recommendation.</p>
+              <ul id="citations" class="citation-list"></ul>
+            </details>
+            <div class="action-block"><div class="action-label"><span>Action payload</span><span id="action-kind" class="non-executable">NON-EXECUTABLE</span></div><pre id="action-view">—</pre></div>
+            <details class="json-details"><summary>JSON kết quả (audit)</summary><pre id="json-view">—</pre></details>
           </section>
           <section class="panel decision-panel" aria-labelledby="decision-title">
             <div class="panel-heading"><div><span class="step-label">04 · HUMAN DECISION</span><h2 id="decision-title">Quyết định operator</h2></div><span class="audit-label">Audit only</span></div>

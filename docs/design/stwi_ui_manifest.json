@@ -1,0 +1,27 @@
+{
+  "artifact": "STWI MVP UI design package",
+  "ticket": "TRA-56",
+  "source_of_truth": "project_contract.json",
+  "derived_from": [
+    "stwi-mvp-ui-redesign-contract-brief.md",
+    "stwi-ui-information-architecture.md"
+  ],
+  "scope": {
+    "functional_network_nodes": 20,
+    "desktop_reference_width_px": 1280,
+    "mobile_reference_widths_px": [360, 390],
+    "raw_video": false,
+    "automatic_actuation": false
+  },
+  "canonical_statuses": ["queued", "running", "succeeded", "needs_review", "failed", "expired"],
+  "presentation_conditions": ["empty"],
+  "deliverables": {
+    "tokens": "stwi_ui_tokens.css",
+    "guidance": "stwi_ui_design_system.md",
+    "prototype": "stwi_ui_prototype.html"
+  },
+  "handoff": {
+    "TRA-57": "Implement the dashboard only against these semantics; do not add state or action meanings.",
+    "TRA-55": "Verify responsive, keyboard, focus, contrast, status and dialog acceptance criteria."
+  }
+}

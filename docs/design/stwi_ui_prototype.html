@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>STWI — TRA-56 prototype</title>
+  <link rel="stylesheet" href="stwi_ui_tokens.css">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--stwi-canvas); color: var(--stwi-text); font-family: var(--stwi-font-ui); }
+    header, main { max-width: 1280px; margin: auto; padding: 16px 24px; }
+    header { display: flex; gap: 16px; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--stwi-border); }
+    .grid { display: grid; grid-template-columns: 240px minmax(0, 1fr) 300px; gap: 16px; }
+    .card { background: var(--stwi-surface); border: 1px solid var(--stwi-border); border-radius: var(--stwi-radius); box-shadow: var(--stwi-shadow); padding: 16px; }
+    .status, button { min-height: var(--stwi-target-min); display: inline-flex; align-items: center; gap: 8px; }
+    .status { color: var(--stwi-success); font-weight: 700; }
+    button { background: var(--stwi-primary-700); color: white; border: 0; border-radius: 8px; padding: 0 14px; font: inherit; cursor: pointer; }
+    ul { padding: 0; list-style: none; } li { margin: 8px 0; } .metric { font-size: 1.35rem; font-family: var(--stwi-font-data); }
+    .notice { border-left: 4px solid var(--stwi-safety); padding-left: 12px; } small { color: var(--stwi-muted); }
+    @media (max-width: 700px) { header { align-items: flex-start; flex-direction: column; } .grid { grid-template-columns: 1fr; } .selector { display: none; } }
+  </style>
+</head>
+<body>
+  <header aria-label="Thanh trạng thái STWI">
+    <strong>STWI / Phân tích What-if</strong>
+    <span class="stwi-mono">node-A · dữ liệu mới 2 phút trước</span>
+    <span class="status" aria-label="Trạng thái: hoàn tất">● Hoàn tất</span>
+  </header>
+  <main>
+    <div class="grid">
+      <aside class="card selector" aria-label="Chọn một trong 20 node đăng ký">
+        <strong>20 node</strong><input class="stwi-focusable" aria-label="Tìm node" placeholder="Tìm node (/)">
+        <ul><li>node-A · X</li><li>node-B · X</li><li>…</li><li>node-20 · Y</li></ul>
+      </aside>
+      <section class="card" aria-labelledby="conclusion">
+        <h1 id="conclusion">Ước tính 30 phút tới</h1>
+        <p>Với giả định đèn xanh 70%, hướng ưu tiên tại node-A <strong>có thể</strong> thông thoáng hơn; hàng chờ ở hướng còn lại có thể tăng. Đây là ước tính hỗ trợ quyết định, không phải lệnh điều khiển.</p>
+        <div class="metric">Lưu lượng: 42 xe/5 phút</div><small>`traffic_volume_5m`</small>
+        <div class="metric">Tốc độ: 28 km/h</div><small>`avg_speed_kmh`</small>
+        <p>Phiên bản năng lực: <span class="stwi-mono">capacity-v1</span> · V/C 0.9 là policy MVP có thể cấu hình, không phải quy định pháp luật.</p>
+        <h2>Bằng chứng</h2><p>Ảnh render tĩnh và tóm tắt detection; không phát video thô.</p>
+        <button class="stwi-focusable" type="button">Ghi nhận quyết định</button>
+        <section aria-labelledby="state-gallery">
+          <h2 id="state-gallery">Thư viện trạng thái</h2>
+          <ul>
+            <li><strong>Empty:</strong> Chọn một trong 20 node đã đăng ký để xem dữ liệu; đây không phải job status.</li>
+            <li><strong>queued:</strong> Đang xếp hàng — chưa có kết quả hoặc đề xuất.</li>
+            <li><strong>running:</strong> Đang phân tích — hiển thị tiến độ, không có đề xuất.</li>
+            <li><strong>needs_review:</strong> Chỉ có “Ứng viên — không thể thực thi”; cần operator xem xét.</li>
+            <li><strong>failed:</strong> Thất bại an toàn — chỉ retry khi API cho phép.</li>
+            <li><strong>expired:</strong> Hết hạn — yêu cầu chạy lại với dữ liệu mới.</li>
+          </ul>
+        </section>
+      </section>
+      <aside class="card" aria-label="Bối cảnh và nguồn gốc">
+        <h2>Độ không chắc chắn</h2><p>Khoảng ước tính 36–48 xe/5 phút; phụ thuộc lưu lượng đến và độ mới dữ liệu.</p>
+        <h2>OOD</h2><p class="notice">Bình thường — không thấy mẫu dữ liệu ngoài phân phối.</p>
+        <h2>Citation & audit</h2><p>Đủ trường bắt buộc · <span class="stwi-mono">trace_id: demo-001</span></p>
+        <small>Nguồn, timestamp, model/data version và hiệu lực pháp lý được mở trong ngăn audit.</small>
+      </aside>
+    </div>
+  </main>
+</body>
+</html>
