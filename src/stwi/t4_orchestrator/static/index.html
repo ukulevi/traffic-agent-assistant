@@ -3,38 +3,69 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>STWI Demo Operator</title>
+    <title>STWI · What-If Operator</title>
     <link rel="stylesheet" href="dashboard.css">
   </head>
   <body>
     <header class="topbar">
-      <div><strong>STWI</strong><span>What-If Operator Demo</span></div>
-      <p class="provisional">Provisional offline demo · Human approval required</p>
+      <div><strong>STWI</strong><span>What-If · Decision support</span></div>
+      <p class="provisional">Demo offline · Mọi quyết định cần operator phê duyệt</p>
     </header>
-    <main>
-      <section class="workflow" aria-label="What-if workflow">
-        <form id="scenario-form" class="panel">
-          <div class="section-heading"><h1>Tạo kịch bản</h1><span id="job-status" class="status">Chưa gửi</span></div>
+    <main class="dashboard">
+      <aside class="input-column" aria-labelledby="scenario-title">
+        <form id="scenario-form" class="panel scenario-form">
+          <div class="eyebrow">Bước 1 · Input</div>
+          <h1 id="scenario-title">Tạo kịch bản</h1>
+          <p class="muted">Gửi một giả định để đánh giá; hệ thống không điều khiển hiện trường.</p>
           <label>Tenant<input id="tenant-id" name="tenant" value="demo-operator" required></label>
           <label>Node<input id="node-id" name="node" value="node-A" required></label>
           <label>Green time ratio<input id="green-time" name="green" type="number" min="0" max="1" step="0.05" value="0.7" required></label>
           <label>Mô tả tình huống<textarea id="scenario-query" name="query" required>Đánh giá kịch bản sự cố tại node-A.</textarea></label>
-          <button type="submit">Gửi What-If</button>
+          <button type="submit">Đánh giá What-If</button>
           <p id="form-error" class="error" role="alert"></p>
         </form>
-        <section class="panel" aria-live="polite">
-          <div class="section-heading"><h2>Quan sát job</h2><code id="trace-id">Chưa có trace</code></div>
-          <dl class="details">
-            <div><dt>Job</dt><dd id="job-id">—</dd></div>
-            <div><dt>Trạng thái</dt><dd id="terminal-status">—</dd></div>
-            <div><dt>Model / data</dt><dd id="versions">—</dd></div>
-          </dl>
-          <h3>Sự kiện</h3><ol id="events" class="events"></ol>
+        <section class="policy-note" aria-label="Safety policy">
+          <strong>Safety policy</strong>
+          <span>V/C = 0.9 là policy MVP có thể cấu hình, không phải quy định pháp luật.</span>
         </section>
-      </section>
-      <section class="result-grid">
-        <section class="panel"><h2>Đánh giá an toàn</h2><p id="review-reason">Chưa có kết quả.</p><pre id="action-view">—</pre></section>
-        <section class="panel"><h2>Quyết định operator</h2><p id="decision-note">Chỉ ghi audit; không có điều khiển hiện trường.</p><div class="decision-actions"><button id="approve" type="button" disabled>Phê duyệt</button><button id="reject" class="secondary" type="button" disabled>Từ chối</button></div><p id="decision-result" role="status"></p></section>
+      </aside>
+
+      <section class="result-column" aria-live="polite" aria-labelledby="result-title">
+        <section class="panel result-hero">
+          <div class="result-heading">
+            <div><div class="eyebrow">Bước 2 · Kết quả</div><h2 id="result-title">Chưa có kết quả</h2></div>
+            <span id="job-status" class="status">Chưa gửi</span>
+          </div>
+          <p id="plain-language-result" class="result-summary">Gửi kịch bản để xem tác động, căn cứ và quyết định hỗ trợ.</p>
+          <div id="action-card" class="action-card is-hidden">
+            <div><span id="action-label" class="eyebrow"></span><p id="action-text"></p></div>
+            <span class="approval-required">Cần operator phê duyệt</span>
+          </div>
+          <p id="review-reason" class="review-reason">Kết quả fail-closed sẽ nêu rõ lý do cần xem xét.</p>
+        </section>
+
+        <section class="metrics-grid" aria-label="Forecast metrics">
+          <article class="metric-card"><span>traffic_volume_5m</span><strong id="forecast-volume">—</strong><small>xe/5 phút</small></article>
+          <article class="metric-card"><span>avg_speed_kmh</span><strong id="forecast-speed">—</strong><small>km/h</small></article>
+          <article class="metric-card"><span>V/C tối đa</span><strong id="vc-ratio">—</strong><small>Ngưỡng policy: 0.9</small></article>
+          <article class="metric-card"><span>Capacity</span><strong id="capacity-version">—</strong><small>capacity_version</small></article>
+        </section>
+
+        <section class="panel evidence-panel" aria-labelledby="evidence-title">
+          <div class="section-heading"><div><div class="eyebrow">Evidence</div><h2 id="evidence-title">Căn cứ & provenance</h2></div><span id="evidence-status" class="evidence-status">Chờ kết quả</span></div>
+          <p id="evidence-message" class="muted">Citation hợp lệ mới cho phép hiển thị recommendation.</p>
+          <ul id="citations" class="citation-list"></ul>
+        </section>
+
+        <section class="panel decision-panel">
+          <h2>Quyết định operator</h2>
+          <p>Chỉ ghi audit; không có lệnh tự động đến thiết bị hiện trường.</p>
+          <div class="decision-actions"><button id="approve" type="button" disabled>Ghi nhận phê duyệt</button><button id="reject" class="secondary" type="button" disabled>Ghi nhận từ chối</button></div>
+          <p id="decision-result" role="status"></p>
+        </section>
+
+        <details class="panel details-panel"><summary>Lifecycle, trace và versions</summary><dl class="details"><div><dt>Job</dt><dd id="job-id">—</dd></div><div><dt>Trạng thái server</dt><dd id="terminal-status">—</dd></div><div><dt>Timestamp</dt><dd id="result-timestamp">—</dd></div><div><dt>trace_id</dt><dd id="trace-id">—</dd></div><div><dt>Model / data</dt><dd id="versions">—</dd></div></dl><h3>Sự kiện</h3><ol id="events" class="events"></ol></details>
+        <details class="panel details-panel"><summary>JSON kết quả (audit)</summary><pre id="json-view">—</pre></details>
       </section>
     </main>
     <script src="dashboard.js"></script>
