@@ -10,6 +10,17 @@ Use exactly 20 registered nodes. Keep the contract names `X[B,12,N,16]`, `M[B,12
 
 ## Visual language
 
+Dashboard triển khai dùng **Solid Hybrid Command Center**: dark opaque shell,
+solid data surfaces và hierarchy ưu tiên kết luận. Không dùng glass,
+translucent fill, backdrop blur, glow hoặc gradient trên panel dữ liệu. Màu
+`#006699` vẫn là primary; màu không bao giờ là tín hiệu trạng thái duy nhất.
+
+UI tách ba miền trạng thái độc lập: canonical job status, transport state và
+operator decision state. Mất SSE hoặc chuyển sang polling fallback không được
+biến một job `running` thành `failed`. Production, demo và static preview dùng
+cùng information architecture; preset deterministic chỉ xuất hiện trong demo,
+còn static preview khóa mọi mutation.
+
 Load `stwi_ui_tokens.css`. Use `Be Vietnam Pro` for Vietnamese interface text and `Azeret Mono` for IDs, values, timestamps, versions and trace IDs. `#006699` is the primary action and navigation colour. Orange, blue, green and purple identify Data, ML, Knowledge/RAG and Safety respectively; they do not by themselves encode success or failure. Every status and OOD indicator has an icon and text label.
 
 Cards have a modest radius and clear border; use shadow only to separate layers. Respect a 44×44px minimum pointer target, visible focus, semantic landmarks and a logical Tab order. Do not use glass effects, high-motion decoration or a dashboard that needs users to hunt for the conclusion.
@@ -54,7 +65,20 @@ No other state is valid. `queued`, `running`, `failed`, and `expired` never show
 
 ## Prototype and interaction contract
 
-The prototype demonstrates a static evidence render/detection summary only; it must have no video player or transport controls. `/` focuses node search, `Enter` opens the focused registered node, `Esc` closes a drawer/dialog, and `C` copies the trace ID. “Ghi nhận quyết định” opens an accessible confirmation dialog to record operator, timestamp, rationale and trace ID. It does not call a control endpoint.
+The dashboard renders aggregate evidence only; it must have no raw-image player
+or field-control semantics. `/` focuses node search when focus is not already in
+an editable control. Native keyboard activation applies to buttons and node
+options; `Esc` closes the modal dialog and returns focus to its trigger.
+“Ghi nhận quyết định” opens an accessible confirmation dialog containing the
+immutable job, trace and trusted operator context. A non-empty rationale is
+required for every decision. The UI records an audit decision, reconciles it
+with `GET` and rejects any response where `automatic_actuation` or
+`applied_by_system` is not explicitly `false`.
+
+At mobile widths the reading order is result → uncertainty/OOD → evidence →
+citations/audit → decision → lifecycle/scenario. Controls retain a minimum
+44×44 px target, long IDs wrap, reduced-motion is respected and the native
+modal dialog provides focus containment.
 
 ### Handoff acceptance
 

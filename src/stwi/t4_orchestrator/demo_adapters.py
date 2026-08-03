@@ -49,6 +49,41 @@ class DemoSurrogateForecaster:
             predicted_volume=110.0,
             predicted_speed=41.0,
         ),
+        "node_05": SurrogateScenario(
+            vc_ratio=0.94,
+            uncertainty_score=0.18,
+            ood_score=0.15,
+            predicted_volume=138.0,
+            predicted_speed=22.0,
+        ),
+        "node_06": SurrogateScenario(
+            vc_ratio=0.98,
+            uncertainty_score=0.25,
+            ood_score=0.30,
+            predicted_volume=72.0,
+            predicted_speed=12.0,
+        ),
+        "node_07": SurrogateScenario(
+            vc_ratio=0.92,
+            uncertainty_score=0.15,
+            ood_score=0.10,
+            predicted_volume=118.0,
+            predicted_speed=27.0,
+        ),
+        "node_08": SurrogateScenario(
+            vc_ratio=0.97,
+            uncertainty_score=0.20,
+            ood_score=0.15,
+            predicted_volume=175.0,
+            predicted_speed=21.0,
+        ),
+        "node_09": SurrogateScenario(
+            vc_ratio=0.78,
+            uncertainty_score=0.82,
+            ood_score=0.60,
+            predicted_volume=105.0,
+            predicted_speed=36.0,
+        ),
     }
 
     def predict(

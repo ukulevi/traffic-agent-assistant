@@ -1,60 +1,17 @@
-const form = document.querySelector("#scenario-form");
-const statusNode = document.querySelector("#job-status");
-const errorNode = document.querySelector("#form-error");
-const eventsNode = document.querySelector("#events");
-const eventCountNode = document.querySelector("#event-count");
-const emptyEventsNode = document.querySelector("#empty-events");
-const approveButton = document.querySelector("#approve");
-const rejectButton = document.querySelector("#reject");
-const submitButton = document.querySelector("#submit-button");
-const greenTime = document.querySelector("#green-time");
-const greenValue = document.querySelector("#green-value");
-const demoPreset = document.querySelector("#demo-preset");
-const nodeInput = document.querySelector("#node-id");
-const scenarioQuery = document.querySelector("#scenario-query");
-const presetExpectation = document.querySelector("#preset-expectation");
-const safetyState = document.querySelector("#safety-state");
-const safetyReason = document.querySelector("#review-reason");
-const interpretationState = document.querySelector("#result-interpretation");
-const interpretationTitle = document.querySelector("#interpretation-title");
-const interpretationSummary = document.querySelector("#interpretation-summary");
-const interpretationImpact = document.querySelector("#interpretation-impact");
-const interpretationNextStep = document.querySelector("#interpretation-next-step");
-const actionView = document.querySelector("#action-view");
-const actionKind = document.querySelector("#action-kind");
-const decisionResult = document.querySelector("#decision-result");
-const runtimeState = document.querySelector("#runtime-state");
-const runtimeLabel = document.querySelector("#runtime-label");
+import { createDashboardApi } from "./dashboard-api.js";
+import { resolveDashboardContext } from "./dashboard-mode.js";
+import {
+  createInitialState,
+  deriveDecisionPolicy,
+  evaluateEvidence,
+  reduceDashboardState,
+  TERMINAL_STATUSES,
+  validateAcceptedJob,
+  validateJobEnvelope,
+} from "./dashboard-state.js";
+import { createDashboardView } from "./dashboard-view.js";
 
-const TERMINAL_STATUSES = new Set(["succeeded", "needs_review", "failed", "expired"]);
-const STATUS_LABELS = {
-  idle: "Chưa gửi",
-  queued: "Đang xếp hàng",
-  running: "Đang mô phỏng",
-  succeeded: "Đã hoàn tất",
-  needs_review: "Cần operator review",
-  failed: "Thất bại",
-  expired: "Hết thời gian",
-};
-const EVENT_LABELS = {
-  queued: "Job đã được tiếp nhận",
-  running: "Đang chạy các bước phân tích",
-  succeeded: "Đã tạo kết quả an toàn",
-  needs_review: "Chuyển sang operator review",
-  failed: "Job kết thúc với lỗi an toàn",
-  expired: "Job vượt hard deadline",
-  result: "Đã nhận kết quả terminal",
-  operator_decision: "Đã ghi quyết định operator",
-  error: "Luồng sự kiện báo lỗi",
-  timeline_unavailable: "Không thể tải timeline; kết quả job vẫn được giữ nguyên",
-};
-let activeJobId = null;
-let activeStatus = "idle";
-let runtimeAvailable = null;
-let activeJurisdiction = "VN";
-let eventSource = null;
-
-const DEMO_PRESETS = {
+export const DEMO_PRESETS = Object.freeze({
   safe: {
     nodeId: "node_00", ratio: 0.70, jurisdiction: "VN",
     query: "Đánh giá quyền và nghĩa vụ người sử dụng đường tại node_00.",
@@ -85,468 +42,396 @@ const DEMO_PRESETS = {
     query: "Đánh giá giả định không có pha xanh tại node_00.",
     expectation: "Kỳ vọng: giá trị cực trị bị safety gate giữ lại để review.",
   },
-};
+  accident: {
+    nodeId: "node_05", ratio: 0.70, jurisdiction: "VN",
+    query: "Đánh giá quyền và nghĩa vụ người sử dụng đường trong tình huống tai nạn synthetic tại node_05.",
+    expectation: "Kỳ vọng synthetic: giảm năng lực hiệu dụng làm V/C vượt policy 0.90; job cần operator review.",
+  },
+  flood: {
+    nodeId: "node_06", ratio: 0.70, jurisdiction: "VN",
+    query: "Đánh giá quyền và nghĩa vụ người sử dụng đường trong tình huống ngập lụt synthetic tại node_06.",
+    expectation: "Kỳ vọng synthetic: tốc độ thấp nhất nhóm incident và V/C vượt policy; hệ thống không mô phỏng mực nước.",
+  },
+  "lane-closure": {
+    nodeId: "node_07", ratio: 0.70, jurisdiction: "VN",
+    query: "Đánh giá quyền và nghĩa vụ người sử dụng đường khi đóng làn synthetic tại node_07.",
+    expectation: "Kỳ vọng synthetic: năng lực giảm tương đương đóng một phần làn và job chuyển needs_review.",
+  },
+  "demand-surge": {
+    nodeId: "node_08", ratio: 0.70, jurisdiction: "VN",
+    query: "Đánh giá quyền và nghĩa vụ người sử dụng đường khi nhu cầu tăng synthetic tại node_08.",
+    expectation: "Kỳ vọng synthetic: lưu lượng cao và V/C vượt policy 0.90; không phải dự báo production.",
+  },
+  "environmental-anomaly": {
+    nodeId: "node_09", ratio: 0.70, jurisdiction: "VN",
+    query: "Đánh giá tín hiệu môi trường synthetic bất thường cần đối chiếu tại node_09.",
+    expectation: "Kỳ vọng synthetic: tín hiệu tương quan nằm ngoài phân phối nên cần review; không kết luận nguyên nhân ô nhiễm–ùn tắc.",
+  },
+});
 
-function setText(selector, value, fallback = "—") {
-  const node = document.querySelector(selector);
-  if (node) node.textContent = value || fallback;
-}
+const ACTIVE_JOB_KEY = "stwi.activeJob";
 
-function formatValue(value) {
-  return typeof value === "number"
-    ? value.toLocaleString("vi-VN", { maximumFractionDigits: 2 })
-    : (value ?? "—");
-}
-
-function validCitation(citation) {
-  return Boolean(
-    citation
-    && (citation.source || citation.source_url || citation.title || citation.document_number)
-    && (citation.provision || citation.article || !citation.document_number)
-    && (citation.effective_from || !citation.document_number)
-  );
-}
-
-function provenanceIsComplete(result) {
-  return Boolean(result?.trace_id || result?.audit_record?.trace_id)
-    && Boolean(result?.model_version)
-    && Boolean(result?.data_version)
-    && Boolean(result?.completed_at || result?.created_at)
-    && Array.isArray(result?.citations)
-    && result.citations.length > 0
-    && result.citations.every(validCitation);
-}
-
-function displayStatusFor(result, serverStatus) {
-  const complete = provenanceIsComplete(result);
-  return serverStatus === "succeeded" && !complete ? "needs_review" : serverStatus;
-}
-
-function metricsFrom(result) {
-  return result?.scenario_summary || result?.forecast_summary || result?.scenario_metrics || {};
-}
-
-function renderCitations(citations, complete) {
-  const list = document.querySelector("#citations");
-  list.replaceChildren();
-  setText("#evidence-status", complete ? "Provenance đầy đủ" : "Thiếu provenance");
-  setText(
-    "#evidence-message",
-    complete
-      ? "Citation có nguồn, điều khoản và mốc hiệu lực để operator đối chiếu."
-      : "Không đủ citation/provenance để xác nhận recommendation; giao diện fail-closed."
-  );
-  for (const citation of citations || []) {
-    const item = document.createElement("li");
-    const heading = document.createElement("strong");
-    const detail = document.createElement("div");
-    heading.textContent = citation.title || citation.document_number || citation.source || "Citation";
-    detail.textContent = [
-      citation.provision || citation.article,
-      citation.effective_from ? `Hiệu lực: ${citation.effective_from}` : null,
-      citation.source || citation.source_url,
-    ].filter(Boolean).join(" · ");
-    item.append(heading, detail);
-    list.append(item);
-  }
-}
-
-function renderAuditDetails(result, serverStatus) {
-  const metrics = metricsFrom(result);
-  const complete = provenanceIsComplete(result);
-  setText("#terminal-status", serverStatus);
-  setText("#result-timestamp", result?.completed_at || result?.created_at);
-  setText("#forecast-volume", formatValue(metrics.traffic_volume_5m ?? metrics.avg_volume));
-  setText("#forecast-speed", formatValue(metrics.avg_speed_kmh ?? metrics.avg_speed));
-  setText("#vc-ratio", formatValue(metrics.max_vc_ratio ?? metrics.vc_ratio));
-  setText("#capacity-version", metrics.capacity_version || result?.capacity_version);
-  setText("#json-view", JSON.stringify(result || {}, null, 2));
-  renderCitations(result?.citations, complete);
-}
-
-function statusClass(status) {
-  return String(status || "idle").toLowerCase().replace(/[^a-z0-9]+/g, "-");
-}
-
-function setStatus(status) {
-  activeStatus = status || "idle";
-  statusNode.textContent = STATUS_LABELS[activeStatus] || activeStatus;
-  statusNode.className = `status status-${statusClass(activeStatus)}`;
-}
-
-function addEvent(label) {
-  const item = document.createElement("li");
-  item.textContent = EVENT_LABELS[label] || label || "Đã nhận event";
-  eventsNode.append(item);
-  const count = eventsNode.children.length;
-  eventCountNode.textContent = `${count} sự kiện`;
-  emptyEventsNode.hidden = count > 0;
-}
-
-function resetEvents() {
-  eventsNode.replaceChildren();
-  eventCountNode.textContent = "0 sự kiện";
-  emptyEventsNode.hidden = false;
-}
-
-function setError(message = "") {
-  errorNode.textContent = message;
-}
-
-function setBusy(isBusy) {
-  submitButton.disabled = isBusy || runtimeAvailable === false;
-  submitButton.querySelector("span").textContent = isBusy ? "Đang xử lý…" : "Chạy mô phỏng";
-  form.setAttribute("aria-busy", String(isBusy));
-}
-
-async function checkRuntimeAvailability() {
-  try {
-    const response = await fetch("/openapi.json", { headers: { Accept: "application/json" } });
-    if (!response.ok) throw new Error("API discovery failed");
-    runtimeAvailable = true;
-    runtimeState.classList.remove("runtime-offline");
-    runtimeLabel.textContent = "Runtime demo sẵn sàng";
-    setError();
-  } catch {
-    runtimeAvailable = false;
-    runtimeState.classList.add("runtime-offline");
-    runtimeLabel.textContent = "UI preview · chưa có API";
-    setError("Static preview chỉ hiển thị giao diện. Hãy chạy STWI FastAPI runtime và mở /demo/ trên cùng cổng.");
-  }
-  setBusy(false);
-}
-
-async function createJobError(response) {
-  if ([404, 405, 501].includes(response.status)) {
-    return `Runtime API chưa sẵn sàng (HTTP ${response.status}). Không thể tạo job từ static preview.`;
-  }
-  if (response.status === 401 || response.status === 403) {
-    return "Runtime từ chối principal/tenant demo. Kiểm tra auth boundary trước khi thử lại.";
-  }
-  if (response.status === 422) {
-    return "Dữ liệu kịch bản chưa hợp lệ. Kiểm tra tenant, node và mô tả tình huống.";
-  }
-  return `Không thể tạo job (HTTP ${response.status}). Kiểm tra runtime demo.`;
-}
-
-function setDecisionEnabled(enabled, status = activeStatus) {
-  approveButton.disabled = !enabled || status !== "succeeded";
-  rejectButton.disabled = !enabled;
-}
-
-function markCustomPreset() {
-  demoPreset.value = "custom";
-  activeJurisdiction = "VN";
-  presetExpectation.textContent = "Tùy chỉnh: kết quả phụ thuộc input nhưng vẫn bị ràng buộc bởi safety gate.";
-}
-
-function applyPreset(presetName) {
-  const preset = DEMO_PRESETS[presetName];
-  if (!preset) {
-    markCustomPreset();
-    return;
-  }
-  nodeInput.value = preset.nodeId;
-  greenTime.value = String(preset.ratio);
-  scenarioQuery.value = preset.query;
-  activeJurisdiction = preset.jurisdiction;
-  presetExpectation.textContent = preset.expectation;
-  greenValue.textContent = `${preset.ratio.toFixed(2)} · ${Math.round(preset.ratio * 100)}%`;
-}
-
-function actionFor(result, displayStatus = result?.status) {
-  if (!result) return null;
-  const action = displayStatus === "succeeded" ? result.recommended_action
-    : displayStatus === "needs_review" ? result.candidate_action
-      : null;
-  return action?.executable === false && action?.automatic_actuation === false ? action : null;
-}
-
-function readableReviewReason(reason) {
-  const normalized = String(reason || "").toLowerCase();
-  if (normalized.includes("out_of_distribution") || normalized.includes("ood")) {
-    return "Tình huống này khác đáng kể so với dữ liệu mà mô hình đã được kiểm tra, nên kết quả chưa đủ tin cậy.";
-  }
-  if (normalized.includes("uncertainty")) {
-    return "Mức độ không chắc chắn đang cao, nên hệ thống chưa thể coi phương án là một khuyến nghị an toàn.";
-  }
-  if (normalized.includes("legal") || normalized.includes("citation")) {
-    return "Hệ thống chưa tìm thấy đủ căn cứ pháp lý hoặc SOP hợp lệ để hỗ trợ phương án.";
-  }
-  if (normalized.includes("vc_ratio") || normalized.includes("vc threshold")) {
-    return "Mức sử dụng năng lực giao thông dự kiến vượt ngưỡng policy của demo, nên phương án bị giữ lại để xem xét.";
-  }
-  if (normalized.includes("timeout")) {
-    return "Quá trình phân tích không hoàn thành trong thời hạn cho phép, nên hệ thống không đưa ra khuyến nghị.";
-  }
-  return "Một hoặc nhiều kiểm tra an toàn chưa đạt; hệ thống chủ động dừng để operator xem xét thêm.";
-}
-
-function metricText(result) {
-  const baseline = result?.baseline_summary || {};
-  const scenario = result?.scenario_summary || {};
-  const baselineVolume = Number(baseline.avg_volume);
-  const scenarioVolume = Number(scenario.avg_volume);
-  const baselineSpeed = Number(baseline.avg_speed);
-  const scenarioSpeed = Number(scenario.avg_speed);
-  const vcRatio = Number(scenario.max_vc_ratio);
-  const checks = Array.isArray(result?.safety_checks) ? result.safety_checks : [];
-  const vcThreshold = Number(checks.find((check) => Number.isFinite(Number(check?.vc_threshold)))?.vc_threshold);
-  const parts = [];
-  if (Number.isFinite(baselineVolume) && Number.isFinite(scenarioVolume)) {
-    parts.push(`lưu lượng trung bình ${baselineVolume.toFixed(1)} → ${scenarioVolume.toFixed(1)} xe/5 phút`);
-  }
-  if (Number.isFinite(baselineSpeed) && Number.isFinite(scenarioSpeed)) {
-    parts.push(`tốc độ trung bình ${baselineSpeed.toFixed(1)} → ${scenarioSpeed.toFixed(1)} km/h`);
-  }
-  if (Number.isFinite(vcRatio)) {
-    const thresholdText = Number.isFinite(vcThreshold) ? `, ngưỡng policy ${vcThreshold.toFixed(2)}` : "";
-    parts.push(`V/C cao nhất ${vcRatio.toFixed(2)}${thresholdText}`);
-  }
-  return parts.length
-    ? `Ước tính từ dữ liệu mô phỏng: ${parts.join("; ")}.`
-    : "API chưa trả đủ số liệu tổng hợp để so sánh tác động; hãy xem model/data version và audit record trước khi kết luận.";
-}
-
-function setInterpretation(result, status) {
-  interpretationState.className = "interpretation";
-  const action = actionFor(result, status) || {};
-  const nodeId = String(action.node_id || "nút giao đã chọn");
-  const ratio = Number(action.green_time_ratio);
-  const ratioText = Number.isFinite(ratio) ? `${Math.round(ratio * 100)}% chu kỳ xanh` : "phương án đã nhập";
-
-  if (status === "succeeded") {
-    interpretationState.classList.add("interpretation-success");
-    interpretationTitle.textContent = "Phương án đạt kiểm tra trong profile mô phỏng";
-    interpretationSummary.textContent = `Theo dữ liệu mô phỏng, phương án ${ratioText} tại ${nodeId} đủ điều kiện để operator xem xét. Đây chưa phải bằng chứng về hiệu quả ngoài thực địa.`;
-    interpretationImpact.textContent = metricText(result);
-    interpretationNextStep.textContent = "Đọc các số liệu, kiểm tra nguồn model/data, rồi phê duyệt hoặc từ chối để ghi audit. Không có lệnh nào được gửi đến đèn tín hiệu.";
-  } else if (status === "needs_review") {
-    interpretationState.classList.add("interpretation-review");
-    interpretationTitle.textContent = "Chưa đủ điều kiện để đưa ra khuyến nghị";
-    interpretationSummary.textContent = `${readableReviewReason(result?.needs_review_reason)} Phương án ${ratioText} tại ${nodeId} chỉ được giữ dưới dạng candidate_action.`;
-    interpretationImpact.textContent = metricText(result);
-    interpretationNextStep.textContent = "Không phê duyệt như một khuyến nghị. Operator cần kiểm tra thêm dữ liệu, căn cứ hoặc điều chỉnh kịch bản trước khi chạy lại.";
-  } else if (status === "failed" || status === "expired") {
-    interpretationState.classList.add("interpretation-failed");
-    interpretationTitle.textContent = status === "expired" ? "Phân tích đã hết thời gian" : "Không tạo được kết quả an toàn";
-    interpretationSummary.textContent = status === "expired"
-      ? "Job không hoàn thành trong thời hạn cho phép. Hệ thống đã dừng và không tạo action."
-      : "Job gặp lỗi và hệ thống đã fail-closed. Không có phương án nào được đề xuất hoặc thực thi.";
-    interpretationImpact.textContent = "Không nên suy luận tác động giao thông từ lượt chạy này.";
-    interpretationNextStep.textContent = "Kiểm tra lỗi runtime/audit, sửa nguyên nhân rồi tạo một job mới.";
-  } else {
-    interpretationState.classList.add("interpretation-idle");
-    interpretationTitle.textContent = "Chưa có kết quả để diễn giải";
-    interpretationSummary.textContent = "Sau khi mô phỏng hoàn tất, khu vực này sẽ giải thích kết quả bằng ngôn ngữ thông thường.";
-    interpretationImpact.textContent = "Các thông số kỹ thuật vẫn được giữ phía dưới để phục vụ kiểm tra và audit.";
-    interpretationNextStep.textContent = "Hãy chạy một kịch bản What-If.";
-  }
-}
-
-function setSafety(result, status) {
-  safetyState.className = "safety-state";
-  const stateIcon = safetyState.querySelector(".state-icon");
-  const stateTitle = safetyState.querySelector("strong");
-  if (status === "succeeded") {
-    safetyState.classList.add("safety-success");
-    stateIcon.textContent = "✓";
-    stateTitle.textContent = "Đạt kiểm tra trong profile mô phỏng";
-    safetyReason.textContent = "Đây là kết quả synthetic; operator vẫn phải xem model/data version trước khi quyết định.";
-  } else if (status === "needs_review") {
-    safetyState.classList.add("safety-review");
-    stateIcon.textContent = "!";
-    stateTitle.textContent = "Cần operator review";
-    safetyReason.textContent = result?.needs_review_reason || "Safety loop chưa đủ bằng chứng để đưa ra recommendation.";
-  } else if (status === "failed" || status === "expired") {
-    safetyState.classList.add("safety-failed");
-    stateIcon.textContent = "×";
-    stateTitle.textContent = status === "expired" ? "Job đã hết thời gian" : "Không tạo được kết quả";
-    safetyReason.textContent = "Hệ thống fail-closed; không có action nào được đưa ra.";
-  } else {
-    safetyState.classList.add("safety-idle");
-    stateIcon.textContent = "○";
-    stateTitle.textContent = "Đang chờ kết quả";
-    safetyReason.textContent = "Safety checks sẽ xuất hiện sau khi job hoàn tất.";
-  }
-  setInterpretation(result, status);
-  const action = actionFor(result, status);
-  actionKind.textContent = status === "succeeded"
-    ? "recommended_action · non-executable"
-    : status === "needs_review"
-      ? "candidate_action · non-executable"
-      : "NON-EXECUTABLE";
-  actionView.textContent = action ? JSON.stringify(action, null, 2) : "Không có action được trả về.";
-}
-
-function closeEventStream() {
-  if (eventSource) {
-    eventSource.close();
-    eventSource = null;
-  }
-}
-
-function streamJobEvents(jobId) {
-  closeEventStream();
-  eventSource = new EventSource(`/api/v1/what-if-jobs/${encodeURIComponent(jobId)}/events`);
-  const handleEvent = (event) => {
-    try {
-      const payload = JSON.parse(event.data);
-      addEvent(payload.status || payload.event || event.type || "progress");
-      if (payload.status && TERMINAL_STATUSES.has(payload.status)) closeEventStream();
-    } catch {
-      addEvent("error");
-    }
+function defaultTimers() {
+  return {
+    setTimeout: (callback, delay) => globalThis.setTimeout(callback, delay),
+    clearTimeout: (timer) => globalThis.clearTimeout(timer),
   };
-  eventSource.onmessage = handleEvent;
-  eventSource.addEventListener("status", handleEvent);
-  eventSource.addEventListener("result", handleEvent);
-  eventSource.onerror = closeEventStream;
 }
 
-async function loadEvents(jobId) {
-  try {
-    const response = await fetch(`/api/v1/what-if-jobs/${encodeURIComponent(jobId)}/events`);
-    if (!response.ok) {
-      addEvent("timeline_unavailable");
+export function createDashboardCoordinator({
+  api = createDashboardApi(),
+  view = createDashboardView(document),
+  resolveContext = () => resolveDashboardContext(),
+  storage = globalThis.sessionStorage,
+  cryptoImpl = globalThis.crypto,
+  navigatorImpl = globalThis.navigator,
+  timers = defaultTimers(),
+} = {}) {
+  let state = createInitialState();
+  let operationEpoch = 0;
+  let activeController = null;
+  let pollingController = null;
+  let closeStream = null;
+  let fallbackTimer = null;
+  let pollingActive = false;
+  let activeJurisdiction = "VN";
+
+  function dispatch(event) {
+    state = reduceDashboardState(state, event);
+    if (state.job.result) {
+      state = {
+        ...state,
+        job: {
+          ...state.job,
+          evidence: evaluateEvidence(state.job.result, state.context.mode),
+        },
+      };
+    }
+    view.render(state, deriveDecisionPolicy(state));
+  }
+
+  function currentOperation(jobId, epoch) {
+    return state.job.id === jobId && state.operationEpoch === epoch;
+  }
+
+  function persistActiveJob() {
+    if (!state.job.id || !storage) return;
+    storage.setItem(ACTIVE_JOB_KEY, JSON.stringify({
+      jobId: state.job.id,
+      tenantId: state.context.tenantId,
+    }));
+  }
+
+  function clearMonitoring() {
+    timers.clearTimeout(fallbackTimer);
+    activeController?.abort();
+    pollingController?.abort();
+    closeStream?.();
+    activeController = null;
+    pollingController = null;
+    closeStream = null;
+    pollingActive = false;
+  }
+
+  async function acceptEnvelope(envelope, epoch) {
+    const validated = validateJobEnvelope(envelope);
+    if (!validated.ok) {
+      dispatch({ type: "transport/protocol_error", code: validated.code });
       return;
     }
-    const body = await response.text();
-    for (const block of body.split(/\r?\n\r?\n/)) {
-      let eventName = "";
-      let eventData = null;
-      for (const line of block.split(/\r?\n/)) {
-        if (line.startsWith("event: ")) eventName = line.slice(7).trim();
-        if (line.startsWith("data: ")) {
-          try {
-            eventData = JSON.parse(line.slice(6));
-          } catch {
-            eventData = null;
-          }
-        }
-      }
-      const label = eventData?.status || eventData?.event || eventName;
-      if (label) addEvent(label);
+    if (!currentOperation(envelope.job_id, epoch)) return;
+    if (envelope.tenant_id && envelope.tenant_id !== state.context.tenantId) {
+      dispatch({ type: "transport/protocol_error", code: "JOB_TENANT_MISMATCH" });
+      return;
     }
-  } catch {
-    addEvent("timeline_unavailable");
-  }
-}
 
-async function fetchTerminalJob(jobId) {
-  const deadline = Date.now() + 180000;
-  while (Date.now() < deadline) {
-    const response = await fetch(`/api/v1/what-if-jobs/${encodeURIComponent(jobId)}`);
-    if (!response.ok) throw new Error("Không thể đọc trạng thái job.");
-    const job = await response.json();
-    setStatus(job.status);
-    if (TERMINAL_STATUSES.has(job.status)) return job;
-    await new Promise((resolve) => window.setTimeout(resolve, 250));
+    dispatch({ type: "job/envelope", envelope: validated.value });
+    if (TERMINAL_STATUSES.has(envelope.status)) {
+      timers.clearTimeout(fallbackTimer);
+      pollingController?.abort();
+      closeStream?.();
+      storage?.removeItem(ACTIVE_JOB_KEY);
+      view.focusResult();
+    }
   }
-  throw new Error("Job chưa trả về trong thời gian cho phép.");
-}
 
-async function submitScenario(event) {
-  event.preventDefault();
-  if (runtimeAvailable === false) {
-    setError("Không thể tạo job: tab này là static preview và chưa kết nối STWI API.");
-    return;
+  async function startPollingFallback(jobId, epoch) {
+    if (pollingActive || !currentOperation(jobId, epoch)) return;
+    pollingActive = true;
+    pollingController?.abort();
+    pollingController = new AbortController();
+    dispatch({ type: "transport/phase", phase: "polling_fallback" });
+    try {
+      await api.pollJob(jobId, {
+        signal: pollingController.signal,
+        onEnvelope: (envelope) => acceptEnvelope(envelope, epoch),
+        isTerminal: (envelope) => TERMINAL_STATUSES.has(envelope.status),
+      });
+    } catch (error) {
+      if (
+        currentOperation(jobId, epoch)
+        && !["MONITOR_ABORTED", "REQUEST_ABORTED"].includes(error.code)
+      ) {
+        dispatch({ type: "transport/offline", code: error.code || "NETWORK_ERROR" });
+      }
+    } finally {
+      pollingActive = false;
+    }
   }
-  activeJobId = null;
-  closeEventStream();
-  setError();
-  resetEvents();
-  setDecisionEnabled(false);
-  setBusy(true);
-  setStatus("queued");
-  setSafety(null, "idle");
-  setText("#job-id", "");
-  setText("#trace-id", "", "Chưa có trace");
-  setText("#versions", "");
-  setText("#terminal-status", "");
-  setText("#result-timestamp", "");
-  setText("#forecast-volume", "");
-  setText("#forecast-speed", "");
-  setText("#vc-ratio", "");
-  setText("#capacity-version", "");
-  setText("#json-view", "");
-  renderCitations([], false);
-  decisionResult.className = "decision-result";
-  decisionResult.textContent = "Đang chờ operator xem xét.";
 
-  const nodeId = nodeInput.value.trim();
-  const payload = {
-    tenant_id: document.querySelector("#tenant-id").value.trim(),
-    scenario_time: new Date().toISOString(),
-    candidate_action: { node_id: nodeId, green_time_ratio: Number(greenTime.value) },
-    node_ids: [nodeId],
-    scenario_query: scenarioQuery.value.trim(),
-    jurisdiction: activeJurisdiction,
+  function monitorJob(jobId, epoch) {
+    closeStream = api.streamJob(jobId, {
+      onEvent: async (payload, eventId) => {
+        if (!currentOperation(jobId, epoch)) return;
+        dispatch({ type: "job/event", jobId, eventId, payload });
+        if (TERMINAL_STATUSES.has(payload?.status)) {
+          try {
+            const envelope = await api.getJob(jobId, { signal: activeController?.signal });
+            await acceptEnvelope(envelope, epoch);
+          } catch (error) {
+            if (currentOperation(jobId, epoch)) {
+              dispatch({ type: "transport/offline", code: error.code || "NETWORK_ERROR" });
+            }
+          }
+        } else if (["queued", "running"].includes(payload?.status)) {
+          await acceptEnvelope({ ...payload, job_id: payload.job_id || jobId }, epoch);
+        }
+      },
+      onTransport: (phase) => {
+        if (!currentOperation(jobId, epoch)) return;
+        if (phase === "protocol_error") {
+          dispatch({ type: "transport/protocol_error", code: "SSE_PAYLOAD_INVALID" });
+          return;
+        }
+        dispatch({ type: "transport/phase", phase });
+        if (phase === "streaming") {
+          timers.clearTimeout(fallbackTimer);
+          pollingController?.abort();
+        } else if (phase === "unavailable") {
+          void startPollingFallback(jobId, epoch);
+        } else if (phase === "reconnecting") {
+          timers.clearTimeout(fallbackTimer);
+          fallbackTimer = timers.setTimeout(
+            () => void startPollingFallback(jobId, epoch),
+            5000,
+          );
+        }
+      },
+    });
+  }
+
+  async function submitScenario(event) {
+    event?.preventDefault?.();
+    if (state.context.mode === "static_preview") {
+      view.setFormError("Static preview không thể tạo job. Hãy mở /demo/ từ STWI runtime.");
+      return;
+    }
+
+    operationEpoch += 1;
+    const epoch = operationEpoch;
+    clearMonitoring();
+    activeController = new AbortController();
+    const idempotencyKey = cryptoImpl?.randomUUID?.() || `stwi-${Date.now()}-${epoch}`;
+    dispatch({ type: "creation/submitting", epoch, idempotencyKey });
+    view.setFormError();
+
+    try {
+      const payload = { ...view.readScenario(), jurisdiction: activeJurisdiction };
+      const accepted = await api.createJob(payload, {
+        idempotencyKey,
+        signal: activeController.signal,
+      });
+      if (epoch !== operationEpoch) return;
+      const validated = validateAcceptedJob(accepted);
+      if (!validated.ok) {
+        dispatch({ type: "transport/protocol_error", code: validated.code });
+        return;
+      }
+      if (validated.value.tenant_id !== state.context.tenantId) {
+        dispatch({ type: "transport/protocol_error", code: "CREATE_TENANT_MISMATCH" });
+        return;
+      }
+
+      dispatch({ type: "job/accepted", accepted: validated.value, epoch });
+      persistActiveJob();
+      view.focusLifecycle();
+      monitorJob(accepted.job_id, epoch);
+    } catch (error) {
+      if (epoch !== operationEpoch || error.code === "REQUEST_ABORTED") return;
+      dispatch({ type: "transport/offline", code: error.code || "NETWORK_ERROR" });
+      view.setFormError(error.message || "Không thể tạo job.");
+    }
+  }
+
+  async function resumeActiveJob() {
+    const raw = storage?.getItem(ACTIVE_JOB_KEY);
+    if (!raw || state.context.mode === "static_preview") return;
+    let saved;
+    try {
+      saved = JSON.parse(raw);
+    } catch {
+      storage.removeItem(ACTIVE_JOB_KEY);
+      return;
+    }
+    if (!saved.jobId || saved.tenantId !== state.context.tenantId) return;
+
+    operationEpoch += 1;
+    const epoch = operationEpoch;
+    clearMonitoring();
+    activeController = new AbortController();
+    dispatch({ type: "job/resume_requested", jobId: saved.jobId, epoch });
+    try {
+      const envelope = await api.getJob(saved.jobId, { signal: activeController.signal });
+      await acceptEnvelope(envelope, epoch);
+      if (!TERMINAL_STATUSES.has(envelope.status)) monitorJob(saved.jobId, epoch);
+    } catch (error) {
+      if (currentOperation(saved.jobId, epoch)) {
+        dispatch({ type: "transport/offline", code: error.code || "NETWORK_ERROR" });
+      }
+    }
+  }
+
+  function selectPreset(name) {
+    if (name === "custom") {
+      activeJurisdiction = "VN";
+      return;
+    }
+    const preset = DEMO_PRESETS[name];
+    if (!preset) return;
+    activeJurisdiction = preset.jurisdiction;
+    view.setScenario(preset);
+  }
+
+  function markCustomPreset() {
+    activeJurisdiction = "VN";
+    view.markCustomPreset?.();
+  }
+
+  async function copyTrace() {
+    const traceId = state.job.result?.trace_id || state.job.result?.audit_record?.trace_id;
+    if (!traceId) return;
+    try {
+      if (!navigatorImpl?.clipboard?.writeText) throw new Error("CLIPBOARD_UNAVAILABLE");
+      await navigatorImpl.clipboard.writeText(traceId);
+      view.setCopyStatus?.("Đã sao chép trace ID.");
+    } catch {
+      view.setCopyStatus?.(
+        "Trình duyệt đã chặn clipboard. Hãy chọn trace ID và sao chép thủ công.",
+      );
+    }
+  }
+
+  function openDecision() {
+    const policy = deriveDecisionPolicy(state);
+    if (!policy.canApprove && !policy.canReject && !policy.canRequestChanges) return;
+    view.openDecisionDialog({
+      jobId: state.job.id,
+      traceId: state.job.result?.trace_id || state.job.result?.audit_record?.trace_id || "—",
+      operatorId: state.context.operatorId,
+    }, policy);
+  }
+
+  async function reconcileDecision(jobId, epoch) {
+    const envelope = await api.getJob(jobId, { signal: activeController?.signal });
+    if (!currentOperation(jobId, epoch)) return null;
+    if (!envelope.operator_decision) {
+      const error = new Error("Không thể xác nhận quyết định từ trạng thái job.");
+      error.code = "DECISION_RECONCILIATION_MISSING";
+      throw error;
+    }
+    await acceptEnvelope(envelope, epoch);
+    return envelope.operator_decision;
+  }
+
+  async function submitDecision(formData) {
+    const decision = String(formData?.get?.("decision") || "");
+    const rationale = String(formData?.get?.("rationale") || "").trim();
+    const policy = deriveDecisionPolicy(state);
+    const allowed = decision === "approved" ? policy.canApprove
+      : decision === "rejected" ? policy.canReject
+        : decision === "request_changes" ? policy.canRequestChanges
+          : false;
+
+    if (!allowed) {
+      dispatch({ type: "decision/error", code: "DECISION_NOT_ALLOWED" });
+      return;
+    }
+    if (!rationale) {
+      dispatch({ type: "decision/error", code: "RATIONALE_REQUIRED" });
+      return;
+    }
+
+    const jobId = state.job.id;
+    const epoch = state.operationEpoch;
+    const operatorId = state.context.operatorId;
+    dispatch({ type: "decision/submitting" });
+    try {
+      const response = await api.recordDecision(jobId, {
+        decision,
+        operator_id: operatorId,
+        comment: rationale,
+      }, { signal: activeController?.signal });
+      if (!currentOperation(jobId, epoch)) return;
+      const record = response?.operator_decision;
+      if (
+        response?.job_id !== jobId
+        || response?.automatic_actuation !== false
+        || record?.applied_by_system !== false
+        || record?.operator_id !== operatorId
+        || record?.decision !== decision
+      ) {
+        dispatch({
+          type: "transport/protocol_error",
+          code: "AUTOMATIC_ACTUATION_FORBIDDEN",
+        });
+        return;
+      }
+
+      await reconcileDecision(jobId, epoch);
+      if (!currentOperation(jobId, epoch)) return;
+      dispatch({ type: "decision/recorded" });
+      view.closeDecisionDialog();
+    } catch (error) {
+      if (!currentOperation(jobId, epoch) || error.code === "REQUEST_ABORTED") return;
+      dispatch({
+        type: error.httpStatus === 409 ? "decision/conflict" : "decision/error",
+        code: error.code || "DECISION_FAILED",
+      });
+    }
+  }
+
+  async function bootstrap() {
+    const context = await resolveContext();
+    dispatch({ type: "context/resolved", context });
+    view.setContext(context);
+    if (context.mode === "demo") selectPreset("safe");
+    await resumeActiveJob();
+    return state;
+  }
+
+  view.setHandlers({
+    submitScenario,
+    selectPreset,
+    selectNode: (nodeId) => { view.setNode(nodeId); markCustomPreset(); },
+    changeRatio: (ratio) => { view.setRatio(ratio); markCustomPreset(); },
+    changeScenario: markCustomPreset,
+    searchNodes: (query) => view.filterNodes(query),
+    copyTrace,
+    openDecision,
+    submitDecision,
+  });
+
+  return {
+    bootstrap,
+    submitScenario,
+    submitDecision,
+    resumeActiveJob,
+    getState: () => state,
+    destroy: clearMonitoring,
   };
-
-  try {
-    const response = await fetch("/api/v1/what-if-jobs", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!response.ok) throw new Error(await createJobError(response));
-    const accepted = await response.json();
-    activeJobId = accepted.job_id;
-    setText("#job-id", activeJobId);
-    streamJobEvents(activeJobId);
-    const job = await fetchTerminalJob(activeJobId);
-    const result = job.result || null;
-    const displayStatus = displayStatusFor(result, job.status);
-    closeEventStream();
-    setStatus(displayStatus);
-    setText("#trace-id", result?.audit_record?.trace_id, "Không có trace");
-    setText("#versions", result ? `${result.model_version} / ${result.data_version}` : "—");
-    renderAuditDetails(result, job.status);
-    setSafety(result, displayStatus);
-    if (eventsNode.children.length === 0) await loadEvents(activeJobId);
-    if (eventsNode.children.length === 0) addEvent(displayStatus);
-    setDecisionEnabled(true, displayStatus);
-  } catch (error) {
-    closeEventStream();
-    setStatus("failed");
-    setSafety(null, "failed");
-    setError(error instanceof Error ? error.message : "Không thể hoàn thành job.");
-  } finally {
-    setBusy(false);
-  }
 }
 
-async function decide(decision) {
-  if (!activeJobId || !TERMINAL_STATUSES.has(activeStatus)) return;
-  approveButton.disabled = true;
-  rejectButton.disabled = true;
-  try {
-    const response = await fetch(`/api/v1/what-if-jobs/${encodeURIComponent(activeJobId)}/operator-decision`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ operator_id: "demo-operator", decision, comment: "Recorded from the demo dashboard." }),
-    });
-    const body = await response.json();
-    if (!response.ok) throw new Error("Không thể ghi quyết định operator.");
-    decisionResult.className = "decision-result success";
-    decisionResult.textContent = `Đã ghi quyết định ${body.operator_decision.decision}; không có hành động tự động.`;
-  } catch (error) {
-    decisionResult.className = "decision-result";
-    decisionResult.textContent = error instanceof Error ? error.message : "Không thể ghi quyết định.";
-    setDecisionEnabled(true);
-  }
+if (typeof document !== "undefined") {
+  const coordinator = createDashboardCoordinator();
+  void coordinator.bootstrap();
 }
-
-greenTime.addEventListener("input", () => {
-  const ratio = Number(greenTime.value);
-  greenValue.textContent = `${ratio.toFixed(2)} · ${Math.round(ratio * 100)}%`;
-  markCustomPreset();
-});
-demoPreset.addEventListener("change", () => applyPreset(demoPreset.value));
-nodeInput.addEventListener("change", markCustomPreset);
-scenarioQuery.addEventListener("input", markCustomPreset);
-checkRuntimeAvailability();
-form.addEventListener("submit", submitScenario);
-approveButton.addEventListener("click", () => decide("approved"));
-rejectButton.addEventListener("click", () => decide("rejected"));
