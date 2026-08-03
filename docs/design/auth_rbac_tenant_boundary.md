@@ -224,6 +224,28 @@ POST, GET, SSE reconnect, and operator-decision endpoints enforce tenant and
 role checks. Denials return stable `AUTH_*` codes plus a `trace_id`; logs omit
 tenant hints, operator hints, credentials, and raw resolver exception text.
 
+## 10.2 Trusted Dashboard Bootstrap (`TRA-58`)
+
+Production exposes `GET /api/v1/ui-context` as a read-only bootstrap boundary.
+It combines the existing `PrincipalResolver` output with a separately injected
+`UiContextProvider`; the latter owns only the allowlisted `node_ids` and the
+bounded `record_decision` capability. Neither provider accepts browser-supplied
+tenant, operator, role, node, or capability claims.
+
+Production startup fails when the UI context provider is missing or marked
+provisional. A successful response is non-cacheable (`Cache-Control: no-store`)
+and contains only resolved identity, supported roles, 1–20 unique node IDs, and
+the typed decision capability. The API clamps `record_decision=false` for
+`analyst` and `readonly` even if the scope provider is misconfigured to allow
+it. No actuation permission or executable action exists in this contract.
+
+Missing identity remains `401 AUTH_PRINCIPAL_REQUIRED`; role denial is
+`403 AUTH_ROLE_DENIED`; unavailable or invalid scope is
+`503 UI_CONTEXT_UNAVAILABLE`. These failures include a `trace_id` and never
+activate demo behavior. Demo/test intentionally leave the route unregistered;
+only that exact 404 permits the dashboard's separately validated provisional
+OpenAPI fallback.
+
 ## 11. References
 
 - `docs/04_AI_Agent_Orchestrator_CF_VLA.md`

@@ -39,6 +39,23 @@ Ngưỡng V/C mặc định 0,9 là policy cấu hình có version, không phả
 
 \section{API Job Bất đồng bộ}
 
+\subsection{Ngữ cảnh Dashboard Production}
+
+Trước khi tạo job, dashboard production gọi
+\texttt{GET /api/v1/ui-context}. Endpoint read-only này ghép principal đã xác
+thực với node allowlist và capability do provider phía server cấp; response có
+\texttt{Cache-Control: no-store}. Client không được cung cấp identity, role,
+node scope hay capability dùng cho authorization. Quyền
+\texttt{record\_decision} còn được chặn theo role
+\texttt{operator}/\texttt{admin}; không tồn tại quyền actuation.
+
+Thiếu principal, role không phù hợp hoặc scope không khả dụng lần lượt trả lỗi
+\texttt{AUTH\_PRINCIPAL\_REQUIRED}, \texttt{AUTH\_ROLE\_DENIED} hoặc
+\texttt{UI\_CONTEXT\_UNAVAILABLE} kèm trace ID. Production không fallback demo
+sau các lỗi này. Demo/test không đăng ký endpoint và chỉ 404 chính xác mới mở
+đường kiểm tra OpenAPI provisional; payload malformed chuyển dashboard sang
+static preview không mutating.
+
 \subsection{Tạo Job}
 
 \begin{lstlisting}[caption={Tạo What-if job},label={lst:create_job}]
@@ -61,7 +78,8 @@ HTTP/1.1 202 Accepted
 
 \subsection{Trạng thái và SSE}
 
-\texttt{GET /api/v1/what-if-jobs/\{job\_id\}} trả snapshot. Endpoint
+\texttt{GET /api/v1/what-if-jobs/\{job\_id\}} trả snapshot.
+\par\noindent
 \texttt{GET /api/v1/what-if-jobs/\{job\_id\}/events} phát SSE gồm stage, iteration, progress, message và timestamp.
 
 Status enum là \texttt{queued}, \texttt{running}, \texttt{succeeded}, \texttt{needs\_review}, \texttt{failed}, \texttt{expired}. SSE reconnect không được tạo execution mới.

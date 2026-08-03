@@ -64,9 +64,14 @@ payload.
 
 At startup, the dashboard first requests trusted same-origin
 `/api/v1/ui-context`. A valid response activates production mode with immutable
-tenant/operator identity, roles and the server node allowlist. Only a `404` on
-that endpoint followed by the exact provisional STWI OpenAPI activates demo
-compatibility. Invalid, unreachable or untrusted runtime responses become
+tenant/operator identity, supported roles, the server node allowlist, and the
+typed `capabilities.record_decision` value. The server clamps decision
+capability to `operator`/`admin`, returns `Cache-Control: no-store`, and never
+exposes an actuation capability. Production deployments must inject trusted
+`PrincipalResolver` and `UiContextProvider` implementations; browser values are
+not authorization evidence. Only a `404` on that endpoint followed by the exact
+provisional STWI OpenAPI activates demo compatibility. A `401`, `403`, `503`,
+malformed 200, unreachable or untrusted runtime response becomes
 `UI preview · chưa có API`; static preview disables job submission and decision
 recording and never falls back silently to demo.
 

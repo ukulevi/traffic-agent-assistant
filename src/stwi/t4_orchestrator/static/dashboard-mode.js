@@ -1,6 +1,22 @@
 const DEMO_NODES = Object.freeze(
   Array.from({ length: 20 }, (_, index) => `node_${String(index).padStart(2, "0")}`),
 );
+const TRUSTED_ROLES = new Set(["operator", "analyst", "admin", "readonly"]);
+const CONTEXT_KEYS = Object.freeze([
+  "capabilities",
+  "mode",
+  "node_ids",
+  "operator_id",
+  "roles",
+  "tenant_id",
+]);
+
+function hasExactKeys(value, expectedKeys) {
+  return value !== null
+    && typeof value === "object"
+    && !Array.isArray(value)
+    && JSON.stringify(Object.keys(value).sort()) === JSON.stringify(expectedKeys);
+}
 
 function staticPreview(reason) {
   return {
@@ -15,16 +31,27 @@ function staticPreview(reason) {
 }
 
 function validTrustedContext(body) {
-  return body?.mode === "production"
+  return hasExactKeys(body, CONTEXT_KEYS)
+    && body.mode === "production"
     && typeof body.tenant_id === "string"
     && body.tenant_id.trim().length > 0
+    && body.tenant_id.trim() === body.tenant_id
     && typeof body.operator_id === "string"
     && body.operator_id.trim().length > 0
+    && body.operator_id.trim() === body.operator_id
     && Array.isArray(body.roles)
     && body.roles.length > 0
-    && body.roles.every((role) => typeof role === "string" && role.length > 0)
+    && body.roles.every((role) => TRUSTED_ROLES.has(role))
+    && new Set(body.roles).size === body.roles.length
     && Array.isArray(body.node_ids)
-    && body.node_ids.every((nodeId) => typeof nodeId === "string" && nodeId.length > 0);
+    && body.node_ids.length >= 1
+    && body.node_ids.length <= 20
+    && body.node_ids.every((nodeId) => typeof nodeId === "string"
+      && nodeId.trim().length > 0
+      && nodeId.trim() === nodeId)
+    && new Set(body.node_ids).size === body.node_ids.length
+    && hasExactKeys(body.capabilities, ["record_decision"])
+    && typeof body.capabilities.record_decision === "boolean";
 }
 
 export async function resolveDashboardContext({ fetchImpl = globalThis.fetch } = {}) {
@@ -43,7 +70,9 @@ export async function resolveDashboardContext({ fetchImpl = globalThis.fetch } =
         operatorId: body.operator_id,
         roles: body.roles,
         nodeIds: body.node_ids,
-        capabilities: body.capabilities || {},
+        capabilities: {
+          recordDecision: body.capabilities.record_decision,
+        },
       };
     }
 

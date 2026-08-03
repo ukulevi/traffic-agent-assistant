@@ -90,7 +90,37 @@ MVP không có actuator. Ngay cả `succeeded` vẫn cần operator phê duyệt
 
 ## 3. API bất đồng bộ
 
-### 3.1. Tạo job
+### 3.1. Khởi tạo ngữ cảnh dashboard production
+
+`GET /api/v1/ui-context` là bootstrap read-only cho dashboard production. API
+ghép danh tính đã được `PrincipalResolver` xác thực với node allowlist và
+capability do `UiContextProvider` phía server cung cấp; client không được gửi
+hoặc ghi đè tenant, operator, role, node scope hay capability.
+
+```json
+{
+  "mode": "production",
+  "tenant_id": "tenant-a",
+  "operator_id": "operator-17",
+  "roles": ["operator"],
+  "node_ids": ["node_00", "node_01"],
+  "capabilities": {"record_decision": true}
+}
+```
+
+Response thành công luôn có `Cache-Control: no-store`. Capability
+`record_decision` chỉ bật khi provider cho phép **và** principal có role
+`operator` hoặc `admin`; endpoint không bao giờ trả capability điều khiển hiện
+trường. Thiếu principal trả `401 AUTH_PRINCIPAL_REQUIRED`, role không phù hợp
+trả `403 AUTH_ROLE_DENIED`, còn lỗi/invalid scope trả
+`503 UI_CONTEXT_UNAVAILABLE`, đều kèm `trace_id` và fail closed.
+
+Production phải inject provider không provisional khi khởi động. Demo/test
+không đăng ký endpoint này: chỉ `404` chính xác mới cho dashboard kiểm tra tiếp
+OpenAPI provisional để bật demo. Mọi lỗi khác hoặc payload 200 malformed đều
+chuyển UI sang static preview, không được fallback demo.
+
+### 3.2. Tạo job
 
 `POST /api/v1/what-if-jobs` → HTTP 202
 
@@ -121,13 +151,13 @@ MVP không có actuator. Ngay cả `succeeded` vẫn cần operator phê duyệt
 }
 ```
 
-### 3.2. Theo dõi job
+### 3.3. Theo dõi job
 
 - `GET /api/v1/what-if-jobs/{job_id}`: snapshot trạng thái và result.
 - `GET /api/v1/what-if-jobs/{job_id}/events`: SSE với `stage`, `iteration`, `progress`, `message`, `timestamp`.
 - Status enum: `queued`, `running`, `succeeded`, `needs_review`, `failed`, `expired`.
 
-### 3.3. Kết quả succeeded
+### 3.4. Kết quả succeeded
 
 ```json
 {
@@ -210,7 +240,7 @@ MVP không có actuator. Ngay cả `succeeded` vẫn cần operator phê duyệt
 }
 ```
 
-### 3.4. Kết quả needs_review
+### 3.5. Kết quả needs_review
 
 ```json
 {
@@ -291,7 +321,7 @@ MVP không có actuator. Ngay cả `succeeded` vẫn cần operator phê duyệt
 }
 ```
 
-### 3.5. Error model
+### 3.6. Error model
 
 ```json
 {
