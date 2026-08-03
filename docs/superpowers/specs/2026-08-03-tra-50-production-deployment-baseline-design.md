@@ -1,7 +1,9 @@
 # TRA-50 Production Deployment Baseline Design
 
-**Ticket:** `TRA-50` / `STWI-SYM-041`  
-**Decision:** Hardened Docker Compose on one controlled host  
+**Ticket:** `TRA-50` / `STWI-SYM-041`
+
+**Decision:** Hardened Docker Compose on one controlled host
+
 **Status:** Approved design, implementation pending written-spec review
 
 ## 1. Outcome and Boundary
