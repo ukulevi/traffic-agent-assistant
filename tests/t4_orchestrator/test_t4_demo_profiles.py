@@ -67,6 +67,31 @@ class TestDemoProfiles(unittest.TestCase):
                 self.assertIn(reason, result.needs_review_reason)
                 self.assertIsNone(result.recommended_action)
 
+    def test_operational_profiles_fail_closed_for_expected_reason(self) -> None:
+        expected_reasons = {
+            "node_05": "vc_ratio",
+            "node_06": "vc_ratio",
+            "node_07": "vc_ratio",
+            "node_08": "vc_ratio",
+            "node_09": "out_of_distribution",
+        }
+        for node_id, reason in expected_reasons.items():
+            with self.subTest(node_id=node_id):
+                result = self.orchestrator.run(node_id, request(node_id, 0.7))
+                self.assertEqual(result.status, JobStatus.NEEDS_REVIEW)
+                self.assertIn(reason, result.needs_review_reason)
+                self.assertIsNone(result.recommended_action)
+                self.assertIsNotNone(result.candidate_action)
+                self.assertFalse(result.candidate_action["executable"])
+
+    def test_flood_profile_has_lowest_incident_speed(self) -> None:
+        speeds = {}
+        for node_id in ("node_05", "node_06", "node_07", "node_08"):
+            result = self.orchestrator.run(node_id, request(node_id, 0.7))
+            speeds[node_id] = result.scenario_summary["avg_speed"]
+
+        self.assertEqual(min(speeds, key=speeds.get), "node_06")
+
 
 if __name__ == "__main__":
     unittest.main()

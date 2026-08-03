@@ -5,6 +5,9 @@ Tài liệu này hướng dẫn trình diễn STWI theo phạm vi đã phê duy�
 trợ ra quyết định What-If, không phải chứng minh hệ thống đã sẵn sàng vận hành
 production hoặc điều khiển thiết bị giao thông.
 
+Để thao tác theo từng test case kèm ảnh chụp dashboard, xem
+[Hướng dẫn sử dụng và demo STWI Operator Dashboard](./mvp_dashboard_demo_walkthrough.md).
+
 ## 1. Hiểu demo trong một phút
 
 Hãy xem STWI như một **bàn thử phương án giao thông**: trước khi một người đưa
@@ -83,7 +86,7 @@ python scripts/validation/validate_demo_simulation_scope.py
 python scripts/demo/run_mvp_smoke.py --output C:\tmp\stwi-mvp-demo-evidence.json
 ```
 
-Kết quả mong đợi của smoke harness là bốn luồng terminal:
+Kết quả mong đợi của smoke harness là sáu luồng terminal:
 
 | Luồng | Trạng thái | Điểm cần nhấn mạnh |
 |---|---|---|
@@ -91,6 +94,8 @@ Kết quả mong đợi của smoke harness là bốn luồng terminal:
 | `unsafe_vc_rejection` | `needs_review` | V/C vượt policy; chỉ có `candidate_action`. |
 | `ood_rejection` | `needs_review` | Tình huống ngoài phân phối bị fail-closed. |
 | `uncertainty_rejection` | `needs_review` | Độ bất định cao nên không có recommendation. |
+| `accident_rejection` | `needs_review` | Tai nạn synthetic làm V/C vượt policy; chỉ có candidate action. |
+| `environmental_anomaly_rejection` | `needs_review` | Tín hiệu tương quan ngoài phân phối bị giữ lại để review. |
 
 Tệp evidence tại `C:\tmp\stwi-mvp-demo-evidence.json` chỉ chứa dữ liệu tổng
 hợp mô phỏng. Không đưa tệp này lên Git hoặc đính kèm raw/private artifact vào
@@ -170,6 +175,11 @@ Chọn **Bộ kiểm thử demo** trên giao diện để trình bày tuần t�
 | Độ bất định cao | `node_03` | `needs_review` |
 | Thiếu căn cứ | `node_04`, jurisdiction không có corpus | `needs_review` |
 | Green time cực trị | `node_00`, green time 0% | `needs_review` |
+| Tai nạn | `node_05` | `needs_review` do V/C |
+| Ngập lụt | `node_06` | `needs_review` do V/C; tốc độ thấp nhất nhóm incident |
+| Đóng làn | `node_07` | `needs_review` do V/C |
+| Nhu cầu tăng | `node_08` | `needs_review` do V/C |
+| Tín hiệu môi trường bất thường | `node_09` | `needs_review` do OOD |
 
 Các preset tạo dữ liệu synthetic xác định để minh họa nhánh điều khiển của
 safety loop; chúng không phải bộ benchmark accuracy. Có thể đối chiếu thêm
@@ -181,6 +191,13 @@ Get-Content C:\tmp\stwi-mvp-demo-evidence.json
 
 Chỉ ra một case `*_rejection`: `recommended_action` vắng mặt,
 `candidate_action` không executable, và `automatic_actuation=false`.
+
+Năm preset vận hành là các abstraction có giới hạn của demo. Tai nạn, ngập lụt,
+đóng làn và nhu cầu tăng chỉ mô tả tác động aggregate synthetic lên năng lực,
+lưu lượng hoặc tốc độ; không mô phỏng hiện trường. Preset môi trường chỉ mô tả
+một tín hiệu tương quan ngoài phân phối cần đối chiếu, không kết luận ô nhiễm
+gây ùn tắc, không dự báo chất lượng không khí và không mô phỏng lượng mưa hay
+mực nước.
 
 ## 6. Checklist nói trong lúc trình bày
 

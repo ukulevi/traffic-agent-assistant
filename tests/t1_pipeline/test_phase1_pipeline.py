@@ -65,6 +65,48 @@ class Phase1PipelineTest(unittest.TestCase):
         self.assertGreater(self.quality.outlier_count, 0)
         self.assertTrue(np.any(~self.quality.observed_mask))
 
+    def test_environmental_features_preserve_contract_and_missing_mask(self) -> None:
+        self.assertEqual(
+            feature_names()[3:11],
+            (
+                "co_ppm",
+                "co2_ppm",
+                "nox_ppb",
+                "pm25_ugm3",
+                "pm10_ugm3",
+                "temperature_c",
+                "humidity_pct",
+                "wind_speed_ms",
+            ),
+        )
+        baseline = np.array(
+            [50, 40, 0.1, 1, 450, 30, 20, 35, 30, 70, 3, 0, 1, 0, 1, 0.5],
+            dtype=np.float32,
+        )
+        values = np.tile(baseline, (18, 20, 1))
+        observed = np.ones_like(values, dtype=bool)
+        values[0, 0, 0] = 10.0
+        values[0, 0, 6] = 500.0
+        values[1, 0, 3:11] = np.nan
+        observed[1, 0, 3:11] = False
+
+        quality = apply_quality_and_impute(
+            values, observed, self.network.adjacency
+        )
+        dataset = build_tensor_windows(
+            quality.values,
+            quality.observed_mask,
+            self.network.adjacency,
+        )
+
+        self.assertEqual(quality.values[0, 0, 0], 10.0)
+        self.assertEqual(quality.values[0, 0, 6], 500.0)
+        self.assertFalse(quality.observed_mask[1, 0, 3:11].any())
+        self.assertTrue(np.isfinite(quality.values).all())
+        self.assertEqual(dataset.X.shape, (1, 12, 20, 16))
+        self.assertEqual(dataset.M.shape, (1, 12, 20, 16))
+        self.assertEqual(dataset.Y.shape, (1, 6, 20, 2))
+
     def test_gate_p1_tensor_shapes(self) -> None:
         scaler = fit_train_scaler(
             self.quality.values, self.quality.observed_mask, 200

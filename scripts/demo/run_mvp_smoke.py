@@ -101,6 +101,7 @@ def _run_case(name: str, scenario: object, expected_status: str, decision: str) 
 def run_smoke(output: Path) -> dict[str, Any]:
     """Run safe and fail-closed flows, then write aggregate-only evidence."""
     from stwi.t4_orchestrator.fake_adapters import (
+        SurrogateScenario,
         high_uncertainty_scenario,
         ood_scenario,
         safe_scenario,
@@ -119,6 +120,30 @@ def run_smoke(output: Path) -> dict[str, Any]:
             _run_case(
                 "uncertainty_rejection",
                 high_uncertainty_scenario(),
+                "needs_review",
+                "rejected",
+            ),
+            _run_case(
+                "accident_rejection",
+                SurrogateScenario(
+                    vc_ratio=0.94,
+                    uncertainty_score=0.18,
+                    ood_score=0.15,
+                    predicted_volume=138.0,
+                    predicted_speed=22.0,
+                ),
+                "needs_review",
+                "rejected",
+            ),
+            _run_case(
+                "environmental_anomaly_rejection",
+                SurrogateScenario(
+                    vc_ratio=0.78,
+                    uncertainty_score=0.82,
+                    ood_score=0.60,
+                    predicted_volume=105.0,
+                    predicted_speed=36.0,
+                ),
                 "needs_review",
                 "rejected",
             ),

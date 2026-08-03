@@ -17,11 +17,20 @@ only `candidate_action`; a recommendation is shown only for `succeeded`.
 Failed and expired jobs also remain non-executable and expose no recommended
 action.
 
-In demo mode, the input panel exposes deterministic presets for `succeeded`,
-V/C policy failure, OOD, high uncertainty, missing legal evidence, and an
-extreme green-time ratio. The canonical synthetic network identifiers are
-`node_00` through `node_19`, matching `mock-network-20-v1`. The API rejects a
-node outside that registry before creating a demo job.
+In demo mode, the input panel groups deterministic presets into `Safety cơ bản`
+and `Tình huống vận hành`. The first group covers `succeeded`, V/C policy
+failure, OOD, high uncertainty, missing legal evidence, and an extreme
+green-time ratio. The operational group maps accident, flood, lane closure, and
+demand surge to bounded aggregate synthetic profiles, while environmental
+anomaly maps to OOD/uncertainty review. The canonical synthetic network
+identifiers are `node_00` through `node_19`, matching `mock-network-20-v1`. The
+API rejects a node outside that registry before creating a demo job.
+
+The environmental preset is an explicitly synthetic correlation signal. It
+does not claim that CO, CO2, NOx, PM2.5, or PM10 causes congestion; it does not
+forecast air quality, water depth, rainfall, or health impacts. Free text gives
+operator context and legal/SOP retrieval only: it is not parsed into simulation
+parameters, and the UI never determines the terminal status itself.
 
 The request boundary uses a typed candidate action. Its node must be present in
 `node_ids`, green-time ratio remains bounded to `[0, 1]`, and blank identifiers
@@ -44,21 +53,43 @@ shown both as a ratio and a percentage (for example `0.70 · 70%`). The guide
 explicitly states that the V/C threshold of 0.9 is a configurable MVP policy,
 not a legal requirement.
 
-The UI polls the status endpoint until a terminal state and then reads SSE
-events for the timeline. Each SSE status is translated into an operator-facing
-Vietnamese event. A timeline transport error does not overwrite a successful
-job result. Network and runtime errors are shown as operational messages rather
-than raw exceptions. Keyboard focus, responsive breakpoints, and reduced-motion
-preferences are supported by the static dashboard. Failed and expired jobs can
-be rejected for audit, but the UI does not allow them to be approved.
+The UI uses SSE as the primary lifecycle transport. If SSE is unavailable it
+starts bounded polling; during reconnect it waits five seconds before enabling
+the polling fallback and stops polling when streaming returns. Transport state
+is displayed separately from canonical job status, so an offline/reconnecting
+condition never fabricates `failed`. The browser stores only the active
+`job_id` and tenant identity in `sessionStorage`; refresh retrieves the
+authoritative job before resuming monitoring and never stores the scenario
+payload.
 
-At startup, the dashboard checks same-origin `/openapi.json`. When the page is
-served by a static-only preview server, the top bar explicitly shows
-`UI preview · chưa có API`, disables job submission, and explains that the
-operator must open `/demo/` from the FastAPI runtime origin. HTTP validation,
-authorization, and missing-runtime failures are reported separately.
+At startup, the dashboard first requests trusted same-origin
+`/api/v1/ui-context`. A valid response activates production mode with immutable
+tenant/operator identity, roles and the server node allowlist. Only a `404` on
+that endpoint followed by the exact provisional STWI OpenAPI activates demo
+compatibility. Invalid, unreachable or untrusted runtime responses become
+`UI preview · chưa có API`; static preview disables job submission and decision
+recording and never falls back silently to demo.
 
-Every decision remains human-controlled: the UI requires an explicit approve
-or reject action and records `applied_by_system=false`. Approval is available
-only for `succeeded`; the API rejects approval of `needs_review`, `failed`, or
-`expired` jobs.
+Every decision remains human-controlled. “Ghi nhận quyết định” opens a modal
+that shows immutable job/trace/operator context and requires a rationale for
+approve, reject or request-changes. Approval is available only for `succeeded`
+with a safe non-executable recommendation and sufficient evidence;
+`needs_review` may only be rejected or returned for changes. After POST, the UI
+requires `automatic_actuation=false` and `applied_by_system=false`, then performs
+GET reconciliation before displaying the immutable audit record. A `409`
+conflict is a decision-state error and does not overwrite job or transport
+state.
+
+Production legal evidence must include an explicit server validation outcome;
+the UI does not infer legal validity from citation shape. Demo mode may label a
+complete deterministic citation set as provisional demo evidence, and states
+clearly that this is not production legal validation. Authentication provider,
+durable multi-instance job storage, production corpus governance and runtime
+observability remain backend/deployment dependencies outside this UI scope.
+
+Keyboard operation uses native controls: `/` focuses node search, `C` copies the
+current `trace_id` when focus is outside an editable field, `Enter` activates the
+focused button or form control, and `Esc` closes the decision dialog. The dialog
+focuses the first decision permitted by policy and returns focus to its opener.
+If the browser denies clipboard permission, the dashboard contains the error and
+asks the operator to select the visible trace ID and copy it manually.
