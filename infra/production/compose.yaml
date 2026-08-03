@@ -1,0 +1,151 @@
+name: stwi-production
+
+services:
+  stwi-api:
+    image: ${STWI_APP_IMAGE:?set a promoted application image pinned by digest}
+    command: ["uvicorn", "stwi.production:app", "--host", "0.0.0.0", "--port", "8000", "--no-server-header"]
+    restart: unless-stopped
+    environment:
+      STWI_RUNTIME_MODE: production
+      STWI_REDIS_PASSWORD: ${STWI_REDIS_PASSWORD:?required}
+      STWI_REDIS_URL: redis://default:${STWI_REDIS_PASSWORD:?required}@redis:6379/0
+      STWI_TSDB_DSN: postgresql://${STWI_TSDB_READER_USER:-stwi_reader_user}:${STWI_TSDB_READER_PASSWORD:?required}@timescaledb:5432/${STWI_TSDB_DB:-stwi}
+      STWI_QDRANT_URL: http://qdrant:6333
+      STWI_QDRANT_API_KEY: ${STWI_QDRANT_API_KEY:?required}
+      STWI_BASELINE_MANIFEST: /run/stwi/artifacts/baseline/manifest.json
+      STWI_SURROGATE_MANIFEST: /run/stwi/artifacts/surrogate/manifest.json
+    ports:
+      - "${STWI_API_BIND:-127.0.0.1}:${STWI_API_PORT:-8000}:8000"
+    volumes:
+      - ${STWI_BASELINE_ARTIFACT_DIR:?required}:/run/stwi/artifacts/baseline:ro
+      - ${STWI_SURROGATE_ARTIFACT_DIR:?required}:/run/stwi/artifacts/surrogate:ro
+    networks: [frontend, backend, data]
+    depends_on:
+      redis:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 256
+    healthcheck:
+      test: ["CMD", "python", "-m", "stwi.production_health", "readiness"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  stwi-worker:
+    image: ${STWI_APP_IMAGE:?set a promoted application image pinned by digest}
+    command: ["celery", "-A", "stwi.production_worker:app", "worker", "--loglevel=INFO", "--concurrency=${STWI_WORKER_CONCURRENCY:-2}"]
+    restart: unless-stopped
+    environment:
+      STWI_RUNTIME_MODE: production
+      STWI_REDIS_PASSWORD: ${STWI_REDIS_PASSWORD:?required}
+      STWI_REDIS_URL: redis://default:${STWI_REDIS_PASSWORD:?required}@redis:6379/0
+      STWI_TSDB_DSN: postgresql://${STWI_TSDB_READER_USER:-stwi_reader_user}:${STWI_TSDB_READER_PASSWORD:?required}@timescaledb:5432/${STWI_TSDB_DB:-stwi}
+      STWI_QDRANT_URL: http://qdrant:6333
+      STWI_QDRANT_API_KEY: ${STWI_QDRANT_API_KEY:?required}
+      STWI_BASELINE_MANIFEST: /run/stwi/artifacts/baseline/manifest.json
+      STWI_SURROGATE_MANIFEST: /run/stwi/artifacts/surrogate/manifest.json
+    volumes:
+      - ${STWI_BASELINE_ARTIFACT_DIR:?required}:/run/stwi/artifacts/baseline:ro
+      - ${STWI_SURROGATE_ARTIFACT_DIR:?required}:/run/stwi/artifacts/surrogate:ro
+    networks: [backend, data]
+    depends_on:
+      redis:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 256
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A stwi.production_worker:app inspect ping --destination celery@$$HOSTNAME --timeout 5 >/dev/null"]
+      interval: 20s
+      timeout: 8s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: redis:7.4.2-alpine@sha256:519f0189dfdee3bc0bad61fb265fe73d864b5c64020e6579ad48a45c49965635
+    command: ["sh", "-c", "exec redis-server --appendonly yes --requirepass \"$$STWI_REDIS_PASSWORD\""]
+    restart: unless-stopped
+    environment:
+      STWI_REDIS_PASSWORD: ${STWI_REDIS_PASSWORD:?required}
+    volumes:
+      - redis-data:/data
+    networks: [backend]
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 128
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$STWI_REDIS_PASSWORD\" redis-cli ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  timescaledb:
+    image: timescale/timescaledb:2.14.2-pg16@sha256:a0b7424bf8a690651e785ecdaf467c26616a62b4e01abf976c46addba974e5e2
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${STWI_TSDB_DB:-stwi}
+      POSTGRES_USER: ${STWI_TSDB_ADMIN_USER:-stwi_admin}
+      POSTGRES_PASSWORD: ${STWI_TSDB_ADMIN_PASSWORD:?required}
+      STWI_TSDB_READER_PASSWORD: ${STWI_TSDB_READER_PASSWORD:?required}
+    volumes:
+      - timescaledb-data:/var/lib/postgresql/data
+      - ./timescaledb-init:/docker-entrypoint-initdb.d:ro
+    networks: [data]
+    cap_drop: ["ALL"]
+    cap_add: ["CHOWN", "DAC_OVERRIDE", "FOWNER", "SETGID", "SETUID"]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 256
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  qdrant:
+    image: qdrant/qdrant:v1.9.7@sha256:de9a1db1ca60d9d5c7774469f493780cc178decc8cf0e8c221ada11d846b1a74
+    restart: unless-stopped
+    environment:
+      QDRANT__SERVICE__API_KEY: ${STWI_QDRANT_API_KEY:?required}
+      QDRANT__SERVICE__READ_ONLY_API_KEY: ${STWI_QDRANT_READ_ONLY_API_KEY:?required}
+    volumes:
+      - qdrant-data:/qdrant/storage
+    networks: [data]
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 256
+    healthcheck:
+      test: ["CMD", "bash", "-c", ":> /dev/tcp/127.0.0.1/6333"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+networks:
+  frontend:
+  backend:
+    internal: true
+  data:
+    internal: true
+
+volumes:
+  redis-data:
+  timescaledb-data:
+  qdrant-data:

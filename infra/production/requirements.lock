@@ -1,0 +1,13 @@
+celery==5.6.3
+fastapi==0.141.1
+httpx==0.28.1
+langgraph==0.6.11
+numpy==2.3.5
+psycopg[binary]==3.2.10
+pydantic==2.13.4
+qdrant-client==1.9.2
+redis==5.3.1
+sentence-transformers==5.6.0
+sse-starlette==2.4.1
+torch==2.7.1
+uvicorn==0.52.1
