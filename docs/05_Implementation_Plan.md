@@ -157,6 +157,34 @@ Trong 13 tuần, nhóm xây dựng MVP hỗ trợ operator đánh giá What-if t
 
 **Gate P4:** demo What-if hoàn chỉnh, có evidence, safety status và operator approval; không tự điều khiển thiết bị.
 
+### Production deployment baseline (`TRA-50`)
+
+Phương án triển khai production đã được chọn là hardened Docker Compose trên
+một host do đơn vị vận hành kiểm soát. `infra/production/compose.yaml` là
+baseline riêng; các file trong `infra/harness/` tiếp tục chỉ phục vụ demo và
+integration, không phải production manifest.
+
+Baseline production bắt buộc:
+
+- chỉ API được bind loopback theo mặc định; Redis, TimescaleDB và Qdrant không
+  publish host port;
+- API/worker dùng cùng promoted application image được pin bằng digest và không
+  được fallback về `stwi.app:app`, demo adapter, fake adapter hoặc in-memory
+  store;
+- `STWI_RUNTIME_MODE=production`, trusted principal/UI-context providers,
+  promoted baseline/surrogate artifacts và real T3 adapters phải có đủ; thiếu
+  hoặc provisional phải fail startup/readiness;
+- credential do host inject, không có development default và không xuất hiện
+  trong repository, log hoặc evidence;
+- migration, backup/restore verification, restart recovery và rollback là thao
+  tác operator có kiểm soát; đường dừng bình thường không xóa named volume.
+
+Compose validation hoặc unit test không chứng minh production-ready. TLS/DNS,
+host hardening, retention, rate limit, monitoring/on-call, restore drill,
+non-mock calibration, camera privacy review và benchmark đúng contract profile
+vẫn là Human Review gates. Demo simulation-first tiếp tục chạy độc lập và không
+tuyên bố dữ liệu hiện trường, SLA đo lường hoặc automatic actuation.
+
 ## 7. Timeline tổng hợp
 
 | Tuần | Luồng chính |
