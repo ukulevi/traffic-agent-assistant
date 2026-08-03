@@ -6,6 +6,7 @@ from pathlib import Path
 
 from scripts.validation.validate_production_deployment import (
     validate_production_deployment,
+    validate_production_topology,
 )
 
 
@@ -82,6 +83,8 @@ VALID_OPS = """def build_command(action, **kwargs):
     return []
 """
 
+ROOT = Path(__file__).resolve().parents[2]
+
 
 class ProductionDeploymentValidationTest(unittest.TestCase):
     def _root(
@@ -103,10 +106,23 @@ class ProductionDeploymentValidationTest(unittest.TestCase):
         (production / ".env.example").write_text(env, encoding="utf-8")
         (production / "README.md").write_text(runbook, encoding="utf-8")
         (production / "ops.py").write_text(ops, encoding="utf-8")
+        init_dir = production / "timescaledb-init"
+        init_dir.mkdir()
+        (init_dir / "00_create_reader_user.sh").write_text(
+            '#!/bin/sh\n: "${STWI_TSDB_READER_PASSWORD:?required}"\n',
+            encoding="utf-8",
+        )
+        (init_dir / "01_schema.sql").write_text(
+            "CREATE TABLE IF NOT EXISTS simulation_results (tenant_id TEXT);\n",
+            encoding="utf-8",
+        )
         return root
 
     def test_valid_baseline_has_no_static_contract_errors(self) -> None:
         self.assertEqual(validate_production_deployment(self._root()), [])
+
+    def test_repository_production_baseline_satisfies_static_contract(self) -> None:
+        self.assertEqual(validate_production_topology(ROOT), [])
 
     def test_rejects_public_data_service_port(self) -> None:
         compose = VALID_COMPOSE.replace(
@@ -125,6 +141,38 @@ class ProductionDeploymentValidationTest(unittest.TestCase):
         errors = validate_production_deployment(self._root(compose=compose))
         self.assertIn("compose: STWI_RUNTIME_MODE must be production", errors)
         self.assertIn("compose: API healthcheck must not use /docs", errors)
+
+    def test_rejects_provisional_application_entrypoint(self) -> None:
+        compose = VALID_COMPOSE.replace(
+            '"stwi.production:app"', '"stwi.app:app"'
+        )
+        errors = validate_production_deployment(self._root(compose=compose))
+        self.assertIn(
+            "compose: application services must not use provisional stwi.app",
+            errors,
+        )
+
+    def test_rejects_floating_infrastructure_image(self) -> None:
+        compose = VALID_COMPOSE.replace("redis:7.4.2-alpine", "redis:latest")
+        errors = validate_production_deployment(self._root(compose=compose))
+        self.assertIn("compose: image tags must not be floating", errors)
+
+    def test_rejects_application_service_without_hardening(self) -> None:
+        compose = VALID_COMPOSE.replace("    read_only: true\n", "", 1).replace(
+            '    cap_drop: ["ALL"]\n', "", 1
+        )
+        errors = validate_production_deployment(self._root(compose=compose))
+        self.assertIn("compose: stwi-api must use a read-only root filesystem", errors)
+        self.assertIn("compose: stwi-api must drop all Linux capabilities", errors)
+
+    def test_rejects_production_seed_data(self) -> None:
+        root = self._root()
+        (root / "infra" / "production" / "timescaledb-init" / "01_schema.sql").write_text(
+            "INSERT INTO simulation_results VALUES ('synthetic_test_only');\n",
+            encoding="utf-8",
+        )
+        errors = validate_production_deployment(root)
+        self.assertIn("timescaledb: production schema must not seed data", errors)
 
     def test_rejects_root_runtime_and_unpinned_base_image(self) -> None:
         dockerfile = VALID_DOCKERFILE.replace("@sha256:" + "a" * 64, "").replace(

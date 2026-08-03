@@ -68,10 +68,27 @@ def _validate_compose(text: str) -> list[str]:
         if "STWI_RUNTIME_MODE: production" not in block:
             errors.append("compose: STWI_RUNTIME_MODE must be production")
             break
+        if "read_only: true" not in block:
+            errors.append(
+                f"compose: {service} must use a read-only root filesystem"
+            )
+        if not re.search(r"(?m)^    cap_drop:\s*(?:\[\"ALL\"\]|$)", block):
+            errors.append(f"compose: {service} must drop all Linux capabilities")
+        if "no-new-privileges:true" not in block:
+            errors.append(f"compose: {service} must enable no-new-privileges")
 
     api_block = _service_block(text, "stwi-api")
     if "/docs" in api_block:
         errors.append("compose: API healthcheck must not use /docs")
+    application_blocks = "\n".join(
+        _service_block(text, service) for service in ("stwi-api", "stwi-worker")
+    )
+    if "stwi.app:app" in application_blocks:
+        errors.append(
+            "compose: application services must not use provisional stwi.app"
+        )
+    if re.search(r"(?mi)^\s*image:\s*\S+:(?:latest|main|edge)\s*$", text):
+        errors.append("compose: image tags must not be floating")
     return errors
 
 
@@ -110,6 +127,26 @@ def _validate_runbook(text: str) -> list[str]:
     return errors
 
 
+def _validate_timescaledb_init(production: Path) -> list[str]:
+    errors: list[str] = []
+    init_dir = production / "timescaledb-init"
+    reader = init_dir / "00_create_reader_user.sh"
+    schema = init_dir / "01_schema.sql"
+    if not reader.is_file():
+        errors.append("timescaledb: reader-role initializer is missing")
+    if not schema.is_file():
+        errors.append("timescaledb: production schema is missing")
+        return errors
+    try:
+        schema_text = schema.read_text(encoding="utf-8")
+    except OSError:
+        errors.append("timescaledb: production schema cannot be read")
+        return errors
+    if re.search(r"(?mi)^\s*INSERT\s+INTO\b", schema_text):
+        errors.append("timescaledb: production schema must not seed data")
+    return errors
+
+
 def validate_production_deployment(root: Path) -> list[str]:
     """Return stable errors without reading credentials or external services."""
     production = root / PRODUCTION_DIR
@@ -127,6 +164,24 @@ def validate_production_deployment(root: Path) -> list[str]:
         errors.extend(_validate_environment(environment))
     if runbook:
         errors.extend(_validate_runbook(runbook))
+    errors.extend(_validate_timescaledb_init(production))
+    return errors
+
+
+def validate_production_topology(root: Path) -> list[str]:
+    """Validate Compose, image, and environment files before runbook work."""
+    production = root / PRODUCTION_DIR
+    errors: list[str] = []
+    compose = _read(production / "compose.yaml", "compose", errors)
+    dockerfile = _read(production / "Dockerfile", "dockerfile", errors)
+    environment = _read(production / ".env.example", "environment", errors)
+    if compose:
+        errors.extend(_validate_compose(compose))
+    if dockerfile:
+        errors.extend(_validate_dockerfile(dockerfile))
+    if environment:
+        errors.extend(_validate_environment(environment))
+    errors.extend(_validate_timescaledb_init(production))
     return errors
 
 
