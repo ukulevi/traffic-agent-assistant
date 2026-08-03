@@ -62,6 +62,14 @@ def _validate_compose(text: str) -> list[str]:
         block = _service_block(text, service)
         if re.search(r"(?m)^    ports:\s*(?:\[|$)", block):
             errors.append(f"compose: {service} must not publish host ports")
+        image_match = re.search(r"(?m)^    image:\s*(\S+)\s*$", block)
+        if not image_match or not re.search(
+            r"@sha256:[0-9a-fA-F]{64}$", image_match.group(1)
+        ):
+            errors.append(
+                "compose: infrastructure images must be pinned by sha256 digest"
+            )
+            break
 
     for service in ("stwi-api", "stwi-worker"):
         block = _service_block(text, service)

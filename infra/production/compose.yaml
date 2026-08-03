@@ -78,7 +78,7 @@ services:
       start_period: 30s
 
   redis:
-    image: redis:7.4.2-alpine
+    image: redis:7.4.2-alpine@sha256:519f0189dfdee3bc0bad61fb265fe73d864b5c64020e6579ad48a45c49965635
     command: ["sh", "-c", "exec redis-server --appendonly yes --requirepass \"$$STWI_REDIS_PASSWORD\""]
     restart: unless-stopped
     environment:
@@ -97,7 +97,7 @@ services:
       start_period: 15s
 
   timescaledb:
-    image: timescale/timescaledb:2.14.2-pg16
+    image: timescale/timescaledb:2.14.2-pg16@sha256:a0b7424bf8a690651e785ecdaf467c26616a62b4e01abf976c46addba974e5e2
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${STWI_TSDB_DB:-stwi}
@@ -120,7 +120,7 @@ services:
       start_period: 30s
 
   qdrant:
-    image: qdrant/qdrant:v1.9.7
+    image: qdrant/qdrant:v1.9.7@sha256:de9a1db1ca60d9d5c7774469f493780cc178decc8cf0e8c221ada11d846b1a74
     restart: unless-stopped
     environment:
       QDRANT__SERVICE__API_KEY: ${STWI_QDRANT_API_KEY:?required}

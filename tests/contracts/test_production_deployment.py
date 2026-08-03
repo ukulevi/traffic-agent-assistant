@@ -35,17 +35,17 @@ VALID_COMPOSE = """services:
     healthcheck:
       test: ["CMD", "celery", "inspect", "ping"]
   redis:
-    image: redis:7.4.2-alpine
+    image: redis:7.4.2-alpine@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
   timescaledb:
-    image: timescale/timescaledb:2.17.2-pg16
+    image: timescale/timescaledb:2.17.2-pg16@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
     environment:
       POSTGRES_PASSWORD: ${STWI_TSDB_ADMIN_PASSWORD:?required}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready"]
   qdrant:
-    image: qdrant/qdrant:v1.9.7
+    image: qdrant/qdrant:v1.9.7@sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
     environment:
       QDRANT__SERVICE__API_KEY: ${STWI_QDRANT_API_KEY:?required}
     healthcheck:
@@ -153,9 +153,20 @@ class ProductionDeploymentValidationTest(unittest.TestCase):
         )
 
     def test_rejects_floating_infrastructure_image(self) -> None:
-        compose = VALID_COMPOSE.replace("redis:7.4.2-alpine", "redis:latest")
+        compose = VALID_COMPOSE.replace(
+            "redis:7.4.2-alpine@sha256:" + "b" * 64,
+            "redis:latest",
+        )
         errors = validate_production_deployment(self._root(compose=compose))
         self.assertIn("compose: image tags must not be floating", errors)
+
+    def test_rejects_mutable_infrastructure_image_reference(self) -> None:
+        compose = VALID_COMPOSE.replace("@sha256:" + "b" * 64, "", 1)
+        errors = validate_production_deployment(self._root(compose=compose))
+        self.assertIn(
+            "compose: infrastructure images must be pinned by sha256 digest",
+            errors,
+        )
 
     def test_rejects_application_service_without_hardening(self) -> None:
         compose = VALID_COMPOSE.replace("    read_only: true\n", "", 1).replace(
