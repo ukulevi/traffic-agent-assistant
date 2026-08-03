@@ -29,6 +29,10 @@ class ProjectContractTest(unittest.TestCase):
         self.assertEqual(CONTRACT["api"]["create_status"], 202)
         self.assertIn("needs_review", CONTRACT["api"]["statuses"])
         self.assertEqual(CONTRACT["api"]["legal_evidence_field"], "citations")
+        self.assertEqual(
+            CONTRACT["api"]["ui_context"],
+            "GET /api/v1/ui-context",
+        )
 
     def test_legal_sources_are_versioned(self):
         sources = {item["number"]: item for item in CONTRACT["legal_corpus"]}

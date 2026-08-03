@@ -6,7 +6,8 @@
 \midrule
 POST & \texttt{/api/v1/what-if-jobs} & Tạo job; trả HTTP 202 \\
 GET & \texttt{/api/v1/what-if-jobs/\{job\_id\}} & Lấy snapshot trạng thái/kết quả \\
-GET & \texttt{/api/v1/what-if-jobs/\{job\_id\}/events} & SSE progress stream \\
+GET & \texttt{/api/v1/what-if-jobs/}\newline\texttt{\{job\_id\}/events} & SSE progress stream \\
+GET & \texttt{/api/v1/ui-context} & Bootstrap dashboard production từ identity và node scope phía server; không cache \\
 GET & \texttt{/api/v1/status} & Health/readiness \\
 \bottomrule
 \end{longtable}
@@ -21,22 +22,46 @@ GET & \texttt{/api/v1/status} & Health/readiness \\
 }
 \end{lstlisting}
 
+\begin{lstlisting}[caption={Trusted production UI context},label={lst:api_ui_context}]
+GET /api/v1/ui-context
+Cache-Control: no-store
+{
+  "mode": "production",
+  "tenant_id": "tenant-a",
+  "operator_id": "operator-17",
+  "roles": ["operator"],
+  "node_ids": ["node_00", "node_01"],
+  "capabilities": {"record_decision": true}
+}
+\end{lstlisting}
+
+Identity, role, node allowlist và capability đều do server resolve. Capability
+\texttt{record\_decision} chỉ có thể bật cho \texttt{operator}/\texttt{admin};
+không có capability điều khiển hiện trường. Thiếu principal trả
+\texttt{401 AUTH\_PRINCIPAL\_REQUIRED}, role bị từ chối trả
+\texttt{403 AUTH\_ROLE\_DENIED}, và provider lỗi/invalid trả
+\texttt{503 UI\_CONTEXT\_UNAVAILABLE}, đều fail closed với trace ID. Demo/test
+không đăng ký endpoint; chỉ 404 chính xác mới cho phép kiểm tra OpenAPI
+provisional để bật demo.
+
 Status enum: \texttt{queued}, \texttt{running}, \texttt{succeeded}, \texttt{needs\_review}, \texttt{failed}, \texttt{expired}. Chỉ \texttt{succeeded} có \texttt{recommended\_action}; \texttt{needs\_review} chỉ có candidate với \texttt{executable=false}.
 
 \section{Error Model}
 
+{\small
 \begin{longtable}{p{4cm} p{2cm} p{8cm}}
 \toprule
 \textbf{Code} & \textbf{Retry} & \textbf{Mô tả} \\
 \midrule
-INVALID\_SCENARIO & Không & Scenario/schema không hợp lệ \\
-UNKNOWN\_NODE & Không & Node không thuộc registry/version \\
-SIMULATION\_UNAVAILABLE & Có & Worker/model không khả dụng \\
-KNOWLEDGE\_UNAVAILABLE & Có & Qdrant/query service lỗi \\
-QUERY\_INVALID & Không & SimulationQuery không hợp lệ \\
+\texttt{INVALID\_}\newline\texttt{SCENARIO} & Không & Scenario/schema không hợp lệ \\
+\texttt{UNKNOWN\_NODE} & Không & Node không thuộc registry/version \\
+\texttt{SIMULATION\_}\newline\texttt{UNAVAILABLE} & Có & Worker/model không khả dụng \\
+\texttt{KNOWLEDGE\_}\newline\texttt{UNAVAILABLE} & Có & Qdrant/query service lỗi \\
+\texttt{QUERY\_INVALID} & Không & SimulationQuery không hợp lệ \\
 POLICY\_ERROR & Không & Không đánh giá được safety policy \\
-INTERNAL\_ERROR & Có giới hạn & Lỗi nội bộ có trace ID \\
+\texttt{INTERNAL\_ERROR} & Có giới hạn & Lỗi nội bộ có trace ID \\
 \bottomrule
 \end{longtable}
+}
 
 Hard deadline là 180 giây. Retry chỉ áp dụng thao tác idempotent và không được vượt deadline chung.

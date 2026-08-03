@@ -93,6 +93,7 @@
     "create_job": "POST /api/v1/what-if-jobs",
     "get_job": "GET /api/v1/what-if-jobs/{job_id}",
     "events": "GET /api/v1/what-if-jobs/{job_id}/events",
+    "ui_context": "GET /api/v1/ui-context",
     "create_status": 202,
     "statuses": ["queued", "running", "succeeded", "needs_review", "failed", "expired"],
     "successful_action_field": "recommended_action",

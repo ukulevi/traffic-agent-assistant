@@ -45,6 +45,13 @@ from stwi.t4_orchestrator.contracts import (
 from stwi.t4_orchestrator.interfaces import JobDispatcher, JobStore
 from stwi.t4_orchestrator.job_store import InMemoryJobStore, get_job_store
 from stwi.t4_orchestrator.orchestrator import WhatIfOrchestrator
+from stwi.t4_orchestrator.ui_context import (
+    UiCapabilities,
+    UiContextProvider,
+    UiContextResolutionError,
+    UiContextResponse,
+    UiContextScope,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +66,7 @@ def create_app(
     settings: RuntimeSettings | None = None,
     principal_resolver: PrincipalResolver | None = None,
     dispatcher: JobDispatcher | None = None,
+    ui_context_provider: UiContextProvider | None = None,
 ) -> object:
     """Create and return the FastAPI application.
 
@@ -98,6 +106,20 @@ def create_app(
             "Production runtime rejects provisional PrincipalResolver "
             "implementations."
         )
+    if _settings.mode == RuntimeMode.PRODUCTION and ui_context_provider is None:
+        raise RuntimeError(
+            "Production runtime requires an explicit server-side "
+            "UiContextProvider."
+        )
+    if _settings.mode == RuntimeMode.PRODUCTION and getattr(
+        ui_context_provider,
+        "is_provisional_provider",
+        False,
+    ):
+        raise RuntimeError(
+            "Production runtime rejects provisional UiContextProvider "
+            "implementations."
+        )
     if not _settings.allow_provisional_adapters and dispatcher is None:
         raise RuntimeError(
             "Production runtime requires an explicit Celery job dispatcher."
@@ -110,7 +132,7 @@ def create_app(
         raise RuntimeError("Production runtime rejects provisional job dispatchers.")
 
     try:
-        from fastapi import BackgroundTasks, FastAPI, Header, HTTPException
+        from fastapi import BackgroundTasks, FastAPI, Header, HTTPException, Response
         from fastapi.responses import JSONResponse, StreamingResponse
         from fastapi.staticfiles import StaticFiles
     except ImportError as exc:
@@ -129,10 +151,15 @@ def create_app(
         operator_hint: str | None = None,
     ) -> ServerPrincipal:
         try:
-            return principal_resolver.resolve(
+            principal = principal_resolver.resolve(
                 tenant_hint=tenant_hint,
                 operator_hint=operator_hint,
             )
+            if not isinstance(principal, ServerPrincipal):
+                raise PrincipalResolutionError(
+                    "resolver returned an invalid principal type"
+                )
+            return principal
         except (PrincipalResolutionError, RuntimeError, ValueError) as exc:
             trace_id = str(uuid.uuid4())
             logger.warning(
@@ -193,6 +220,55 @@ def create_app(
         StaticFiles(directory=Path(__file__).with_name("static"), html=True),
         name="demo",
     )
+
+    if _settings.mode == RuntimeMode.PRODUCTION:
+
+        @app.get("/api/v1/ui-context", response_model=UiContextResponse)
+        async def get_ui_context(response: Response) -> UiContextResponse:
+            """Return trusted identity and UI scope for dashboard bootstrap."""
+            principal = resolve_principal()
+            require_roles(
+                principal,
+                PrincipalRole.OPERATOR,
+                PrincipalRole.ANALYST,
+                PrincipalRole.ADMIN,
+                PrincipalRole.READONLY,
+            )
+            try:
+                scope = ui_context_provider.resolve(principal=principal)
+                if not isinstance(scope, UiContextScope):
+                    raise UiContextResolutionError(
+                        "UI context provider returned an invalid scope"
+                    )
+                can_record_decision = scope.record_decision and principal.has_any_role(
+                    PrincipalRole.OPERATOR,
+                    PrincipalRole.ADMIN,
+                )
+                payload = UiContextResponse(
+                    tenant_id=principal.tenant_id,
+                    operator_id=principal.operator_id,
+                    roles=sorted(principal.roles, key=lambda role: role.value),
+                    node_ids=list(scope.node_ids),
+                    capabilities=UiCapabilities(
+                        record_decision=can_record_decision,
+                    ),
+                )
+            except Exception as exc:
+                trace_id = str(uuid.uuid4())
+                logger.error(
+                    "UI context unavailable code=UI_CONTEXT_UNAVAILABLE trace_id=%s",
+                    trace_id,
+                )
+                raise HTTPException(
+                    status_code=503,
+                    detail={
+                        "code": "UI_CONTEXT_UNAVAILABLE",
+                        "message": "Trusted UI context is unavailable",
+                        "trace_id": trace_id,
+                    },
+                ) from exc
+            response.headers["Cache-Control"] = "no-store"
+            return payload
 
     # -----------------------------------------------------------------------
     # POST /api/v1/what-if-jobs — create job (HTTP 202)

@@ -25,7 +25,49 @@ test("trusted runtime context enables production mode", async () => {
   const context = await resolveDashboardContext({ fetchImpl });
   assert.equal(context.mode, "production");
   assert.equal(context.tenantId, "tenant-a");
+  assert.equal(context.operatorId, "op-a");
   assert.deepEqual(context.roles, ["operator"]);
+  assert.deepEqual(context.nodeIds, ["node_00"]);
+  assert.deepEqual(context.capabilities, { recordDecision: true });
+});
+
+test("malformed production scope remains static preview", async (t) => {
+  const valid = {
+    mode: "production",
+    tenant_id: "tenant-a",
+    operator_id: "op-a",
+    roles: ["operator"],
+    node_ids: ["node_00"],
+    capabilities: { record_decision: true },
+  };
+  const cases = {
+    "duplicate node": { ...valid, node_ids: ["node_00", "node_00"] },
+    "empty node": { ...valid, node_ids: [""] },
+    "too many nodes": {
+      ...valid,
+      node_ids: Array.from({ length: 21 }, (_, index) => `node_${index}`),
+    },
+    "unsupported role": { ...valid, roles: ["superuser"] },
+    "duplicate role": { ...valid, roles: ["operator", "operator"] },
+    "unknown capability": {
+      ...valid,
+      capabilities: { record_decision: true, automatic_actuation: true },
+    },
+    "non-boolean capability": {
+      ...valid,
+      capabilities: { record_decision: 1 },
+    },
+  };
+
+  for (const [name, body] of Object.entries(cases)) {
+    await t.test(name, async () => {
+      const context = await resolveDashboardContext({
+        fetchImpl: async () => response(200, body),
+      });
+      assert.equal(context.mode, "static_preview");
+      assert.equal(context.reason, "CONTEXT_INVALID");
+    });
+  }
 });
 
 test("provisional STWI OpenAPI enables explicit demo compatibility", async () => {
