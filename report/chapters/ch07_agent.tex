@@ -78,7 +78,8 @@ HTTP/1.1 202 Accepted
 
 \subsection{Trạng thái và SSE}
 
-\texttt{GET /api/v1/what-if-jobs/\{job\_id\}} trả snapshot. Endpoint
+\texttt{GET /api/v1/what-if-jobs/\{job\_id\}} trả snapshot.
+\par\noindent
 \texttt{GET /api/v1/what-if-jobs/\{job\_id\}/events} phát SSE gồm stage, iteration, progress, message và timestamp.
 
 Status enum là \texttt{queued}, \texttt{running}, \texttt{succeeded}, \texttt{needs\_review}, \texttt{failed}, \texttt{expired}. SSE reconnect không được tạo execution mới.
