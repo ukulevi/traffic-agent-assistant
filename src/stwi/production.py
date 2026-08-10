@@ -16,6 +16,7 @@ app = create_app(
     principal_resolver=runtime.principal_resolver,
     dispatcher=runtime.dispatcher,
     ui_context_provider=runtime.ui_context_provider,
+    network_context_provider=runtime.network_context_provider,
 )
 
 

@@ -16,7 +16,12 @@ from typing import Any
 
 from stwi.config.runtime import RuntimeMode, RuntimeSettings, get_runtime_settings
 from stwi.t3_knowledge.tier3_facade import RealT3Adapter, T3KnowledgeTier
+from stwi.t1_pipeline.network_topology import (
+    NetworkTopologyRegistry,
+    build_synthetic_topology,
+)
 from stwi.t4_orchestrator.job_dispatch import CeleryJobDispatcher
+from stwi.t4_orchestrator.network_context import AuthorizedNetworkContextProvider
 from stwi.t4_orchestrator.orchestrator import WhatIfOrchestrator
 from stwi.t4_orchestrator.redis_job_store import RedisJobStore
 from stwi.t4_orchestrator.runtime_artifacts import RuntimeArtifactSet
@@ -104,6 +109,7 @@ class ProductionRuntime:
     orchestrator: WhatIfOrchestrator
     principal_resolver: Any
     ui_context_provider: Any
+    network_context_provider: AuthorizedNetworkContextProvider
 
 
 ComponentFactory = Callable[[ProductionSettings], ProductionComponents]
@@ -202,6 +208,12 @@ def build_production_runtime(settings: ProductionSettings) -> ProductionRuntime:
         settings=settings.runtime,
         runtime_artifacts=artifacts,
     )
+    topology = build_synthetic_topology()
+    network_context_provider = AuthorizedNetworkContextProvider(
+        registry=NetworkTopologyRegistry((topology,)),
+        network_version=topology.network_version,
+        ui_context_provider=components.ui_context_provider,
+    )
     return ProductionRuntime(
         settings=settings,
         components=components,
@@ -212,6 +224,7 @@ def build_production_runtime(settings: ProductionSettings) -> ProductionRuntime:
         orchestrator=orchestrator,
         principal_resolver=components.principal_resolver,
         ui_context_provider=components.ui_context_provider,
+        network_context_provider=network_context_provider,
     )
 
 

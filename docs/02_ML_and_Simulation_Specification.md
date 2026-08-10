@@ -39,6 +39,16 @@ flowchart LR
 
 Mạng đường thật có hướng, nhưng GCN MVP sử dụng adjacency trọng số được symmetrize từ travel time/kết nối. Directed routing graph vẫn được giữ riêng cho mô phỏng và giải thích tuyến.
 
+Với demo hiện hành, hai artifact có version độc lập:
+
+- `synthetic-routing-20-v1`: directed routing graph trên lưới synthetic 4×5,
+  dùng cho kiểm tra corridor và các ticket điều hướng tiếp theo;
+- `mock-adjacency-20-v1`: định danh adjacency GCN theo node order canonical.
+
+Không suy ra rằng hai version hoặc hai cấu trúc này có thể hoán đổi. Ticket
+topology chỉ đăng ký metadata và routing graph; không thay đổi `A[N,N]`, tensor
+shape, feature order hay đường inference của GCN–LSTM.
+
 ## 2. Dữ liệu, split và baseline
 
 ### 2.0. Phạm vi demo simulation-first

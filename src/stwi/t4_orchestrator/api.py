@@ -45,6 +45,11 @@ from stwi.t4_orchestrator.contracts import (
 from stwi.t4_orchestrator.interfaces import JobDispatcher, JobStore
 from stwi.t4_orchestrator.job_store import InMemoryJobStore, get_job_store
 from stwi.t4_orchestrator.orchestrator import WhatIfOrchestrator
+from stwi.t4_orchestrator.network_context import (
+    NetworkContextProvider,
+    NetworkContextResponse,
+    NetworkContextUnavailable,
+)
 from stwi.t4_orchestrator.ui_context import (
     UiCapabilities,
     UiContextProvider,
@@ -67,6 +72,7 @@ def create_app(
     principal_resolver: PrincipalResolver | None = None,
     dispatcher: JobDispatcher | None = None,
     ui_context_provider: UiContextProvider | None = None,
+    network_context_provider: NetworkContextProvider | None = None,
 ) -> object:
     """Create and return the FastAPI application.
 
@@ -118,6 +124,15 @@ def create_app(
     ):
         raise RuntimeError(
             "Production runtime rejects provisional UiContextProvider "
+            "implementations."
+        )
+    if _settings.mode == RuntimeMode.PRODUCTION and getattr(
+        network_context_provider,
+        "is_provisional_provider",
+        False,
+    ):
+        raise RuntimeError(
+            "Production runtime rejects provisional NetworkContextProvider "
             "implementations."
         )
     if not _settings.allow_provisional_adapters and dispatcher is None:
@@ -264,6 +279,47 @@ def create_app(
                     detail={
                         "code": "UI_CONTEXT_UNAVAILABLE",
                         "message": "Trusted UI context is unavailable",
+                        "trace_id": trace_id,
+                    },
+                ) from exc
+            response.headers["Cache-Control"] = "no-store"
+            return payload
+
+        @app.get(
+            "/api/v1/network-context",
+            response_model=NetworkContextResponse,
+        )
+        async def get_network_context(response: Response) -> NetworkContextResponse:
+            """Return the authorized synthetic topology projection."""
+            principal = resolve_principal()
+            require_roles(
+                principal,
+                PrincipalRole.OPERATOR,
+                PrincipalRole.ANALYST,
+                PrincipalRole.ADMIN,
+                PrincipalRole.READONLY,
+            )
+            try:
+                if network_context_provider is None:
+                    raise NetworkContextUnavailable(
+                        "network context provider is not configured"
+                    )
+                payload = network_context_provider.resolve(principal=principal)
+                if not isinstance(payload, NetworkContextResponse):
+                    raise NetworkContextUnavailable(
+                        "network context provider returned an invalid response"
+                    )
+            except Exception as exc:
+                trace_id = str(uuid.uuid4())
+                logger.error(
+                    "Network context unavailable code=NETWORK_CONTEXT_UNAVAILABLE trace_id=%s",
+                    trace_id,
+                )
+                raise HTTPException(
+                    status_code=503,
+                    detail={
+                        "code": "NETWORK_CONTEXT_UNAVAILABLE",
+                        "message": "Trusted network context is unavailable",
                         "trace_id": trace_id,
                     },
                 ) from exc

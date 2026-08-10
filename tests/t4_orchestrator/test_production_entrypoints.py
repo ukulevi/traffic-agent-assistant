@@ -25,6 +25,7 @@ class ProductionEntrypointTest(unittest.TestCase):
             dispatcher=MagicMock(is_provisional_dispatcher=False),
             principal_resolver=MagicMock(is_provisional_resolver=False),
             ui_context_provider=MagicMock(is_provisional_provider=False),
+            network_context_provider=MagicMock(is_provisional_provider=False),
             celery_app=MagicMock(),
         )
 
@@ -53,6 +54,7 @@ class ProductionEntrypointTest(unittest.TestCase):
             principal_resolver=runtime.principal_resolver,
             dispatcher=runtime.dispatcher,
             ui_context_provider=runtime.ui_context_provider,
+            network_context_provider=runtime.network_context_provider,
         )
 
     def test_worker_entrypoint_registers_stable_task(self) -> None:
