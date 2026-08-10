@@ -10,15 +10,29 @@ STATIC_ROOT = Path(__file__).parents[2] / "src" / "stwi" / "t4_orchestrator" / "
 
 
 class TestDashboardStatic(unittest.TestCase):
-    def test_dashboard_uses_result_first_three_region_structure(self) -> None:
-        markup = (STATIC_ROOT / "index.html").read_text(encoding="utf-8")
-        self.assertIn('class="command-layout"', markup)
-        self.assertIn('class="node-rail"', markup)
-        self.assertIn('class="evidence-rail"', markup)
-        self.assertLess(markup.index('id="result-conclusion"'), markup.index('id="lifecycle-title"'))
-        self.assertLess(markup.index('id="lifecycle-title"'), markup.index('id="scenario-title"'))
-        self.assertIn('id="decision-dialog"', markup)
-        self.assertIn('type="module" src="dashboard.js"', markup)
+    def test_dashboard_uses_five_region_workflow_order(self) -> None:
+      markup = (STATIC_ROOT / "index.html").read_text(encoding="utf-8")
+      self.assertEqual(markup.count('class="skip-link"'), 2)
+      self.assertIn('href="#scenario-form"', markup)
+      self.assertIn('href="#result-conclusion"', markup)
+      self.assertLess(markup.index('id="scenario-form"'), markup.index('id="lifecycle-title"'))
+      self.assertLess(markup.index('id="lifecycle-title"'), markup.index('id="result-conclusion"'))
+      self.assertLess(markup.index('id="result-conclusion"'), markup.index('id="evidence-panel"'))
+      self.assertLess(markup.index('id="evidence-panel"'), markup.index('id="decision-title"'))
+      self.assertIn('class="workspace"', markup)
+      stylesheet = (STATIC_ROOT / "dashboard.css").read_text(encoding="utf-8")
+      self.assertIn('grid-template-columns: 220px minmax(560px, 1fr)', stylesheet)
+      for selector in (
+        '.scenario-panel { order:',
+        '.lifecycle-panel { order:',
+        '.result-panel { order:',
+        '#evidence-panel { order:',
+        '#uncertainty-panel { order:',
+        '.decision-panel { order:',
+        '.help-panel { order:',
+        '.node-rail { order:',
+      ):
+        self.assertNotIn(selector, stylesheet)
 
     def test_dashboard_data_surfaces_are_solid_not_glass(self) -> None:
         stylesheet = (STATIC_ROOT / "dashboard.css").read_text(encoding="utf-8")

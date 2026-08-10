@@ -213,6 +213,8 @@ export function createDashboardView(doc = document) {
     const list = byId("node-list");
     select.replaceChildren();
     list.replaceChildren();
+    list.setAttribute("role", "group");
+    list.setAttribute("aria-label", "Danh sách node");
     for (const nodeId of context.nodeIds || []) {
       const option = doc.createElement("option");
       option.value = nodeId;
@@ -222,8 +224,7 @@ export function createDashboardView(doc = document) {
       button.type = "button";
       button.textContent = nodeId;
       button.dataset.nodeId = nodeId;
-      button.setAttribute("role", "option");
-      button.setAttribute("aria-selected", "false");
+      button.setAttribute("aria-pressed", "false");
       button.addEventListener("click", () => handlers.selectNode?.(nodeId));
       list.append(button);
     }
@@ -241,7 +242,13 @@ export function createDashboardView(doc = document) {
   function setNode(nodeId) {
     byId("node-id").value = nodeId;
     for (const button of byId("node-list").children) {
-      button.setAttribute("aria-selected", String(button.dataset.nodeId === nodeId));
+      const selected = button.dataset.nodeId === nodeId;
+      button.setAttribute("aria-pressed", String(selected));
+      if (selected) {
+        button.setAttribute("aria-current", "true");
+      } else {
+        button.removeAttribute("aria-current");
+      }
     }
   }
 

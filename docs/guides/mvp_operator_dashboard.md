@@ -1,15 +1,18 @@
 # MVP Operator Dashboard
 
 Run the API with the existing orchestrator extra, then open `/demo/` on the
-same origin. The dashboard is organized as a four-step operator workflow:
+same origin. The dashboard follows a five-region operator workflow:
 
-1. **Input** — create a What-If scenario with tenant, node, green-time ratio,
-   and a short incident description.
-2. **Observe** — follow `queued`/`running`/terminal status, lifecycle events,
-   `trace_id`, and model/data versions.
-3. **Safety** — read the fail-closed explanation and inspect the non-executable
-   action payload.
-4. **Human decision** — explicitly approve or reject the result for audit only.
+1. **Input** — configuration at the top: tenant, node, green-time ratio,
+   scenario description, and demo presets.
+2. **Job lifecycle** — monitor `queued`/`running`/terminal status, events,
+   `trace_id`, model/data versions, and timestamps.
+3. **Result** — read the terminal simulation envelope, aggregate forecast
+   metrics, and Vietnamese interpretation before moving to evidence.
+4. **Safety/evidence** — review uncertainty/OOD checks, counterfactual safety
+   iterations, citations, and the non-executable action payload.
+5. **Operator review** — explicitly approve, reject, or request changes for
+   audit only.
 
 The dashboard is provisional and aggregate-only. It never displays raw video,
 credentials, or an executable field action. For `needs_review`, it renders
@@ -92,9 +95,14 @@ clearly that this is not production legal validation. Authentication provider,
 durable multi-instance job storage, production corpus governance and runtime
 observability remain backend/deployment dependencies outside this UI scope.
 
-Keyboard operation uses native controls: `/` focuses node search, `C` copies the
-current `trace_id` when focus is outside an editable field, `Enter` activates the
-focused button or form control, and `Esc` closes the decision dialog. The dialog
-focuses the first decision permitted by policy and returns focus to its opener.
-If the browser denies clipboard permission, the dashboard contains the error and
-asks the operator to select the visible trace ID and copy it manually.
+Keyboard progression follows the five-region workflow. Skip links jump to input
+configuration or the result envelope. `/` focuses the node search, `C` copies
+the current `trace_id` when focus is outside an editable field, and `Enter`
+activates the focused button or form control. After a job is accepted, focus
+moves to the lifecycle panel for monitoring; on a terminal envelope, focus moves
+once to the result conclusion. The node rail uses ordinary buttons with
+`aria-pressed`, so `Tab` stays consistent and screen readers announce selected
+state without incomplete listbox semantics. `Esc` closes the decision dialog
+and returns focus to its opener. If the browser denies clipboard permission, the
+dashboard contains the error and asks the operator to select the visible trace
+ID and copy it manually.
