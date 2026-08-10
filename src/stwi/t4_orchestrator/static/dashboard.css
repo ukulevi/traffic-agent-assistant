@@ -83,6 +83,19 @@ a:focus-visible,
 .forecast-metrics span, .forecast-metrics small { display: block; color: var(--stwi-muted); font-size: 10px; }
 .forecast-metrics strong { display: block; margin: 6px 0 4px; color: #063f59; font: 700 18px/1.2 "Azeret Mono", Consolas, monospace; }
 
+.network-disclosure, .network-status { color: var(--stwi-muted); font-size: 11px; line-height: 1.6; }
+.network-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); gap: 14px; }
+.network-map { min-height: 360px; overflow: hidden; border: 1px solid var(--stwi-border); border-radius: 10px; background: #eaf2f5; }
+.network-map[data-map-state="fallback"] { display: grid; place-items: center; }
+.network-table-wrap { max-height: 360px; overflow: auto; border: 1px solid var(--stwi-border); border-radius: 10px; }
+.network-fallback { width: 100%; border-collapse: collapse; font-size: 11px; }
+.network-fallback caption { padding: 10px; color: var(--stwi-muted); text-align: left; }
+.network-fallback th, .network-fallback td { padding: 7px 9px; border-top: 1px solid var(--stwi-border); text-align: left; }
+.network-fallback th { position: sticky; top: 0; z-index: 1; color: #fff; background: var(--stwi-shell); }
+.network-node-button { width: 100%; min-height: 36px; justify-content: flex-start; padding: 6px 8px; color: var(--stwi-primary); background: #fff; box-shadow: none; }
+.network-node-button[aria-pressed="true"] { color: #fff; background: var(--stwi-primary); }
+.network-status { margin: 10px 0 0; }
+
 .status, .evidence-status { display: inline-flex; min-height: 30px; align-items: center; padding: 5px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; }
 .status-idle { color: #53656d; background: #e9eff2; }
 .status-queued, .status-running { color: #075a79; background: #dff2f7; }
@@ -163,6 +176,9 @@ fieldset input { width: auto; }
   .command-layout { grid-template-columns: 1fr; }
   .node-rail { position: static; }
   .node-list { grid-template-columns: repeat(4, minmax(0, 1fr)); max-height: none; }
+  .network-layout { grid-template-columns: 1fr; }
+  .network-map { min-height: 320px; }
+  .network-table-wrap { max-height: 280px; }
 }
 
 @media (max-width: 590px) {
@@ -174,6 +190,7 @@ fieldset input { width: auto; }
   .form-footer { align-items: stretch; flex-direction: column; }
   .form-footer button { width: 100%; }
   .node-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .network-map { min-height: 280px; }
 }
 
 @media (max-width: 389px) {

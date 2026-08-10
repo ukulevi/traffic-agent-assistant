@@ -29,6 +29,7 @@ class TestDashboardStatic(unittest.TestCase):
         self.mode_js = (STATIC / "dashboard-mode.js").read_text(encoding="utf-8")
         self.state_js = (STATIC / "dashboard-state.js").read_text(encoding="utf-8")
         self.view_js = (STATIC / "dashboard-view.js").read_text(encoding="utf-8")
+        self.map_js = (STATIC / "dashboard-map.js").read_text(encoding="utf-8")
         self.css = (STATIC / "dashboard.css").read_text(encoding="utf-8")
 
     def test_dashboard_assets_and_ids_are_consistent(self) -> None:
@@ -40,6 +41,8 @@ class TestDashboardStatic(unittest.TestCase):
         self.assertTrue(selectors.issubset(set(parser.ids)))
         self.assertIn('href="dashboard.css"', self.html)
         self.assertIn('type="module" src="dashboard.js"', self.html)
+        self.assertIn('href="vendor/leaflet/leaflet.css"', self.html)
+        self.assertIn('src="vendor/leaflet/leaflet.js"', self.html)
         for module in (
             "dashboard-api.js",
             "dashboard-mode.js",
@@ -203,6 +206,25 @@ class TestDashboardStatic(unittest.TestCase):
         self.assertNotIn('.decision-panel { order:', self.css)
         self.assertNotIn('.help-panel { order:', self.css)
         self.assertNotIn('.node-rail { order:', self.css)
+
+    def test_dashboard_has_offline_synthetic_network_view(self) -> None:
+        for element_id in (
+            "network-analysis",
+            "network-map",
+            "network-fallback",
+            "network-version",
+        ):
+            self.assertIn(f'id="{element_id}"', self.html)
+        self.assertIn('from "./dashboard-map.js"', self.js)
+        self.assertIn('getNetworkContext', self.api_js)
+        self.assertIn("L.CRS.Simple", self.map_js)
+        self.assertNotIn("tileLayer(", self.map_js)
+        self.assertNotIn("innerHTML", self.map_js)
+        self.assertIn("synthetic-grid-20-v1", self.map_js)
+        runtime_assets = re.findall(r'(?:src|href)="([^"]+)"', self.html)
+        self.assertFalse(any(asset.startswith(("http://", "https://", "//")) for asset in runtime_assets))
+        self.assertIn(".network-map", self.css)
+        self.assertIn(".network-fallback", self.css)
 
 
 if __name__ == "__main__":

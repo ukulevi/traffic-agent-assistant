@@ -74,6 +74,11 @@ export function createDashboardApi({
     { signal },
   );
 
+  const getNetworkContext = ({ signal } = {}) => requestJson(
+    "/api/v1/network-context",
+    { signal },
+  );
+
   return {
     createJob(payload, { idempotencyKey, signal } = {}) {
       return requestJson("/api/v1/what-if-jobs", {
@@ -90,6 +95,8 @@ export function createDashboardApi({
     },
 
     getJob,
+
+    getNetworkContext,
 
     recordDecision(jobId, payload, { signal } = {}) {
       return requestJson(

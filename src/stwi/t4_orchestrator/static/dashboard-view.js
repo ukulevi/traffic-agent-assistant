@@ -252,6 +252,17 @@ export function createDashboardView(doc = document) {
     }
   }
 
+  function setNetworkContext(context, status = "ready") {
+    const version = context?.network_version || "không khả dụng";
+    text(byId("network-version"), version);
+    text(
+      byId("network-status"),
+      status === "ready"
+        ? `${context?.nodes?.length || 0} nút được hiển thị · ${context?.synthetic === true ? "synthetic" : "authorized context"}.`
+        : "Không tải được topology đã xác thực; bảng và bản đồ không được suy diễn từ dữ liệu production.",
+    );
+  }
+
   function setRatio(ratio) {
     byId("green-time").value = String(ratio);
     text(byId("green-value"), `${Number(ratio).toFixed(2)} · ${Math.round(Number(ratio) * 100)}%`);
@@ -345,6 +356,7 @@ export function createDashboardView(doc = document) {
     setContext,
     setScenario,
     setNode,
+    setNetworkContext,
     setRatio,
     filterNodes,
     markCustomPreset,

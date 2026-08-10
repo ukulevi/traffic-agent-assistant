@@ -6,6 +6,7 @@
     <meta name="theme-color" content="#072b38">
     <title>STWI · What-If Operator</title>
     <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
   </head>
   <body>
     <a class="skip-link" href="#scenario-form">Bỏ qua đến cấu hình</a>
@@ -75,6 +76,23 @@
               <div class="form-footer"><p class="privacy-note">Chỉ aggregate · Không lưu hình ảnh thô</p><button id="submit-button" type="submit">Chạy mô phỏng</button></div>
               <p id="form-error" class="error" role="alert"></p>
             </form>
+          </section>
+
+          <section id="network-analysis" class="panel network-panel" aria-labelledby="network-title">
+            <div class="panel-heading">
+              <div><p class="section-kicker">SYNTHETIC NETWORK</p><h2 id="network-title">Mạng 20 nút</h2></div>
+              <span class="simulation-badge">Tile-free · Offline-safe</span>
+            </div>
+            <p class="network-disclosure">Sơ đồ 4×5 hoàn toàn synthetic, không đại diện địa lý thực và không gửi lệnh điều khiển. Phiên bản: <code id="network-version">Đang tải</code>.</p>
+            <div class="network-layout">
+              <div id="network-map" class="network-map" role="application" tabindex="0" aria-label="Sơ đồ tương tác mạng synthetic 20 nút"></div>
+              <div class="network-table-wrap">
+                <table id="network-fallback" class="network-fallback">
+                  <caption>Danh sách nút dự phòng khi bản đồ không khả dụng</caption>
+                </table>
+              </div>
+            </div>
+            <p id="network-status" class="network-status" role="status" aria-live="polite">Đang chuẩn bị topology synthetic.</p>
           </section>
 
           <section class="panel lifecycle-panel" aria-labelledby="lifecycle-title">
@@ -161,6 +179,7 @@
         <div class="dialog-actions"><button id="dialog-cancel" type="button" class="secondary">Hủy</button><button id="submit-decision" type="submit">Xác nhận audit-only</button></div>
       </form>
     </dialog>
+    <script src="vendor/leaflet/leaflet.js"></script>
     <script type="module" src="dashboard.js"></script>
   </body>
 </html>

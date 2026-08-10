@@ -10,6 +10,10 @@ import {
   validateJobEnvelope,
 } from "./dashboard-state.js";
 import { createDashboardView } from "./dashboard-view.js";
+import {
+  SYNTHETIC_NETWORK_CONTEXT,
+  createDashboardMap,
+} from "./dashboard-map.js";
 
 export const DEMO_PRESETS = Object.freeze({
   safe: {
@@ -91,6 +95,7 @@ export function createDashboardCoordinator({
   cryptoImpl = globalThis.crypto,
   navigatorImpl = globalThis.navigator,
   timers = defaultTimers(),
+  mapFactory = null,
 } = {}) {
   let state = createInitialState();
   let operationEpoch = 0;
@@ -100,6 +105,7 @@ export function createDashboardCoordinator({
   let fallbackTimer = null;
   let pollingActive = false;
   let activeJurisdiction = "VN";
+  let networkMap = null;
 
   function dispatch(event) {
     state = reduceDashboardState(state, event);
@@ -113,6 +119,10 @@ export function createDashboardCoordinator({
       };
     }
     view.render(state, deriveDecisionPolicy(state));
+    networkMap?.setJobState({
+      ...(state.job.result || {}),
+      status: state.job.status,
+    });
   }
 
   function currentOperation(jobId, epoch) {
@@ -305,6 +315,13 @@ export function createDashboardCoordinator({
     if (!preset) return;
     activeJurisdiction = preset.jurisdiction;
     view.setScenario(preset);
+    networkMap?.setSelection(preset.nodeId);
+  }
+
+  function selectNode(nodeId) {
+    view.setNode(nodeId);
+    networkMap?.setSelection(nodeId);
+    markCustomPreset();
   }
 
   function markCustomPreset() {
@@ -409,6 +426,20 @@ export function createDashboardCoordinator({
     const context = await resolveContext();
     dispatch({ type: "context/resolved", context });
     view.setContext(context);
+    if (mapFactory) {
+      networkMap = mapFactory({ onSelectNode: selectNode });
+      try {
+        const topology = context.mode === "production"
+          ? await api.getNetworkContext()
+          : SYNTHETIC_NETWORK_CONTEXT;
+        networkMap?.setTopology(topology);
+        networkMap?.setSelection(context.nodeIds?.[0] || topology.nodes?.[0]?.node_id);
+        view.setNetworkContext?.(topology, "ready");
+      } catch {
+        networkMap?.setTopology(null);
+        view.setNetworkContext?.(null, "unavailable");
+      }
+    }
     if (context.mode === "demo") selectPreset("safe");
     await resumeActiveJob();
     return state;
@@ -417,7 +448,7 @@ export function createDashboardCoordinator({
   view.setHandlers({
     submitScenario,
     selectPreset,
-    selectNode: (nodeId) => { view.setNode(nodeId); markCustomPreset(); },
+    selectNode,
     changeRatio: (ratio) => { view.setRatio(ratio); markCustomPreset(); },
     changeScenario: markCustomPreset,
     searchNodes: (query) => view.filterNodes(query),
@@ -432,11 +463,24 @@ export function createDashboardCoordinator({
     submitDecision,
     resumeActiveJob,
     getState: () => state,
-    destroy: clearMonitoring,
+    destroy: () => {
+      clearMonitoring();
+      networkMap?.destroy();
+      networkMap = null;
+    },
   };
 }
 
 if (typeof document !== "undefined") {
-  const coordinator = createDashboardCoordinator();
+  const coordinator = createDashboardCoordinator({
+    mapFactory: ({ onSelectNode }) => createDashboardMap(
+      document.getElementById("network-map"),
+      globalThis.L,
+      {
+        fallbackElement: document.getElementById("network-fallback"),
+        onSelectNode,
+      },
+    ),
+  });
   void coordinator.bootstrap();
 }
