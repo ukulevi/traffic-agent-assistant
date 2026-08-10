@@ -78,6 +78,7 @@ class OrchestratorState:
     citations: list[dict[str, Any]] = field(default_factory=list)
     safety_checks: list[SafetyCheckResult] = field(default_factory=list)
     safety_passed: bool = False
+    selected_action: CandidateAction | None = None
 
     # Terminal state
     status: JobStatus = JobStatus.RUNNING
@@ -232,6 +233,7 @@ class WhatIfOrchestrator:
         """Run surrogate forecast with candidate action; check OOD/uncertainty."""
         req = state.request
         candidate_action = req.candidate_action.model_dump()
+        state.selected_action = req.candidate_action
         state.scenario_results = self._surrogate.predict(
             node_ids=req.node_ids,
             horizons_minutes=req.horizons_minutes,
@@ -308,11 +310,18 @@ class WhatIfOrchestrator:
             ood_threshold=self._ood_threshold,
         )
         outcome = loop.run(
-            scenario_results=state.scenario_results,
+            node_ids=state.request.node_ids,
+            horizons_minutes=state.request.horizons_minutes,
+            candidate_action=state.request.candidate_action.model_dump(),
+            scenario_time=state.request.scenario_time,
             has_citations=len(state.citations) > 0,
+            initial_results=state.scenario_results,
         )
-        state.safety_checks = outcome.checks
+        state.safety_checks = list(outcome.checks)
         state.safety_passed = outcome.passed
+        state.selected_action = CandidateAction.model_validate(outcome.selected_action)
+        if outcome.iterations:
+            state.scenario_results = list(outcome.iterations[-1].results)
 
         if outcome.passed:
             state.status = JobStatus.SUCCEEDED
@@ -356,9 +365,10 @@ class WhatIfOrchestrator:
         scenario_summary = self._summarize_scenario(state.scenario_results)
 
         # Action field semantics per contract
+        selected_action = state.selected_action or req.candidate_action
         if state.status == JobStatus.SUCCEEDED:
             recommended_action = self._operator_action_payload(
-                req.candidate_action,
+                selected_action,
                 executable=False,
                 action_kind="recommended_action",
             )
@@ -366,7 +376,7 @@ class WhatIfOrchestrator:
         elif state.status == JobStatus.NEEDS_REVIEW:
             recommended_action = None
             candidate_action_field = self._operator_action_payload(
-                req.candidate_action,
+                selected_action,
                 executable=False,
                 action_kind="candidate_action",
             )

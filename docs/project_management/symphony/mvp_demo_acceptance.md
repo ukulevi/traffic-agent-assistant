@@ -1,86 +1,70 @@
-# MVP Demo Acceptance Evidence
+# Comprehensive Hybrid Demo Acceptance
 
-**Linear ticket:** `TRA-26`  
-**Baseline:** `main` at `cfa12e58977f451f4e7978efc419b6b47c7ebc7f`  
-**Scope:** Integrated, offline Demo MVP acceptance only. This is not a
-production-readiness claim.
+**Scope:** Offline comprehensive profile plus optional real-service probes. This
+document is not a production-readiness, SLA, RTSP, legal-review or model-accuracy
+claim.
 
-## Integrated Components
+## Acceptance contract
 
-The acceptance baseline includes the merged work from:
+The offline profile is accepted only when the versioned manifest contains all
+13 capabilities from `stwi.demo.scenarios`, every mandatory capability is
+`pass`, and the global safety/privacy invariants remain true:
 
-- `TRA-23` / PR #10: mandatory Tier-4 HTTP API CI coverage.
-- `TRA-24` / PR #12: operator review dashboard at `/demo/`.
-- `TRA-25` / PR #11: reproducible offline MVP smoke harness.
+- aggregate-only; no retained raw video or image payload;
+- no automatic actuation and no system-applied operator decision;
+- `recommended_action` only for `succeeded`;
+- `candidate_action` only for `needs_review`;
+- neither action for `failed` or `expired`;
+- trace/model/data version and exactly one terminal event for every passing job;
+- cross-tenant and invalid-input probes create no job;
+- static preview is non-mutating.
 
-## Evidence
+## Reproducible commands
 
-The following commands ran from the baseline workspace on 2026-07-13:
-
-```text
-powershell -ExecutionPolicy Bypass -File .agents/skills/stwi-release-qa/scripts/verify_project.ps1
-python -m unittest tests.t4_orchestrator.test_t4_api_http
-python -m unittest discover -s tests/t4_orchestrator
-python -m unittest tests.demo.test_mvp_smoke
-python scripts/demo/run_mvp_smoke.py --output C:\tmp\stwi-tra-26-mvp-smoke-evidence.json
+```powershell
+python -m unittest discover -s tests/demo -v
+python scripts/demo/run_mvp_smoke.py --profile offline --output C:\tmp\stwi-offline-evidence.json
+node --test tests/frontend/*.test.mjs
 node --check src/stwi/t4_orchestrator/static/dashboard.js
-git diff --check
+node --check src/stwi/t4_orchestrator/static/dashboard-view.js
 ```
 
-Results:
+The offline CLI returns exit code 0 only when the manifest verdict is `pass`.
+The evidence file is intentionally outside the repository and contains only
+synthetic aggregate metadata.
 
-- Release verifier passed: documentation validator, contract tests,
-  presentation JavaScript syntax, and whitespace check.
-- Tier-4 HTTP suite passed: 36 tests with no dependency skip.
-- Tier-4 discovery passed: 103 tests.
-- Offline smoke unit test passed: 1 test.
-- Offline smoke CLI produced two terminal flows: `succeeded` with an approved
-  operator decision and `needs_review` with a rejected operator decision.
-- Both smoke flows recorded `automatic_actuation: false`,
-  `applied_by_system: false`, `human_decision_only: true`, and no retained raw
-  video.
-- Dashboard JavaScript syntax and `git diff --check` passed.
+## Optional services profile
 
-The smoke evidence is intentionally written outside the repository at
-`C:\tmp\stwi-tra-26-mvp-smoke-evidence.json`; it contains only synthetic,
-aggregate demo data.
+```powershell
+python scripts/demo/run_mvp_smoke.py --profile services --output C:\tmp\stwi-services-evidence.json
+```
 
-## Operator Review Evidence
+Docker, Redis/Celery, Qdrant and TimescaleDB are probed independently without
+mock replacement. An unavailable dependency is `not_verified`; a probe error is
+`fail`. Both produce a non-zero, non-pass profile verdict. Secrets and raw
+exceptions must not be printed.
 
-Before PR #12 was merged, the dashboard was checked locally at `/demo/` on
-the same dashboard commit (`43238ec`): job creation reached a terminal state,
-SSE events were visible, and approve/reject remained audit-only. The UI showed
-`executable: false` and `automatic_actuation: false`. No browser console error
-was observed. This acceptance run did not repeat that browser interaction
-because the local server launch was unavailable in the sandbox; the prior
-browser result remains the recorded UI evidence.
+## Browser acceptance
 
-## Contract and Privacy Boundary
+Serve `stwi.app:app` with `STWI_RUNTIME_MODE=demo` on loopback and inspect:
 
-The integrated demo preserves the decision-support boundary:
+- safe approval and safe rejection;
+- `refinement` shows two distinct candidate evaluations;
+- `needs_review` never enables approval;
+- failed/expired rendering exposes no action;
+- SSE reconnect/polling fallback do not duplicate execution;
+- keyboard focus, decision dialog, narrow viewport and console state;
+- static preview cannot submit.
 
-- `POST /api/v1/what-if-jobs` remains asynchronous and returns `202`.
-- Only `succeeded` presents a recommended action; `needs_review` remains
-  non-executable and requires a human decision.
-- The offline harness uses provisional synthetic adapters only, contacts no
-  live services, and retains no raw video or credentials.
-- No automatic traffic-signal or field-device action is implemented.
+Browser acceptance is evidence only after the check is actually run and
+recorded; source/unit tests do not substitute for visual inspection.
 
-## Remaining Human Review Gates
+## Human Review gates remaining
 
-This acceptance does not close the following work:
+- live RTSP/camera privacy and calibration evidence;
+- contract GPU profile and promoted model artifacts;
+- non-mock calibration and surrogate/E2E benchmark;
+- approved production identity, legal/SOP corpus and deployment environment;
+- TLS/DNS, backup/restore drill, monitoring/on-call and go/no-go decision.
 
-- `TRA-5`: complete vision artifact metadata.
-- `TRA-6`: surrogate P99 evidence on the contract benchmark hardware profile.
-- `TRA-11`: human-supervised live RTSP smoke test.
-- `TRA-13`: approved auth/RBAC and tenant-boundary design.
-- `TRA-17`: approved production deployment option.
-- `TRA-27`: global Symphony continuation-loop remediation.
-
-Production Celery/Redis/TimescaleDB/Qdrant wiring, an approved SOP corpus,
-and production identity controls are also outside this offline MVP acceptance.
-
-## Recommended State
-
-Move `TRA-26` to `In Review`. A human reviewer must approve this evidence and
-the corresponding PR before the ticket can move to `Done`.
+These gates remain explicit regardless of offline or service-profile results.

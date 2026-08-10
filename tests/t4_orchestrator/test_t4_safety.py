@@ -22,6 +22,7 @@ from datetime import datetime
 from stwi.t4_orchestrator.contracts import JobStatus, SafetyCheckResult
 from stwi.t4_orchestrator.fake_adapters import (
     FakeSurrogateForecaster,
+    ScenarioForecastResult,
     SurrogateScenario,
     high_uncertainty_scenario,
     ood_scenario,
@@ -70,18 +71,35 @@ class TestSafetyLoopUnit(unittest.TestCase):
         )
         return surrogate, results
 
+    def _run_loop(
+        self,
+        scenario: SurrogateScenario,
+        *,
+        has_citations: bool = True,
+        candidate_action: dict[str, object] | None = None,
+        vc_threshold: float = 0.9,
+    ):
+        surrogate, results = self._make_surrogate_and_results(scenario)
+        loop = CounterfactualSafetyLoop(surrogate=surrogate, vc_threshold=vc_threshold)
+        outcome = loop.run(
+            node_ids=["node-A"],
+            horizons_minutes=[5],
+            candidate_action=candidate_action
+            or {"node_id": "node-A", "green_time_ratio": 0.7},
+            scenario_time=SCENARIO_TIME,
+            has_citations=has_citations,
+            initial_results=results,
+        )
+        return surrogate, outcome
+
     def test_safe_scenario_passes(self):
-        surrogate, results = self._make_surrogate_and_results(safe_scenario())
-        loop = CounterfactualSafetyLoop(surrogate=surrogate)
-        outcome = loop.run(results, has_citations=True)
+        _, outcome = self._run_loop(safe_scenario())
         self.assertTrue(outcome.passed)
         self.assertIsNone(outcome.fail_reason)
 
     def test_vc_over_threshold_fails(self):
         scenario = unsafe_vc_scenario(vc_ratio=0.95)
-        surrogate, results = self._make_surrogate_and_results(scenario)
-        loop = CounterfactualSafetyLoop(surrogate=surrogate, vc_threshold=0.9)
-        outcome = loop.run(results, has_citations=True)
+        _, outcome = self._run_loop(scenario)
         self.assertFalse(outcome.passed)
         self.assertIn("vc_ratio", outcome.fail_reason)
         # Check gate detail
@@ -90,57 +108,50 @@ class TestSafetyLoopUnit(unittest.TestCase):
     def test_vc_exactly_at_threshold_passes(self):
         """vc_ratio == threshold is allowed (<=, not <)."""
         scenario = SurrogateScenario(vc_ratio=0.9, uncertainty_score=0.1, ood_score=0.02)
-        surrogate, results = self._make_surrogate_and_results(scenario)
-        loop = CounterfactualSafetyLoop(surrogate=surrogate, vc_threshold=0.9)
-        outcome = loop.run(results, has_citations=True)
+        _, outcome = self._run_loop(scenario)
         self.assertTrue(outcome.passed)
 
     def test_missing_citations_fails(self):
-        surrogate, results = self._make_surrogate_and_results(safe_scenario())
-        loop = CounterfactualSafetyLoop(surrogate=surrogate)
-        outcome = loop.run(results, has_citations=False)
+        _, outcome = self._run_loop(safe_scenario(), has_citations=False)
         self.assertFalse(outcome.passed)
         self.assertIn("missing_legal_evidence", outcome.fail_reason)
         self.assertFalse(outcome.checks[0].citations_ok)
+        self.assertEqual(outcome.iterations_run, 1)
 
     def test_ood_fails(self):
-        surrogate, results = self._make_surrogate_and_results(ood_scenario())
-        loop = CounterfactualSafetyLoop(surrogate=surrogate)
-        outcome = loop.run(results, has_citations=True)
+        _, outcome = self._run_loop(ood_scenario())
         self.assertFalse(outcome.passed)
         self.assertIn("ood_score", outcome.fail_reason)
         self.assertFalse(outcome.checks[0].ood_ok)
+        self.assertEqual(outcome.iterations_run, 1)
 
     def test_high_uncertainty_fails(self):
-        surrogate, results = self._make_surrogate_and_results(high_uncertainty_scenario())
-        loop = CounterfactualSafetyLoop(surrogate=surrogate)
-        outcome = loop.run(results, has_citations=True)
+        _, outcome = self._run_loop(high_uncertainty_scenario())
         self.assertFalse(outcome.passed)
         self.assertIn("uncertainty", outcome.fail_reason)
         self.assertFalse(outcome.checks[0].uncertainty_ok)
+        self.assertEqual(outcome.iterations_run, 1)
 
     def test_max_iterations_bounded(self):
         """Safety loop must never exceed MAX_ITERATIONS."""
-        surrogate, results = self._make_surrogate_and_results(unsafe_vc_scenario())
-        loop = CounterfactualSafetyLoop(surrogate=surrogate)
-        outcome = loop.run(results, has_citations=True)
+        _, outcome = self._run_loop(unsafe_vc_scenario())
         self.assertLessEqual(outcome.iterations_run, MAX_ITERATIONS)
 
     def test_non_converged_policy_runs_max_iterations(self):
         """A policy failure should produce a 3-iteration CSL audit trace."""
-        surrogate, results = self._make_surrogate_and_results(unsafe_vc_scenario())
-        loop = CounterfactualSafetyLoop(surrogate=surrogate)
-        outcome = loop.run(results, has_citations=True)
+        _, outcome = self._run_loop(unsafe_vc_scenario())
         self.assertFalse(outcome.passed)
         self.assertEqual(outcome.iterations_run, MAX_ITERATIONS)
         self.assertEqual(len(outcome.checks), MAX_ITERATIONS)
+        self.assertEqual(
+            [item.action["green_time_ratio"] for item in outcome.iterations],
+            [0.7, 0.85, 1.0],
+        )
 
     def test_compound_failure_reports_all_reasons(self):
         """When multiple gates fail, all are reported in fail_reason."""
         compound = SurrogateScenario(vc_ratio=0.99, uncertainty_score=0.95, ood_score=0.9)
-        surrogate, results = self._make_surrogate_and_results(compound)
-        loop = CounterfactualSafetyLoop(surrogate=surrogate)
-        outcome = loop.run(results, has_citations=False)
+        _, outcome = self._run_loop(compound, has_citations=False)
         self.assertFalse(outcome.passed)
         # All four failures should appear
         reason = outcome.fail_reason
@@ -148,6 +159,49 @@ class TestSafetyLoopUnit(unittest.TestCase):
         self.assertIn("missing_legal_evidence", reason)
         self.assertIn("uncertainty", reason)
         self.assertIn("ood_score", reason)
+        self.assertEqual(outcome.iterations_run, 1)
+
+    def test_vc_failure_repredicts_with_refined_action(self):
+        class ResponsiveSurrogate(FakeSurrogateForecaster):
+            def __init__(self):
+                super().__init__()
+                self.requested_ratios: list[float] = []
+
+            def predict(self, node_ids, horizons_minutes, candidate_action, scenario_time):
+                ratio = float(candidate_action["green_time_ratio"])
+                self.requested_ratios.append(ratio)
+                vc_ratio = 0.95 if ratio < 0.25 else 0.82
+                return [
+                    ScenarioForecastResult(
+                        node_id=node_ids[0],
+                        horizon_minutes=horizons_minutes[0],
+                        predicted_volume=120.0,
+                        predicted_speed=35.0,
+                        vc_ratio=vc_ratio,
+                        uncertainty_score=0.1,
+                        ood_score=0.05,
+                    )
+                ]
+
+        surrogate = ResponsiveSurrogate()
+        initial = surrogate.predict(
+            ["node-A"],
+            [5],
+            {"node_id": "node-A", "green_time_ratio": 0.10},
+            SCENARIO_TIME,
+        )
+        outcome = CounterfactualSafetyLoop(surrogate=surrogate).run(
+            node_ids=["node-A"],
+            horizons_minutes=[5],
+            candidate_action={"node_id": "node-A", "green_time_ratio": 0.10},
+            scenario_time=SCENARIO_TIME,
+            has_citations=True,
+            initial_results=initial,
+        )
+
+        self.assertTrue(outcome.passed)
+        self.assertEqual(surrogate.requested_ratios, [0.10, 0.25])
+        self.assertEqual(outcome.selected_action["green_time_ratio"], 0.25)
 
 
 class TestOrchestratorSafetyIntegration(unittest.TestCase):
@@ -215,13 +269,12 @@ class TestOrchestratorSafetyIntegration(unittest.TestCase):
         if result.status == JobStatus.SUCCEEDED:
             self.assertGreater(len(result.citations), 0)
 
-    def test_needs_review_candidate_action_equals_original_request(self):
-        """candidate_action keeps request fields but is explicitly non-executable."""
-        candidate = {"node_id": "node-A", "green_time_ratio": 0.7}
+    def test_needs_review_candidate_action_uses_last_refined_candidate(self):
+        """candidate_action exposes the last evaluated hypothesis as non-executable."""
         result = run_job(unsafe_vc_scenario())
         if result.status == JobStatus.NEEDS_REVIEW:
-            for key, value in candidate.items():
-                self.assertEqual(result.candidate_action[key], value)
+            self.assertEqual(result.candidate_action["node_id"], "node-A")
+            self.assertEqual(result.candidate_action["green_time_ratio"], 1.0)
             self.assertFalse(result.candidate_action["executable"])
             self.assertTrue(result.candidate_action["requires_operator_approval"])
             self.assertFalse(result.candidate_action["automatic_actuation"])

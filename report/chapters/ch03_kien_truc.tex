@@ -215,13 +215,29 @@ B7 & Xuất Báo cáo & Phương án an toàn được định dạng JSON + tex
 \rowcolor{rowgray}
   & FastAPI & REST API server (async) \\
 \rowcolor{rowgray}
-  & React + SSE & Dashboard real-time \\
+  & HTML/CSS/JavaScript + SSE & Dashboard real-time \\
 \midrule
 \multirow{2}{*}{Hạ tầng} & Docker Compose & Container orchestration (dev) \\
   & GitHub Actions & CI/CD --- Build, Test, Release PDF \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\section{Composition Production Fail-closed}
+
+API và worker dùng chung composition root \texttt{stwi.production\_components}.
+Biến bắt buộc \texttt{STWI\_PRODUCTION\_COMPONENT\_FACTORY} trỏ tới callable
+\texttt{module:callable} cung cấp baseline/surrogate thật cùng trusted principal
+resolver và UI-context provider. STWI tự ghép Redis job store, Celery dispatcher,
+RealT3Adapter, corpus pháp lý read-only và hai manifest model đã promoted. Thiếu
+thành phần, artifact stale/uncalibrated hoặc marker provisional làm startup hay
+readiness thất bại; không có fallback sang adapter demo.
+
+Migration chạy bằng one-shot \texttt{stwi-migrate}, yêu cầu xác nhận rõ và admin
+DSN riêng. API/worker chỉ nhận reader DSN. Preflight và readiness chỉ xuất mã lỗi
+ổn định đã redaction, không in credential hay exception gốc. Việc các kiểm tra
+này pass vẫn không thay thế Human Review cho TLS, backup/restore, monitoring,
+model calibration và benchmark contract profile.
 
 \section{Quy chuẩn Kỹ thuật Bắt buộc}
 

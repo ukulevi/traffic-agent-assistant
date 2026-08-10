@@ -6,6 +6,13 @@ Tầng 4 là workflow hỗ trợ quyết định, không phải actuator. LangGr
 
 Counterfactual Safety Loop (CSL) lấy cảm hứng từ CF-VLA nhưng STWI không phải mô hình Vision--Language--Action end-to-end. Hệ thống áp dụng ý tưởng tự phản biện lên dữ liệu, mô phỏng và căn cứ pháp lý.
 
+Mỗi vòng CSL đánh giá một candidate có kiểu và khác candidate trước. Refiner
+MVP chỉ tăng 	exttt{green\_time\_ratio} khi failure duy nhất là V/C, trong khi
+citation, uncertainty và OOD đều hợp lệ; surrogate sau đó chạy lại với candidate
+mới. OOD, uncertainty cao, thiếu citation, input không hợp lệ hoặc lỗi dependency
+dừng ngay. Vòng lặp tối đa ba candidate, fail closed và không phải optimizer hay
+actuator tổng quát.
+
 \section{State Machine}
 
 \begin{enumerate}[leftmargin=1.5cm]
@@ -61,18 +68,24 @@ static preview không mutating.
 \begin{lstlisting}[caption={Tạo What-if job},label={lst:create_job}]
 POST /api/v1/what-if-jobs
 {
-  "scenario": "Tai nan tai node A; danh gia phan luong sang B",
+  "tenant_id": "tenant-a",
   "scenario_time": "2026-06-21T08:00:00+07:00",
-  "constraints": {"deadline_ms": 180000, "priority": "high"}
+  "candidate_action": {
+    "node_id": "node_00",
+    "green_time_ratio": 0.70
+  },
+  "node_ids": ["node_00"],
+  "scenario_query": "Danh gia can cu tai node_00",
+  "horizons_minutes": [5, 10, 15, 30],
+  "jurisdiction": "VN",
+  "vc_threshold": 0.90
 }
 
 HTTP/1.1 202 Accepted
 {
-  "job_id": "wf_01J...",
+  "job_id": "uuid...",
   "status": "queued",
-  "status_url": "/api/v1/what-if-jobs/wf_01J...",
-  "events_url": "/api/v1/what-if-jobs/wf_01J.../events",
-  "trace_id": "tr_01J..."
+  "tenant_id": "tenant-a"
 }
 \end{lstlisting}
 
@@ -90,7 +103,10 @@ Status enum là \texttt{queued}, \texttt{running}, \texttt{succeeded}, \texttt{n
 {
   "status": "succeeded",
   "recommended_action": {
-    "summary": "Phan luong toi da 40% sang B",
+    "node_id": "node_00",
+    "green_time_ratio": 0.85,
+    "executable": false,
+    "automatic_actuation": false,
     "requires_operator_approval": true
   },
   "citations": [{

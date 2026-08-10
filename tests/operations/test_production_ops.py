@@ -34,6 +34,26 @@ class ProductionOperationsTest(unittest.TestCase):
                 approved=False,
             )
 
+    def test_migration_requires_explicit_approval(self) -> None:
+        with self.assertRaisesRegex(ValueError, "explicit --approved"):
+            build_command(
+                "migration",
+                project_name="stwi-prod",
+                approved=False,
+            )
+
+    def test_migration_invokes_admin_only_apply_action(self) -> None:
+        commands = build_command(
+            "migration",
+            project_name="stwi-prod",
+            approved=True,
+        )
+        command = commands[0]
+        rendered = " ".join(command)
+        self.assertIn("stwi.production_migrate apply --approved", rendered)
+        self.assertIn("stwi-migrate", command)
+        self.assertNotIn("STWI_TSDB_DSN", command)
+
     def test_backup_commands_are_bounded_and_non_destructive(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             commands = build_command(

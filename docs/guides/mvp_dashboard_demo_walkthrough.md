@@ -9,7 +9,7 @@ Bạn cần Python 3.11+ và PowerShell. Từ thư mục gốc repository, cài 
 ```powershell
 pip install -e ".[orchestrator]"
 python scripts/validation/validate_demo_simulation_scope.py
-python scripts/demo/run_mvp_smoke.py --output C:\tmp\stwi-mvp-demo-evidence.json
+python scripts/demo/run_mvp_smoke.py --profile offline --output C:\tmp\stwi-mvp-demo-evidence.json
 ```
 
 Khởi động dashboard chỉ trên loopback:
@@ -79,7 +79,18 @@ Kiểm tra các vùng chính trước khi chạy:
 
 **Điểm kiểm tra:** đây là audit trail bất biến, không phải nút điều khiển hiện trường.
 
-## 4. Test case fail-closed
+## 4. Test case `refinement` — hai candidate khác nhau
+
+Chọn preset `refinement` tại `node_10`, giữ `green_time_ratio=0.70` và chạy.
+Counterfactual Safety Loop phải hiển thị hai vòng: vòng đầu V/C vượt policy
+`0.90`; vòng sau đánh giá candidate mới với ratio `0.85` và pass. Kết quả cuối
+là `succeeded`, nhưng action vẫn `NON-EXECUTABLE` và cần operator phê duyệt.
+
+Refinement chỉ áp dụng cho failure V/C cô lập. OOD, uncertainty cao, thiếu
+citation, invalid input hoặc dependency failure phải dừng ngay thay vì thử đổi
+action.
+
+## 5. Test case fail-closed
 
 Chạy lần lượt từng preset. Sau mỗi lần, chờ trạng thái terminal rồi đối chiếu bảng sau:
 
@@ -117,7 +128,7 @@ Chọn `missing-evidence` và chạy. Jurisdiction synthetic không có căn c�
 
 Với `extreme`, chọn preset và xác nhận tỷ lệ xanh bằng `0.00`. UI phải giữ job ở `needs_review`. Test case này dùng chung mẫu kiểm tra safety với bốn trường hợp trên nên không cần ảnh riêng.
 
-## 5. Nhóm tình huống giao thông synthetic
+## 6. Nhóm tình huống giao thông synthetic
 
 ![Biểu mẫu nhóm preset tình huống giao thông](../assets/demo_walkthrough/11-incident-presets.png)
 
@@ -135,7 +146,7 @@ Thao tác cho mỗi hàng: chọn preset, kiểm tra node/tỷ lệ tự điền
 
 Không diễn giải các preset này như dữ liệu tai nạn thật, phép đo mực nước, kết luận ô nhiễm gây ùn tắc hoặc khả năng điều khiển hiện trường.
 
-## 6. Bàn phím và sao chép trace ID
+## 7. Bàn phím và sao chép trace ID
 
 - Nhấn `/` khi không ở trong ô nhập để đưa focus tới ô tìm node.
 - Nhấn `C` khi không ở trong ô nhập để sao chép trace ID của job hiện tại.
@@ -146,7 +157,7 @@ Không diễn giải các preset này như dữ liệu tai nạn thật, phép �
 
 Ảnh trên minh họa trường hợp browser cho phép clipboard và UI báo **Đã sao chép trace ID**. Nếu browser từ chối quyền, dashboard phải hiển thị hướng dẫn chọn trace ID và sao chép thủ công; lỗi quyền clipboard không được làm hỏng job hay tạo console error chưa xử lý.
 
-## 7. Xử lý sự cố
+## 8. Xử lý sự cố
 
 | Hiện tượng | Cách xử lý |
 |---|---|
@@ -157,7 +168,7 @@ Không diễn giải các preset này như dữ liệu tai nạn thật, phép �
 | Job `failed` hoặc `expired` | Ghi lại `job_id`, `trace_id`, error code/timestamp; không tự chuyển thành `succeeded` hoặc bỏ qua gate. |
 | Evidence không rõ hoặc thiếu citation | Không phê duyệt; giữ `needs_review` và chuyển reviewer phù hợp. |
 
-## 8. Kết thúc phiên
+## 9. Kết thúc phiên
 
 1. Xác nhận action vẫn `NON-EXECUTABLE` và mọi quyết định đã ghi `applied_by_system=false`.
 2. Ghi lại job/trace ID cần phục vụ audit; không lưu payload vượt nhu cầu.

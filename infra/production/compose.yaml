@@ -14,11 +14,14 @@ services:
       STWI_QDRANT_API_KEY: ${STWI_QDRANT_API_KEY:?required}
       STWI_BASELINE_MANIFEST: /run/stwi/artifacts/baseline/manifest.json
       STWI_SURROGATE_MANIFEST: /run/stwi/artifacts/surrogate/manifest.json
+      STWI_PRODUCTION_COMPONENT_FACTORY: ${STWI_PRODUCTION_COMPONENT_FACTORY:?required}
+      STWI_LEGAL_CORPUS_DIR: /run/stwi/legal-corpus
     ports:
       - "${STWI_API_BIND:-127.0.0.1}:${STWI_API_PORT:-8000}:8000"
     volumes:
       - ${STWI_BASELINE_ARTIFACT_DIR:?required}:/run/stwi/artifacts/baseline:ro
       - ${STWI_SURROGATE_ARTIFACT_DIR:?required}:/run/stwi/artifacts/surrogate:ro
+      - ${STWI_LEGAL_CORPUS_DIR_HOST:?required}:/run/stwi/legal-corpus:ro
     networks: [frontend, backend, data]
     depends_on:
       redis:
@@ -53,9 +56,12 @@ services:
       STWI_QDRANT_API_KEY: ${STWI_QDRANT_API_KEY:?required}
       STWI_BASELINE_MANIFEST: /run/stwi/artifacts/baseline/manifest.json
       STWI_SURROGATE_MANIFEST: /run/stwi/artifacts/surrogate/manifest.json
+      STWI_PRODUCTION_COMPONENT_FACTORY: ${STWI_PRODUCTION_COMPONENT_FACTORY:?required}
+      STWI_LEGAL_CORPUS_DIR: /run/stwi/legal-corpus
     volumes:
       - ${STWI_BASELINE_ARTIFACT_DIR:?required}:/run/stwi/artifacts/baseline:ro
       - ${STWI_SURROGATE_ARTIFACT_DIR:?required}:/run/stwi/artifacts/surrogate:ro
+      - ${STWI_LEGAL_CORPUS_DIR_HOST:?required}:/run/stwi/legal-corpus:ro
     networks: [backend, data]
     depends_on:
       redis:
@@ -76,6 +82,25 @@ services:
       timeout: 8s
       retries: 5
       start_period: 30s
+
+  stwi-migrate:
+    image: ${STWI_APP_IMAGE:?set a promoted application image pinned by digest}
+    command: ["python", "-m", "stwi.production_migrate", "check"]
+    profiles: ["operations"]
+    environment:
+      STWI_RUNTIME_MODE: production
+      STWI_TSDB_ADMIN_DSN: ${STWI_TSDB_ADMIN_DSN:?required for explicit migration}
+      STWI_PRODUCTION_SCHEMA_PATH: /app/infra/production/timescaledb-init/01_schema.sql
+    networks: [data]
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 64
 
   redis:
     image: redis:7.4.2-alpine@sha256:519f0189dfdee3bc0bad61fb265fe73d864b5c64020e6579ad48a45c49965635

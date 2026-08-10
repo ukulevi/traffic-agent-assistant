@@ -14,6 +14,7 @@ from stwi.t4_orchestrator.contracts import (
     JobEvent,
     JobStatus,
     OperatorDecisionRecord,
+    SafetyCheckResult,
     WhatIfJobRequest,
 )
 
@@ -72,6 +73,18 @@ class ScenarioForecaster(Protocol):
         ...
 
     def max_ood_score(self, results: list[ScenarioForecast]) -> float:
+        ...
+
+
+class CandidateRefiner(Protocol):
+    """Propose one bounded counterfactual action after a safety failure."""
+
+    def refine(
+        self,
+        current_action: dict[str, Any],
+        check: SafetyCheckResult,
+        iteration: int,
+    ) -> dict[str, Any] | None:
         ...
 
 
@@ -138,6 +151,7 @@ __all__ = [
     "ScenarioForecast",
     "BaselineForecaster",
     "ScenarioForecaster",
+    "CandidateRefiner",
     "LegalEvidenceProvider",
     "JobStore",
     "JobDispatcher",
