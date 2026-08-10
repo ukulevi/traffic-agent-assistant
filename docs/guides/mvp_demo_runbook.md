@@ -1,243 +1,229 @@
-# Hướng dẫn demo MVP SmartTraffic What-If
+# Runbook demo offline SmartTraffic What-If
 
-Tài liệu này hướng dẫn trình diễn STWI theo phạm vi đã phê duyệt:
-**simulation-first, offline, aggregate-only**. Mục tiêu là minh hoạ luồng hỗ
-trợ ra quyết định What-If, không phải chứng minh hệ thống đã sẵn sàng vận hành
-production hoặc điều khiển thiết bị giao thông.
+Tài liệu này dùng để setup và trình bày toàn bộ 13 kịch bản demo offline của
+STWI. Demo sử dụng dữ liệu synthetic, chỉ hỗ trợ ra quyết định và không tự động
+điều khiển thiết bị.
 
-Để thao tác theo từng test case kèm ảnh chụp dashboard, xem
-[Hướng dẫn sử dụng và demo STWI Operator Dashboard](./mvp_dashboard_demo_walkthrough.md).
+## 1. Chuẩn bị môi trường
 
-## 1. Hiểu demo trong một phút
+### 1.1. Yêu cầu
 
-Hãy xem STWI như một **bàn thử phương án giao thông**: trước khi một người đưa
-ra quyết định, họ có thể hỏi hệ thống “nếu thay đổi điều này thì điều gì có thể
-xảy ra?”. Hệ thống phân tích tình huống, tự kiểm tra mức an toàn của kết quả và
-trình bày bằng chứng để con người quyết định cuối cùng.
+- Windows và PowerShell.
+- Python 3.11 trở lên.
+- Chạy lệnh từ thư mục gốc của repository.
+- Trình duyệt truy cập được địa chỉ loopback `127.0.0.1`.
 
-Luồng demo là:
+Kiểm tra Python:
 
-```text
-Người demo nhập tình huống
-        ↓
-STWI tạo một job phân tích
-        ↓
-STWI dự báo và mô phỏng tác động
-        ↓
-STWI tự kiểm tra an toàn / độ tin cậy
-        ↓
-Người vận hành xem kết quả và ghi quyết định
+```powershell
+python --version
 ```
 
-Ví dụ, bạn có thể hỏi: “Tại `node_00`, nếu giả định thời gian đèn xanh là 70%
-thì tình hình trong 30 phút tới có thể thay đổi như thế nào?” Đây chỉ là một
-câu hỏi mô phỏng. Việc nhập 70% **không thay đổi đèn thật**.
-
-Ba điều người xem cần hiểu ngay từ đầu:
-
-1. Dữ liệu trong demo là dữ liệu giao thông tổng hợp/mô phỏng theo từng 5 phút;
-   không có camera trực tiếp, RTSP hay cảm biến hiện trường.
-2. Kết quả là bằng chứng hỗ trợ quyết định, không phải mệnh lệnh điều khiển.
-3. Nút **Phê duyệt** hoặc **Từ chối** chỉ ghi nhận ý kiến của operator vào audit
-   trail; hệ thống không gửi lệnh đến đèn tín hiệu hoặc thiết bị ngoài thực tế.
-
-### Những gì xuất hiện trên màn hình
-
-| Khu vực UI | Cách hiểu đơn giản |
-|---|---|
-| **Tạo kịch bản What-If** | Nơi bạn đặt câu hỏi giả định cho hệ thống. |
-| **Theo dõi job** | “Số thứ tự” của câu hỏi: đã nhận, đang phân tích hay đã xong. |
-| **Đánh giá an toàn** | Hệ thống có đủ tự tin để đưa ra gợi ý hay phải dừng để con người xem thêm. |
-| **Action payload** | Nội dung gợi ý dưới dạng dữ liệu kỹ thuật; luôn có `executable: false` trong demo. |
-| **Quyết định operator** | Nơi con người lưu quyết định cuối cùng để phục vụ audit. |
-
-### Diễn giải hai kết quả có thể gặp
-
-- `succeeded`: kiểm tra đã pass. Hệ thống có thể hiển thị một
-  `recommended_action`, nhưng operator vẫn phải xem xét và phê duyệt.
-- `needs_review`: hệ thống không đủ cơ sở an toàn hoặc đủ tin cậy để khuyến nghị.
-  Khi đó chỉ có `candidate_action` để tham khảo; không có hành động nào được
-  thực thi.
-
-## 2. Thông điệp cần chốt trước khi demo
-
-Nói rõ ba điểm này ngay từ đầu:
-
-1. STWI dự báo baseline 30 phút và ước lượng tác động của một kịch bản bằng
-   GCN-LSTM cùng surrogate ensemble từ các kịch bản SUMO offline.
-2. Dữ liệu demo là chuỗi 5 phút tổng hợp mô phỏng. Không có video thô, RTSP
-   trực tiếp, hay cảm biến hiện trường trong lượt demo này.
-3. STWI chỉ hỗ trợ quyết định. Mọi action đều `executable=false`; ngay cả kết
-   quả `succeeded` vẫn cần operator phê duyệt và quyết định chỉ được ghi audit.
-
-Không mô tả demo là pilot, độ chính xác ngoài thực địa, benchmark SLA production,
-hay khả năng điều khiển đèn tín hiệu.
-
-## 3. Chuẩn bị trước buổi demo
-
-Yêu cầu: Python 3.11+ và môi trường có thể cài package của repository. Không
-cần Docker, GPU, RTSP URL, khóa API hoặc dịch vụ bên ngoài.
-
-Từ thư mục gốc repository, cài dependency demo và kiểm tra phạm vi:
+Cài project và dependency cho API/dashboard:
 
 ```powershell
 pip install -e ".[orchestrator]"
-python scripts/validation/validate_demo_simulation_scope.py
-python scripts/demo/run_mvp_smoke.py --output C:\tmp\stwi-mvp-demo-evidence.json
 ```
 
-Kết quả mong đợi của smoke harness là sáu luồng terminal:
+### 1.2. Chạy kiểm tra offline
 
-| Luồng | Trạng thái | Điểm cần nhấn mạnh |
-|---|---|---|
-| `safe_approval` | `succeeded` | Có `recommended_action`, nhưng `executable=false`; operator vẫn là người phê duyệt. |
-| `unsafe_vc_rejection` | `needs_review` | V/C vượt policy; chỉ có `candidate_action`. |
-| `ood_rejection` | `needs_review` | Tình huống ngoài phân phối bị fail-closed. |
-| `uncertainty_rejection` | `needs_review` | Độ bất định cao nên không có recommendation. |
-| `accident_rejection` | `needs_review` | Tai nạn synthetic làm V/C vượt policy; chỉ có candidate action. |
-| `environmental_anomaly_rejection` | `needs_review` | Tín hiệu tương quan ngoài phân phối bị giữ lại để review. |
+```powershell
+python scripts/demo/run_mvp_smoke.py --profile offline --output C:\tmp\stwi-offline-evidence.json
+```
 
-Tệp evidence tại `C:\tmp\stwi-mvp-demo-evidence.json` chỉ chứa dữ liệu tổng
-hợp mô phỏng. Không đưa tệp này lên Git hoặc đính kèm raw/private artifact vào
-tài liệu công khai.
+Kết quả mong đợi:
 
-Nếu một trong hai lệnh thất bại, không tiếp tục tuyên bố demo đã được xác minh;
-hãy dùng thông báo lỗi để xử lý môi trường trước.
+```json
+{"profile":"offline","verdict":"pass","capability_count":13}
+```
 
-## 4. Khởi động giao diện operator
+Không bắt đầu demo nếu `verdict` khác `pass` hoặc `capability_count` khác `13`.
 
-Giữ `STWI_RUNTIME_MODE` ở `development` hoặc `demo`; **không** đặt
-`production` cho buổi demo offline vì production cố ý từ chối adapter/store
-provisional.
+### 1.3. Khởi động dashboard
 
 ```powershell
 $env:STWI_RUNTIME_MODE = "demo"
 python -m uvicorn stwi.app:app --host 127.0.0.1 --port 8000
 ```
 
-Mở trình duyệt tại [http://127.0.0.1:8000/demo/](http://127.0.0.1:8000/demo/).
-Chỉ dùng loopback khi demo trên một máy. Dừng server bằng `Ctrl+C` sau buổi demo.
+Giữ cửa sổ PowerShell này đang chạy và mở:
 
-## 5. Kịch bản trình diễn đề xuất (5–7 phút)
-
-### Bước 1 — Đặt câu hỏi cho hệ thống
-
-Trên trang `/demo/`, giữ giá trị mặc định hoặc nhập:
-
-| Trường | Giá trị demo |
-|---|---|
-| Tenant | `demo-operator` |
-| Node | `node_00` |
-| Green time ratio | `0.70` |
-| Mô tả | `Đánh giá quyền và nghĩa vụ người sử dụng đường tại node_00.` |
-
-Chọn **Chạy mô phỏng**. Có thể nói theo cách dễ hiểu: “Hệ thống đã nhận câu
-hỏi và tạo một job để xử lý ở nền.” Sau đó dashboard sẽ theo dõi tiến độ.
-Nếu cần giải thích kỹ thuật, API trả `202 Accepted`, còn màn hình nhận tiến độ
-qua GET và SSE.
-
-### Bước 2 — Xem hệ thống đã xử lý gì
-
-Trên màn hình, chỉ lần lượt chỉ ra:
-
-1. Trạng thái trong phần **Theo dõi job**: hệ thống đã nhận, đã chạy và đã xong.
-2. `trace_id`, `model_version` và `data_version`: nhãn giúp truy lại nguồn gốc
-   kết quả khi cần kiểm tra/audit.
-3. Các sự kiện lifecycle: các mốc tiến độ của job, thay vì coi đây là một nút
-   bấm cho kết quả ngay lập tức.
-4. **Đánh giá an toàn**: hệ thống đã pass kiểm tra, hoặc lý do tại sao nó yêu
-   cầu con người xem thêm.
-5. Action JSON: phải có `executable: false` và
-   `requires_operator_approval: true`.
-
-Nếu terminal là `succeeded`, gọi action là **recommended action**. Nếu là
-`needs_review`, gọi nó là **candidate action**, không gọi là khuyến nghị.
-
-### Bước 3 — Để con người quyết định
-
-Với `succeeded`, chọn **Phê duyệt** hoặc **Từ chối** để minh hoạ audit trail.
-Với `needs_review`, UI chỉ cho phép **Từ chối**; API cũng từ chối quyết định
-`approved`. Đọc lại thông báo trên UI: quyết định được ghi nhận nhưng không có
-hành động tự động.
-
-Không nói rằng nút Phê duyệt thay đổi chu kỳ đèn, gửi lệnh xuống node, hoặc áp
-dụng action vào hạ tầng thật.
-
-### Bước 4 — Minh hoạ việc hệ thống biết dừng đúng lúc
-
-Chọn **Bộ kiểm thử demo** trên giao diện để trình bày tuần tự các nhánh:
-
-| Preset | Node/profile | Trạng thái mong đợi |
-|---|---|---|
-| Luồng bình thường | `node_00`, green time 70% | `succeeded` |
-| V/C vượt policy | `node_01` | `needs_review` |
-| Ngoài phân phối | `node_02` | `needs_review` |
-| Độ bất định cao | `node_03` | `needs_review` |
-| Thiếu căn cứ | `node_04`, jurisdiction không có corpus | `needs_review` |
-| Green time cực trị | `node_00`, green time 0% | `needs_review` |
-| Tai nạn | `node_05` | `needs_review` do V/C |
-| Ngập lụt | `node_06` | `needs_review` do V/C; tốc độ thấp nhất nhóm incident |
-| Đóng làn | `node_07` | `needs_review` do V/C |
-| Nhu cầu tăng | `node_08` | `needs_review` do V/C |
-| Tín hiệu môi trường bất thường | `node_09` | `needs_review` do OOD |
-
-Các preset tạo dữ liệu synthetic xác định để minh họa nhánh điều khiển của
-safety loop; chúng không phải bộ benchmark accuracy. Có thể đối chiếu thêm
-evidence của smoke harness ở Mục 3:
-
-```powershell
-Get-Content C:\tmp\stwi-mvp-demo-evidence.json
+```text
+http://127.0.0.1:8000/demo/
 ```
 
-Chỉ ra một case `*_rejection`: `recommended_action` vắng mặt,
-`candidate_action` không executable, và `automatic_actuation=false`.
+Đường dẫn `/` trả HTTP 404 vì dashboard được mount tại `/demo/`. Lỗi
+`/favicon.ico` 404 không ảnh hưởng đến demo.
 
-Năm preset vận hành là các abstraction có giới hạn của demo. Tai nạn, ngập lụt,
-đóng làn và nhu cầu tăng chỉ mô tả tác động aggregate synthetic lên năng lực,
-lưu lượng hoặc tốc độ; không mô phỏng hiện trường. Preset môi trường chỉ mô tả
-một tín hiệu tương quan ngoài phân phối cần đối chiếu, không kết luận ô nhiễm
-gây ùn tắc, không dự báo chất lượng không khí và không mô phỏng lượng mưa hay
-mực nước.
+## 2. Kiểm tra trước khi demo
 
-## 6. Checklist nói trong lúc trình bày
+Xác nhận các mục sau:
 
-- [ ] Input là dữ liệu tổng hợp mỗi 5 phút; network logic vẫn theo contract 20 node.
-- [ ] Baseline và scenario surrogate là hai vai trò riêng; không blend case truy xuất vào input online.
-- [ ] Safety loop tối đa 3 vòng và fail-closed khi OOD, uncertainty cao, thiếu citation hoặc policy không hội tụ.
-- [ ] Chỉ `succeeded` mới có `recommended_action`.
-- [ ] `needs_review` chỉ có `candidate_action` và luôn cần người vận hành xem xét.
-- [ ] Không lưu/phát hành raw video và không có automatic actuation.
-- [ ] Đây là demo mô phỏng, không phải triển khai production.
+- Header hiển thị `Demo synthetic` và `Simulation only`.
+- Form tạo kịch bản có các preset `safe`, `refinement`, `unsafe-vc`, `ood`,
+  `uncertainty` và `missing-evidence`.
+- Nút **Chạy mô phỏng** hoạt động.
+- File `C:\tmp\stwi-offline-evidence.json` tồn tại.
+- File evidence có `schema_version: "1.0"`, `verdict: "pass"` và đủ 13 phần tử
+  trong `capabilities`.
+- Không mở trực tiếp file `index.html` khi trình bày các luồng tạo job.
 
-## 7. Câu trả lời ngắn cho câu hỏi thường gặp
+## 3. Ma trận 13 kịch bản
 
-**Dữ liệu này có phải dữ liệu giao thông thật không?**  Không. Demo dùng dữ
-liệu tổng hợp/mô phỏng đã version; RTSP và cảm biến thật là gate riêng.
+| # | Capability | Cách chạy | Kết quả mong đợi |
+|---:|---|---|---|
+| 1 | `safe_approval` | Dashboard: preset `safe`, chạy job và chọn approve | `succeeded`, có `recommended_action`, quyết định `approved` |
+| 2 | `safe_rejection` | Dashboard: tạo job `safe` mới và chọn reject | `succeeded`, quyết định `rejected` |
+| 3 | `refinement_success` | Dashboard: preset `refinement` | `succeeded` sau hai candidate khác nhau |
+| 4 | `unsafe_vc` | Dashboard: preset `unsafe-vc` | `needs_review`, chỉ có `candidate_action` |
+| 5 | `ood` | Dashboard: preset `ood` | `needs_review`, không refinement |
+| 6 | `high_uncertainty` | Dashboard: preset `uncertainty` | `needs_review`, không refinement |
+| 7 | `missing_citation` | Dashboard: preset `missing-evidence` | `needs_review`, không có recommendation |
+| 8 | `dependency_failure` | File evidence offline | `failed`, không có action |
+| 9 | `deadline_exceeded` | File evidence offline | `expired`, không có action |
+| 10 | `invalid_scenario` | File evidence offline | HTTP `422`, không tạo job |
+| 11 | `tenant_scope_denied` | File evidence offline | HTTP `403`, không tạo job |
+| 12 | `sse_reconnect` | File evidence offline | Resume từ event trước, không lặp terminal event |
+| 13 | `static_preview` | Mở trực tiếp file HTML tĩnh | Preview không cho tạo job |
 
-**Hệ thống có tự thay đổi đèn tín hiệu không?**  Không. Tất cả action trả về
-đều non-executable; operator chỉ ghi quyết định audit.
+## 4. Hướng dẫn chạy từng kịch bản
 
-**Vì sao có `needs_review`?**  Đây là hành vi an toàn có chủ đích: khi policy,
-uncertainty, OOD hoặc citation không đủ tin cậy, hệ thống không được đưa ra
-khuyến nghị thực thi.
+### 4.1. `safe_approval`
 
-**Đã sẵn sàng production chưa?**  Chưa. Cần nguồn camera/aggregate được phê
-duyệt, calibration non-mock, benchmark đúng cấu hình contract, và baseline
-triển khai/khôi phục production trước khi có thể đánh giá release production.
+1. Chọn preset `safe`.
+2. Xác nhận node là `node_00` và `green_time_ratio` là `0.70`.
+3. Bấm **Chạy mô phỏng**.
+4. Chờ lifecycle chuyển `queued` → `running` → `succeeded`.
+5. Kiểm tra kết quả có đơn vị, citation, model/data version, `job_id` và
+   `trace_id`.
+6. Kiểm tra `recommended_action` có nhãn `NON-EXECUTABLE`.
+7. Bấm **Ghi nhận quyết định**, chọn approve, nhập lý do và xác nhận.
+8. Kiểm tra quyết định là `approved` và `applied_by_system=false`.
 
-## 8. Kết thúc và dọn dẹp
+### 4.2. `safe_rejection`
 
-1. Dừng Uvicorn bằng `Ctrl+C`.
-2. Chỉ giữ evidence mô phỏng tại thư mục private/tạm nếu cần review; không
-   commit hoặc chia sẻ kèm credential, endpoint RTSP, raw video hay dataset
-   private.
-3. Ghi lại câu hỏi của người xem thành ticket riêng; không thay đổi contract,
-ngưỡng SLA hoặc safety policy ngay trong lúc demo.
+1. Chọn lại preset `safe` và tạo một job mới.
+2. Chờ job kết thúc ở `succeeded`.
+3. Bấm **Ghi nhận quyết định**, chọn reject và nhập lý do.
+4. Kiểm tra quyết định là `rejected` và `applied_by_system=false`.
 
-## Tham chiếu
+Phải tạo job mới vì quyết định của một job đã ghi thì không được thay đổi.
 
-- `project_contract.json` — phạm vi, API, safety và SLA bất biến.
-- `docs/project_management/symphony/mvp_demo_acceptance.md` — evidence
-  acceptance của MVP offline.
-- `docs/04_AI_Agent_Orchestrator_CF_VLA.md` — lifecycle job, safety loop và
-  semantics `succeeded`/`needs_review`.
+### 4.3. `refinement_success`
+
+1. Chọn preset `refinement`.
+2. Xác nhận node là `node_10` và ratio ban đầu là `0.70`.
+3. Chạy mô phỏng và mở phần Counterfactual Safety Loop.
+4. Kiểm tra vòng 1 đánh giá ratio `0.70` và không đạt gate V/C.
+5. Kiểm tra vòng 2 đánh giá candidate mới với ratio `0.85` và đạt gate.
+6. Xác nhận trạng thái cuối là `succeeded`; action vẫn `NON-EXECUTABLE`.
+
+### 4.4. `unsafe_vc`
+
+1. Chọn preset `unsafe-vc`; node phải là `node_01`.
+2. Chạy mô phỏng.
+3. Kiểm tra trạng thái cuối là `needs_review` do V/C vượt policy `0.90`.
+4. Kiểm tra chỉ có `candidate_action`, không có `recommended_action` và không
+   thể approve.
+
+### 4.5. `ood`
+
+1. Chọn preset `ood`; node phải là `node_02`.
+2. Chạy mô phỏng.
+3. Kiểm tra trạng thái cuối là `needs_review` với lý do
+   `out_of_distribution`.
+4. Kiểm tra safety loop dừng ngay, không thử candidate khác và không có
+   `recommended_action`.
+
+### 4.6. `high_uncertainty`
+
+1. Chọn preset `uncertainty`; node phải là `node_03`.
+2. Chạy mô phỏng.
+3. Kiểm tra trạng thái cuối là `needs_review` do uncertainty cao.
+4. Kiểm tra không refinement, không recommendation và không thể approve.
+
+### 4.7. `missing_citation`
+
+1. Chọn preset `missing-evidence`; node phải là `node_04`.
+2. Chạy mô phỏng.
+3. Kiểm tra trạng thái cuối là `needs_review` do thiếu citation hợp lệ.
+4. Kiểm tra không refinement và không có `recommended_action`.
+
+### 4.8. Xem năm kịch bản boundary trong evidence
+
+Không cố ý làm hỏng dashboard để tạo lỗi dependency, timeout, validation,
+authorization hoặc SSE. Mở file:
+
+```powershell
+notepad C:\tmp\stwi-offline-evidence.json
+```
+
+Tìm lần lượt từng giá trị `name` và đối chiếu:
+
+| Capability | Trường cần kiểm tra |
+|---|---|
+| `dependency_failure` | `status: "pass"`, `observed: "failed"`, `terminal_status: "failed"`, không có action |
+| `deadline_exceeded` | `status: "pass"`, `observed: "expired"`, `terminal_status: "expired"`, không có action |
+| `invalid_scenario` | `status: "pass"`, `expected: "422"`, `observed: "422"`, `terminal_event_count: 0` |
+| `tenant_scope_denied` | `status: "pass"`, `expected: "403"`, `observed: "403"`, `terminal_event_count: 0` |
+| `sse_reconnect` | `status: "pass"`, `observed: "terminal_event_resumed"`, `terminal_event_count: 1` |
+
+`status: "pass"` trong manifest nghĩa là kịch bản tạo đúng kết quả mong đợi;
+ví dụ `dependency_failure` pass khi job kết thúc đúng ở `failed` và không làm lộ
+action.
+
+### 4.9. `static_preview`
+
+1. Mở file sau trực tiếp bằng trình duyệt trong một tab riêng:
+
+   ```text
+   src/stwi/t4_orchestrator/static/index.html
+   ```
+
+2. Kiểm tra giao diện hiển thị `Static preview`.
+3. Kiểm tra không thể tạo job hoặc gửi quyết định.
+4. Đóng tab preview và quay lại `http://127.0.0.1:8000/demo/`.
+
+Trong evidence, capability này phải có:
+
+```json
+{
+  "name": "static_preview",
+  "status": "pass",
+  "observed": "non_mutating_static_preview"
+}
+```
+
+## 5. Trình tự demo đề xuất
+
+Chạy theo thứ tự sau để câu chuyện trình bày liền mạch:
+
+1. Giới thiệu dashboard `Demo synthetic` và nguyên tắc không tự động điều khiển.
+2. Chạy `safe_approval` để trình bày lifecycle, kết quả, citation và quyết định.
+3. Chạy `safe_rejection` để chứng minh operator có thể bác bỏ recommendation.
+4. Chạy `refinement_success` để trình bày hai candidate khác nhau.
+5. Chạy `unsafe_vc`, `ood`, `high_uncertainty` và `missing_citation` để trình
+   bày các nhánh `needs_review`.
+6. Mở evidence và trình bày `dependency_failure`, `deadline_exceeded`,
+   `invalid_scenario`, `tenant_scope_denied` và `sse_reconnect`.
+7. Mở `static_preview`, xác nhận form không mutating rồi quay lại dashboard.
+8. Kết luận rằng đủ 13 kịch bản đã được trình bày và mọi action đều cần quyết
+   định của con người.
+
+## 6. Xử lý lỗi khi demo
+
+| Hiện tượng | Cách xử lý |
+|---|---|
+| Mở `/` thấy `404 Not Found` | Dùng đúng `http://127.0.0.1:8000/demo/`. |
+| `/favicon.ico` trả 404 | Bỏ qua; lỗi này không ảnh hưởng dashboard. |
+| `Connection refused` | Kiểm tra cửa sổ Uvicorn còn chạy và đang dùng cổng `8000`. |
+| Thiếu `fastapi` hoặc `uvicorn` | Chạy lại `pip install -e ".[orchestrator]"`. |
+| Dashboard hiển thị `Static preview` | Đóng file HTML trực tiếp và mở lại URL `/demo/`. |
+| Job kết thúc `needs_review` | Đối chiếu preset; đây là kết quả đúng của các kịch bản fail-closed. |
+| Smoke test không pass đủ 13 capability | Không tiếp tục demo; đọc capability có `status: "fail"` trong evidence. |
+
+## 7. Kết thúc
+
+1. Đóng tab `static_preview` nếu còn mở.
+2. Giữ lại `C:\tmp\stwi-offline-evidence.json` nếu cần đối chiếu sau demo.
+3. Nhấn `Ctrl+C` tại cửa sổ Uvicorn để dừng server.

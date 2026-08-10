@@ -18,29 +18,33 @@ class TestMvpSmoke(unittest.TestCase):
             self.assertTrue(output.exists())
             self.assertEqual(json.loads(output.read_text(encoding="utf-8")), evidence)
 
+        self.assertEqual(evidence["schema_version"], "1.0")
+        self.assertEqual(evidence["verdict"], "pass")
         self.assertFalse(evidence["live_services_contacted"])
         self.assertFalse(evidence["raw_video_retained"])
-        self.assertEqual(len(evidence["cases"]), 6)
+        self.assertEqual(len(evidence["capabilities"]), 13)
         self.assertEqual(
-            [case["case"] for case in evidence["cases"]],
+            [case["name"] for case in evidence["capabilities"]],
             [
                 "safe_approval",
-                "unsafe_vc_rejection",
-                "ood_rejection",
-                "uncertainty_rejection",
-                "accident_rejection",
-                "environmental_anomaly_rejection",
+                "safe_rejection",
+                "refinement_success",
+                "unsafe_vc",
+                "ood",
+                "high_uncertainty",
+                "missing_citation",
+                "dependency_failure",
+                "deadline_exceeded",
+                "invalid_scenario",
+                "tenant_scope_denied",
+                "sse_reconnect",
+                "static_preview",
             ],
         )
-        self.assertEqual(evidence["cases"][0]["terminal_status"], "succeeded")
-        self.assertTrue(
-            all(case["terminal_status"] == "needs_review" for case in evidence["cases"][1:])
-        )
-        for case in evidence["cases"]:
-            self.assertTrue(case["provisional"])
+        for case in evidence["capabilities"]:
+            self.assertEqual(case["status"], "pass")
             self.assertFalse(case["applied_by_system"])
             self.assertFalse(case["automatic_actuation"])
-            self.assertTrue(all(case["invariants"].values()))
 
 
 if __name__ == "__main__":

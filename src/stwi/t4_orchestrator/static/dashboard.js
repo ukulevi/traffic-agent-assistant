@@ -17,6 +17,11 @@ export const DEMO_PRESETS = Object.freeze({
     query: "Đánh giá quyền và nghĩa vụ người sử dụng đường tại node_00.",
     expectation: "Kỳ vọng: kết quả synthetic đạt các kiểm tra của profile mô phỏng.",
   },
+  refinement: {
+    nodeId: "node_10", ratio: 0.70, jurisdiction: "VN",
+    query: "Đánh giá phương án synthetic cần điều chỉnh tỷ lệ đèn xanh tại node_10.",
+    expectation: "Kỳ vọng: vòng 1 vượt policy V/C; hệ thống thử một candidate khác, vòng 2 pass và vẫn cần operator phê duyệt.",
+  },
   "unsafe-vc": {
     nodeId: "node_01", ratio: 0.70, jurisdiction: "VN",
     query: "Đánh giá quyền và nghĩa vụ người sử dụng đường khi nhu cầu vượt năng lực tại node_01.",

@@ -12,6 +12,7 @@ PRODUCTION_DIR = Path("infra/production")
 REQUIRED_SERVICES = (
     "stwi-api",
     "stwi-worker",
+    "stwi-migrate",
     "redis",
     "timescaledb",
     "qdrant",
@@ -28,8 +29,22 @@ REQUIRED_RUNBOOK_SECTIONS = (
 CREDENTIAL_NAMES = (
     "STWI_REDIS_PASSWORD",
     "STWI_TSDB_ADMIN_PASSWORD",
+    "STWI_TSDB_ADMIN_DSN",
     "STWI_TSDB_READER_PASSWORD",
     "STWI_QDRANT_API_KEY",
+)
+REQUIRED_ENVIRONMENT_NAMES = (
+    "STWI_PRODUCTION_COMPONENT_FACTORY",
+    "STWI_LEGAL_CORPUS_DIR_HOST",
+    "STWI_TSDB_ADMIN_DSN",
+)
+REQUIRED_APPLICATION_MODULES = (
+    "production_components.py",
+    "production.py",
+    "production_worker.py",
+    "production_preflight.py",
+    "production_health.py",
+    "production_migrate.py",
 )
 
 
@@ -84,6 +99,29 @@ def _validate_compose(text: str) -> list[str]:
             errors.append(f"compose: {service} must drop all Linux capabilities")
         if "no-new-privileges:true" not in block:
             errors.append(f"compose: {service} must enable no-new-privileges")
+        for variable in (
+            "STWI_PRODUCTION_COMPONENT_FACTORY",
+            "STWI_LEGAL_CORPUS_DIR",
+        ):
+            if variable not in block:
+                errors.append(f"compose: {service} requires {variable}")
+        if "STWI_TSDB_ADMIN_DSN" in block:
+            errors.append(
+                f"compose: {service} must not receive STWI_TSDB_ADMIN_DSN"
+            )
+
+    migration_block = _service_block(text, "stwi-migrate")
+    if migration_block:
+        if "STWI_TSDB_ADMIN_DSN" not in migration_block:
+            errors.append("compose: stwi-migrate requires STWI_TSDB_ADMIN_DSN")
+        if "stwi.production_migrate" not in migration_block:
+            errors.append("compose: stwi-migrate requires production migration CLI")
+        if "read_only: true" not in migration_block:
+            errors.append(
+                "compose: stwi-migrate must use a read-only root filesystem"
+            )
+        if not re.search(r"(?m)^    cap_drop:\s*(?:\[\"ALL\"\]|$)", migration_block):
+            errors.append("compose: stwi-migrate must drop all Linux capabilities")
 
     api_block = _service_block(text, "stwi-api")
     if "/docs" in api_block:
@@ -124,6 +162,9 @@ def _validate_environment(text: str) -> list[str]:
         values[name.strip()] = value.strip()
     if any(values.get(name, "") for name in CREDENTIAL_NAMES):
         errors.append("environment: credential variables must not have defaults")
+    for name in REQUIRED_ENVIRONMENT_NAMES:
+        if name not in values:
+            errors.append(f"environment: missing variable name {name}")
     return errors
 
 
@@ -155,6 +196,15 @@ def _validate_timescaledb_init(production: Path) -> list[str]:
     return errors
 
 
+def _validate_application_entrypoints(root: Path) -> list[str]:
+    package = root / "src" / "stwi"
+    return [
+        f"application: missing production entrypoint {module}"
+        for module in REQUIRED_APPLICATION_MODULES
+        if not (package / module).is_file()
+    ]
+
+
 def validate_production_deployment(root: Path) -> list[str]:
     """Return stable errors without reading credentials or external services."""
     production = root / PRODUCTION_DIR
@@ -173,6 +223,7 @@ def validate_production_deployment(root: Path) -> list[str]:
     if runbook:
         errors.extend(_validate_runbook(runbook))
     errors.extend(_validate_timescaledb_init(production))
+    errors.extend(_validate_application_entrypoints(root))
     return errors
 
 
@@ -190,6 +241,7 @@ def validate_production_topology(root: Path) -> list[str]:
     if environment:
         errors.extend(_validate_environment(environment))
     errors.extend(_validate_timescaledb_init(production))
+    errors.extend(_validate_application_entrypoints(root))
     return errors
 
 

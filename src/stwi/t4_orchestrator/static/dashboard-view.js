@@ -94,6 +94,23 @@ export function createDashboardView(doc = document) {
     text(byId("event-count"), `${events.length} sự kiện`, "0 sự kiện");
   }
 
+  function renderSafetyChecks(checks = [], iterations = 0) {
+    const list = byId("safety-checks");
+    list.replaceChildren();
+    text(byId("safety-iterations"), `${iterations} / 3 vòng`, "0 / 3 vòng");
+    for (const check of checks) {
+      const term = doc.createElement("dt");
+      const detail = doc.createElement("dd");
+      term.textContent = `Vòng ${check.iteration} · ${check.passed ? "PASS" : "REVIEW"}`;
+      detail.textContent = [
+        check.max_vc_ratio == null ? null : `V/C ${check.max_vc_ratio}`,
+        check.vc_threshold == null ? null : `policy ${check.vc_threshold}`,
+        check.fail_reason,
+      ].filter(Boolean).join(" · ");
+      list.append(term, detail);
+    }
+  }
+
   function renderInterpretation(result, status) {
     const interpretation = byId("result-interpretation");
     interpretation.className = `interpretation interpretation-${
@@ -169,6 +186,7 @@ export function createDashboardView(doc = document) {
       || state.creation.phase === "submitting";
     renderCitations(result?.citations || []);
     renderEvents(state.job.events || []);
+    renderSafetyChecks(result?.safety_checks || [], result?.safety_iterations || 0);
     renderInterpretation(result, status);
     doc.documentElement.dataset.runtimeMode = state.context.mode;
   }

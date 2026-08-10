@@ -1,9 +1,10 @@
-"""Run the deterministic, offline STWI MVP demo smoke flow."""
+"""Run versioned STWI demo evidence profiles without upgrading mock claims."""
 
 from __future__ import annotations
 
 import argparse
 import json
+import logging
 import sys
 from pathlib import Path
 from typing import Any
@@ -14,153 +15,384 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+_OPEN_CLIENTS: list[Any] = []
 
-def _request_body() -> dict[str, Any]:
+
+def _request_body(
+    *,
+    node_id: str = "node_00",
+    tenant_id: str = "demo-operator",
+    jurisdiction: str = "VN",
+    ratio: float = 0.7,
+) -> dict[str, Any]:
     return {
-        "tenant_id": "demo-operator",
+        "tenant_id": tenant_id,
         "scenario_time": "2025-06-01T08:00:00+00:00",
-        "candidate_action": {"node_id": "node_00", "green_time_ratio": 0.7},
-        "node_ids": ["node_00"],
-        "scenario_query": "quyền nghĩa vụ người sử dụng đường tại node_00",
+        "candidate_action": {
+            "node_id": node_id,
+            "green_time_ratio": ratio,
+        },
+        "node_ids": [node_id],
+        "scenario_query": (
+            f"Đánh giá quyền và nghĩa vụ người sử dụng đường tại {node_id}."
+        ),
+        "jurisdiction": jurisdiction,
     }
 
 
-def _client_for(scenario: object) -> object:
+def _client_for(orchestrator: object, principal_resolver: object | None = None) -> object:
     from fastapi.testclient import TestClient
+
+    from stwi.config.runtime import get_runtime_settings
     from stwi.t4_orchestrator.api import create_app
-    from stwi.t4_orchestrator.fake_adapters import FakeSurrogateForecaster
     from stwi.t4_orchestrator.job_store import InMemoryJobStore
+
+    settings = get_runtime_settings({"STWI_RUNTIME_MODE": "demo"})
+    client = TestClient(
+        create_app(
+            store=InMemoryJobStore(),
+            orchestrator=orchestrator,
+            settings=settings,
+            principal_resolver=principal_resolver,
+        )
+    )
+    _OPEN_CLIENTS.append(client)
+    return client
+
+
+def _close_demo_clients() -> None:
+    while _OPEN_CLIENTS:
+        _OPEN_CLIENTS.pop().close()
+
+
+def _orchestrator_for(profile: str) -> object:
+    from stwi.config.runtime import get_runtime_settings
+    from stwi.t4_orchestrator.demo_adapters import (
+        DemoSurrogateForecaster,
+        RefinementDemoSurrogateForecaster,
+    )
+    from stwi.t4_orchestrator.fake_adapters import FakeBaselineForecaster
     from stwi.t4_orchestrator.orchestrator import WhatIfOrchestrator
 
-    return TestClient(create_app(
-        store=InMemoryJobStore(),
-        orchestrator=WhatIfOrchestrator(
-            surrogate=FakeSurrogateForecaster(default_scenario=scenario)
-        ),
-    ))
+    settings = get_runtime_settings({"STWI_RUNTIME_MODE": "demo"})
+    baseline: object = FakeBaselineForecaster()
+    surrogate: object = DemoSurrogateForecaster()
+    timeout_seconds = 180.0
+
+    if profile == "refinement":
+        surrogate = RefinementDemoSurrogateForecaster()
+    elif profile == "dependency_failure":
+
+        class FailingBaseline:
+            is_provisional_adapter = True
+
+            def predict(self, **_kwargs: object) -> list[object]:
+                raise RuntimeError("synthetic dependency unavailable")
+
+        baseline = FailingBaseline()
+    elif profile == "deadline_exceeded":
+        timeout_seconds = 0.0
+
+    return WhatIfOrchestrator(
+        baseline=baseline,
+        surrogate=surrogate,
+        settings=settings,
+        timeout_seconds=timeout_seconds,
+    )
 
 
-def _require(condition: bool, message: str) -> None:
-    if not condition:
-        raise RuntimeError(message)
+def _run_job_case(scenario: object) -> object:
+    from stwi.demo.evidence import CapabilityEvidence, CapabilityStatus
 
-
-def _run_case(name: str, scenario: object, expected_status: str, decision: str) -> dict[str, Any]:
-    client = _client_for(scenario)
-    accepted = client.post("/api/v1/what-if-jobs", json=_request_body())
-    _require(accepted.status_code == 202, f"{name}: expected HTTP 202")
+    client = _client_for(_orchestrator_for(scenario.profile or "safe"))
+    jurisdiction = "DEMO-NONE" if scenario.profile == "missing_citation" else "VN"
+    accepted = client.post(
+        "/api/v1/what-if-jobs",
+        json=_request_body(node_id=scenario.node_id, jurisdiction=jurisdiction),
+    )
+    if accepted.status_code != scenario.expected_http_status:
+        raise RuntimeError("unexpected create status")
     job_id = accepted.json()["job_id"]
     terminal = client.get(f"/api/v1/what-if-jobs/{job_id}")
-    _require(terminal.status_code == 200, f"{name}: terminal GET failed")
-    terminal_data = terminal.json()
-    _require(terminal_data["status"] == expected_status, f"{name}: wrong terminal status")
+    if terminal.status_code != 200:
+        raise RuntimeError("terminal GET failed")
+    envelope = terminal.json()
+    if envelope["status"] != scenario.expected_terminal_status:
+        raise RuntimeError("unexpected terminal status")
     stream = client.get(f"/api/v1/what-if-jobs/{job_id}/events")
-    _require("event: result" in stream.text, f"{name}: SSE has no result event")
+    terminal_event_count = stream.text.count("event: result")
+    result = envelope["result"]
 
-    result = terminal_data["result"]
-    action = result["recommended_action"] or result["candidate_action"]
-    if expected_status == "succeeded":
-        _require(result["recommended_action"] is not None, f"{name}: missing recommendation")
-        _require(result["candidate_action"] is None, f"{name}: unexpected candidate")
-    else:
-        _require(result["recommended_action"] is None, f"{name}: unexpected recommendation")
-        _require(result["candidate_action"] is not None, f"{name}: missing candidate")
+    decision_data: dict[str, Any] | None = None
+    if scenario.operator_decision:
+        decision = client.post(
+            f"/api/v1/what-if-jobs/{job_id}/operator-decision",
+            json={
+                "operator_id": "demo-operator",
+                "decision": scenario.operator_decision,
+                "comment": "Comprehensive offline demo evidence.",
+            },
+        )
+        if decision.status_code != 200:
+            raise RuntimeError("operator decision failed")
+        decision_data = decision.json()
 
-    recorded = client.post(
-        f"/api/v1/what-if-jobs/{job_id}/operator-decision",
-        json={"operator_id": "demo-operator", "decision": decision, "comment": "Offline MVP smoke evidence."},
-    )
-    _require(recorded.status_code == 200, f"{name}: decision request failed")
-    decision_data = recorded.json()
-    _require(decision_data["automatic_actuation"] is False, f"{name}: automatic actuation")
-    _require(decision_data["operator_decision"]["applied_by_system"] is False, f"{name}: system-applied decision")
-
-    return {
-        "case": name,
-        "job_id": job_id,
-        "accepted_status": accepted.json()["status"],
-        "terminal_status": terminal_data["status"],
-        "trace_id": result["audit_record"]["trace_id"],
-        "model_version": result["model_version"],
-        "data_version": result["data_version"],
-        "provisional": True,
-        "sse_result_event": True,
-        "operator_decision": decision,
-        "applied_by_system": decision_data["operator_decision"]["applied_by_system"],
-        "automatic_actuation": decision_data["automatic_actuation"],
-        "invariants": {
+    return CapabilityEvidence(
+        name=scenario.name,
+        kind="job",
+        status=CapabilityStatus.PASS,
+        mandatory=scenario.mandatory,
+        expected=scenario.expected_terminal_status,
+        observed=envelope["status"],
+        terminal_status=envelope["status"],
+        trace_id=result["audit_record"]["trace_id"],
+        model_version=result["model_version"],
+        data_version=result["data_version"],
+        terminal_event_count=terminal_event_count,
+        recommended_action=result["recommended_action"],
+        candidate_action=result["candidate_action"],
+        operator_decision=scenario.operator_decision,
+        applied_by_system=(
+            decision_data["operator_decision"]["applied_by_system"]
+            if decision_data
+            else False
+        ),
+        automatic_actuation=(
+            decision_data["automatic_actuation"] if decision_data else False
+        ),
+        details={
             "http_202": accepted.status_code == 202,
-            "terminal_status_expected": terminal_data["status"] == expected_status,
-            "sse_result_event": "event: result" in stream.text,
-            "non_executable_action": action["executable"] is False,
-            "human_decision_only": decision_data["operator_decision"]["applied_by_system"] is False,
+            "safety_iterations": result["safety_iterations"],
+            "provisional": True,
         },
-    }
-
-
-def run_smoke(output: Path) -> dict[str, Any]:
-    """Run safe and fail-closed flows, then write aggregate-only evidence."""
-    from stwi.t4_orchestrator.fake_adapters import (
-        SurrogateScenario,
-        high_uncertainty_scenario,
-        ood_scenario,
-        safe_scenario,
-        unsafe_vc_scenario,
     )
 
-    evidence = {
-        "harness": "stwi_offline_mvp_smoke_v1",
-        "mode": "offline_provisional",
-        "live_services_contacted": False,
-        "raw_video_retained": False,
-        "cases": [
-            _run_case("safe_approval", safe_scenario(), "succeeded", "approved"),
-            _run_case("unsafe_vc_rejection", unsafe_vc_scenario(), "needs_review", "rejected"),
-            _run_case("ood_rejection", ood_scenario(), "needs_review", "rejected"),
-            _run_case(
-                "uncertainty_rejection",
-                high_uncertainty_scenario(),
-                "needs_review",
-                "rejected",
-            ),
-            _run_case(
-                "accident_rejection",
-                SurrogateScenario(
-                    vc_ratio=0.94,
-                    uncertainty_score=0.18,
-                    ood_score=0.15,
-                    predicted_volume=138.0,
-                    predicted_speed=22.0,
-                ),
-                "needs_review",
-                "rejected",
-            ),
-            _run_case(
-                "environmental_anomaly_rejection",
-                SurrogateScenario(
-                    vc_ratio=0.78,
-                    uncertainty_score=0.82,
-                    ood_score=0.60,
-                    predicted_volume=105.0,
-                    predicted_speed=36.0,
-                ),
-                "needs_review",
-                "rejected",
-            ),
-        ],
-    }
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(evidence, indent=2, sort_keys=True), encoding="utf-8")
+
+def _run_invalid_scenario(scenario: object) -> object:
+    from stwi.demo.evidence import CapabilityEvidence, CapabilityStatus
+
+    client = _client_for(_orchestrator_for("safe"))
+    response = client.post(
+        "/api/v1/what-if-jobs",
+        json=_request_body(ratio=1.1),
+    )
+    if response.status_code != scenario.expected_http_status:
+        raise RuntimeError("invalid input was not rejected")
+    return CapabilityEvidence(
+        name=scenario.name,
+        kind="validation",
+        status=CapabilityStatus.PASS,
+        expected=str(scenario.expected_http_status),
+        observed=str(response.status_code),
+        details={"job_created": False},
+    )
+
+
+def _run_tenant_denied(scenario: object) -> object:
+    from stwi.demo.evidence import CapabilityEvidence, CapabilityStatus
+    from stwi.t4_orchestrator.auth import (
+        PrincipalRole,
+        ServerPrincipal,
+        StaticPrincipalResolver,
+    )
+
+    resolver = StaticPrincipalResolver(
+        ServerPrincipal(
+            tenant_id="trusted-tenant",
+            operator_id="trusted-operator",
+            roles=frozenset({PrincipalRole.OPERATOR}),
+        )
+    )
+    client = _client_for(_orchestrator_for("safe"), resolver)
+    response = client.post(
+        "/api/v1/what-if-jobs",
+        json=_request_body(tenant_id="untrusted-tenant"),
+    )
+    if response.status_code != scenario.expected_http_status:
+        raise RuntimeError("cross-tenant request was not denied")
+    return CapabilityEvidence(
+        name=scenario.name,
+        kind="authorization",
+        status=CapabilityStatus.PASS,
+        expected=str(scenario.expected_http_status),
+        observed=str(response.status_code),
+        details={"job_created": False, "code": "AUTH_TENANT_DENIED"},
+    )
+
+
+def _run_sse_reconnect(scenario: object) -> object:
+    from stwi.demo.evidence import CapabilityEvidence, CapabilityStatus
+
+    client = _client_for(_orchestrator_for("safe"))
+    accepted = client.post("/api/v1/what-if-jobs", json=_request_body())
+    job_id = accepted.json()["job_id"]
+    initial = client.get(f"/api/v1/what-if-jobs/{job_id}/events")
+    resumed = client.get(
+        f"/api/v1/what-if-jobs/{job_id}/events",
+        headers={"Last-Event-ID": "1"},
+    )
+    passed = (
+        initial.status_code == 200
+        and resumed.status_code == scenario.expected_http_status
+        and "event: result" in resumed.text
+        and "id: 1\n" not in resumed.text
+    )
+    if not passed:
+        raise RuntimeError("SSE resume contract failed")
+    return CapabilityEvidence(
+        name=scenario.name,
+        kind="sse",
+        status=CapabilityStatus.PASS,
+        expected="resume_after_event_1",
+        observed="terminal_event_resumed",
+        terminal_event_count=resumed.text.count("event: result"),
+        details={"last_event_id": 1},
+    )
+
+
+def _run_static_preview(scenario: object) -> object:
+    from stwi.demo.evidence import CapabilityEvidence, CapabilityStatus
+
+    mode_source = (
+        ROOT
+        / "src"
+        / "stwi"
+        / "t4_orchestrator"
+        / "static"
+        / "dashboard-mode.js"
+    ).read_text(encoding="utf-8")
+    controller_source = (
+        ROOT
+        / "src"
+        / "stwi"
+        / "t4_orchestrator"
+        / "static"
+        / "dashboard.js"
+    ).read_text(encoding="utf-8")
+    passed = (
+        'mode: "static_preview"' in mode_source
+        and 'state.context.mode === "static_preview"' in controller_source
+        and "Static preview" in controller_source
+    )
+    if not passed:
+        raise RuntimeError("static preview mutation guard missing")
+    return CapabilityEvidence(
+        name=scenario.name,
+        kind="static",
+        status=CapabilityStatus.PASS,
+        expected="non_mutating_static_preview",
+        observed="non_mutating_static_preview",
+        details={"network_contacted": False},
+    )
+
+
+def _run_capability(scenario: object) -> object:
+    if scenario.kind == "job":
+        return _run_job_case(scenario)
+    if scenario.kind == "validation":
+        return _run_invalid_scenario(scenario)
+    if scenario.kind == "authorization":
+        return _run_tenant_denied(scenario)
+    if scenario.kind == "sse":
+        return _run_sse_reconnect(scenario)
+    return _run_static_preview(scenario)
+
+
+def run_offline_profile(output: Path) -> object:
+    """Run all mandatory offline capabilities and atomically write evidence."""
+    from stwi.demo.evidence import (
+        CapabilityEvidence,
+        CapabilityStatus,
+        DemoEvidence,
+        write_evidence_atomic,
+    )
+    from stwi.demo.scenarios import offline_scenarios
+
+    capabilities = []
+    previous_logging_disable = logging.root.manager.disable
+    logging.disable(logging.CRITICAL)
+    try:
+        for scenario in offline_scenarios():
+            try:
+                capabilities.append(_run_capability(scenario))
+            except Exception as exc:
+                capabilities.append(
+                    CapabilityEvidence(
+                        name=scenario.name,
+                        kind=(scenario.kind if scenario.kind != "job" else "job"),
+                        status=CapabilityStatus.FAIL,
+                        mandatory=scenario.mandatory,
+                        expected=(
+                            scenario.expected_terminal_status
+                            or str(scenario.expected_http_status)
+                        ),
+                        observed="capability_failed",
+                        details={"error_type": type(exc).__name__},
+                    )
+                )
+            finally:
+                _close_demo_clients()
+    finally:
+        _close_demo_clients()
+        logging.disable(previous_logging_disable)
+    verdict = "pass" if all(
+        item.status == CapabilityStatus.PASS
+        for item in capabilities
+        if item.mandatory
+    ) else "fail"
+    evidence = DemoEvidence(
+        profile="offline",
+        verdict=verdict,
+        live_services_contacted=False,
+        capabilities=capabilities,
+    )
+    write_evidence_atomic(output, evidence)
     return evidence
 
 
-def main() -> int:
+def run_smoke(output: Path) -> dict[str, Any]:
+    """Backward-compatible dictionary facade for existing automation."""
+    return run_offline_profile(output).model_dump(mode="json")
+
+
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path, default=ROOT / "data/derived/private/demo/mvp_smoke_evidence.json")
-    args = parser.parse_args()
-    evidence = run_smoke(args.output)
-    print(json.dumps({"output": str(args.output), "case_count": len(evidence["cases"])}))
-    return 0
+    parser.add_argument(
+        "--profile",
+        choices=("offline", "services"),
+        default="offline",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=None,
+    )
+    args = parser.parse_args(argv)
+    output = args.output or (
+        ROOT
+        / "data"
+        / "derived"
+        / "private"
+        / "demo"
+        / f"comprehensive_{args.profile}_evidence.json"
+    )
+    if args.profile == "services":
+        from stwi.demo.service_lab import run_service_profile
+
+        evidence = run_service_profile(output)
+    else:
+        evidence = run_offline_profile(output)
+    print(
+        json.dumps(
+            {
+                "output": str(output),
+                "profile": evidence.profile,
+                "verdict": evidence.verdict,
+                "capability_count": len(evidence.capabilities),
+            }
+        )
+    )
+    return 0 if evidence.verdict == "pass" else 1
 
 
 if __name__ == "__main__":

@@ -110,9 +110,9 @@ Only use workflow detections as camera evidence for five-minute aggregates such
 as `traffic_volume_5m` and `heavy_vehicle_ratio`. Do not log raw image payloads
 or base64 visualization outputs.
 
-## MVP Demo Smoke
+## Comprehensive Hybrid Demo
 
-See [docs/guides/mvp_demo_runbook.md](./docs/guides/mvp_demo_runbook.md) for the deterministic offline demo flow and aggregate-only evidence boundary.
+See [docs/guides/mvp_demo_runbook.md](./docs/guides/mvp_demo_runbook.md) for the 7-minute and 15-minute presenter scripts, the 13-capability matrix, recovery steps, and the aggregate-only evidence boundary.
 
 The approved solo-project demo is simulation-first: versioned synthetic
 five-minute time series feed the baseline model and offline Eclipse SUMO runs
@@ -122,7 +122,13 @@ boundary with:
 
 ```powershell
 python scripts/validation/validate_demo_simulation_scope.py
+python scripts/demo/run_mvp_smoke.py --profile offline --output C:\tmp\stwi-offline-evidence.json
 ```
+
+The optional `services` profile probes Docker, Redis/Celery, Qdrant and
+TimescaleDB without mock fallback. Its verdict may be `pass`, `fail`, or
+`incomplete` when a capability is `not_verified`; it is not a production
+readiness declaration.
 
 ## AI agent
 

@@ -18,19 +18,27 @@ If any gate fails after MAX_ITERATIONS attempts, the job transitions to
 needs_review with the candidate_action (NOT recommended_action). The human
 operator receives the candidate_action and all evidence to make the final call.
 
-Phase 4 provisional note: the loop runs MAX_ITERATIONS on non-convergence but
-does not currently modify the candidate_action between iterations (no
-optimizer). The repeated checks provide an audit-compatible placeholder for
-Phase 5 action refinement.
+The loop may refine only an isolated V/C policy failure. Legal evidence,
+uncertainty, OOD, validation and dependency failures stop immediately for
+human review. Every recorded iteration therefore represents a distinct, typed
+candidate evaluation rather than a repeated placeholder check.
 """
 
 from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Any
 
-from stwi.t4_orchestrator.contracts import SafetyCheckResult
-from stwi.t4_orchestrator.interfaces import ScenarioForecast, ScenarioForecaster
+from pydantic import ValidationError
+
+from stwi.t4_orchestrator.contracts import CandidateAction, SafetyCheckResult
+from stwi.t4_orchestrator.interfaces import (
+    CandidateRefiner,
+    ScenarioForecast,
+    ScenarioForecaster,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -41,20 +49,65 @@ DEFAULT_OOD_THRESHOLD = 0.5
 
 
 @dataclass(frozen=True)
+class SafetyIteration:
+    """One immutable candidate evaluation in the safety loop."""
+
+    action: dict[str, Any]
+    results: tuple[ScenarioForecast, ...]
+    check: SafetyCheckResult
+
+
+@dataclass(frozen=True)
 class SafetyLoopOutcome:
-    """Final outcome of the Counterfactual Safety Loop."""
+    """Final outcome plus the candidate history used to reach it."""
 
     passed: bool
     iterations_run: int
-    checks: list[SafetyCheckResult]
+    iterations: tuple[SafetyIteration, ...]
+    selected_action: dict[str, Any]
     fail_reason: str | None = None
+
+    @property
+    def checks(self) -> tuple[SafetyCheckResult, ...]:
+        return tuple(item.check for item in self.iterations)
+
+
+class GreenTimeRatioRefiner:
+    """Increase one node's green-time hypothesis after an isolated V/C failure."""
+
+    def __init__(self, step: float = 0.15) -> None:
+        if not 0 < step <= 1:
+            raise ValueError("refinement step must be in (0, 1]")
+        self._step = step
+
+    def refine(
+        self,
+        current_action: dict[str, Any],
+        check: SafetyCheckResult,
+        iteration: int,
+    ) -> dict[str, Any] | None:
+        del iteration
+        adjustable_vc_only = (
+            not check.vc_ratio_ok
+            and check.citations_ok
+            and check.uncertainty_ok
+            and check.ood_ok
+        )
+        if not adjustable_vc_only:
+            return None
+        current_ratio = float(current_action["green_time_ratio"])
+        next_ratio = min(1.0, round(current_ratio + self._step, 10))
+        if next_ratio <= current_ratio:
+            return None
+        return {**current_action, "green_time_ratio": next_ratio}
 
 
 class CounterfactualSafetyLoop:
     """Counterfactual Safety Loop with configurable thresholds.
 
-    Phase 4 provisional: runs up to max_iterations evaluations.
-    Each iteration checks the same candidate_action (no optimizer yet).
+    Runs up to max_iterations distinct candidate evaluations. Only an isolated
+    V/C policy failure may trigger the bounded green-time-ratio refiner;
+    evidence, OOD, uncertainty and validation failures stop immediately.
     Passes iff ALL four safety gates pass in any single iteration.
     """
 
@@ -65,36 +118,52 @@ class CounterfactualSafetyLoop:
         uncertainty_threshold: float = DEFAULT_UNCERTAINTY_THRESHOLD,
         ood_threshold: float = DEFAULT_OOD_THRESHOLD,
         max_iterations: int = MAX_ITERATIONS,
+        refiner: CandidateRefiner | None = None,
     ) -> None:
         self._surrogate = surrogate
         self._vc_threshold = vc_threshold
         self._uncertainty_threshold = uncertainty_threshold
         self._ood_threshold = ood_threshold
         self._max_iterations = max_iterations
+        self._refiner = refiner or GreenTimeRatioRefiner()
 
     def run(
         self,
-        scenario_results: list[ScenarioForecast],
+        *,
+        node_ids: list[str],
+        horizons_minutes: list[int],
+        candidate_action: dict[str, Any],
+        scenario_time: datetime,
         has_citations: bool,
+        initial_results: list[ScenarioForecast] | None = None,
     ) -> SafetyLoopOutcome:
-        """Evaluate the scenario results against all safety gates.
-
-        Args:
-            scenario_results: Predictions from surrogate for this iteration.
-            has_citations: Whether T3 returned valid legal evidence.
-
-        Returns:
-            SafetyLoopOutcome with pass/fail and per-gate details.
-        """
-        checks: list[SafetyCheckResult] = []
+        """Evaluate and, for isolated V/C failure, refine distinct candidates."""
+        current_action = self._validate_action(candidate_action, node_ids)
+        iterations: list[SafetyIteration] = []
 
         for iteration in range(1, self._max_iterations + 1):
+            scenario_results = (
+                initial_results
+                if iteration == 1 and initial_results is not None
+                else self._surrogate.predict(
+                    node_ids=node_ids,
+                    horizons_minutes=horizons_minutes,
+                    candidate_action=current_action,
+                    scenario_time=scenario_time,
+                )
+            )
             check = self._evaluate_iteration(
                 iteration=iteration,
                 scenario_results=scenario_results,
                 has_citations=has_citations,
             )
-            checks.append(check)
+            iterations.append(
+                SafetyIteration(
+                    action=dict(current_action),
+                    results=tuple(scenario_results),
+                    check=check,
+                )
+            )
 
             if check.passed:
                 logger.info(
@@ -105,7 +174,8 @@ class CounterfactualSafetyLoop:
                 return SafetyLoopOutcome(
                     passed=True,
                     iterations_run=iteration,
-                    checks=checks,
+                    iterations=tuple(iterations),
+                    selected_action=dict(current_action),
                 )
 
             logger.warning(
@@ -114,16 +184,59 @@ class CounterfactualSafetyLoop:
                 check.fail_reason,
             )
 
-            # Phase 4 provisional: no action optimizer yet, so each iteration
-            # re-evaluates the same candidate for audit-compatible CSL traces.
+            # The final bounded iteration has evidence only for current_action.
+            # Do not expose a newly refined, unevaluated hypothesis downstream.
+            if iteration == self._max_iterations:
+                break
 
-        final_reason = checks[-1].fail_reason if checks else "no_iterations_run"
+            next_action = self._refiner.refine(current_action, check, iteration)
+            if next_action is None:
+                return SafetyLoopOutcome(
+                    passed=False,
+                    iterations_run=len(iterations),
+                    iterations=tuple(iterations),
+                    selected_action=dict(current_action),
+                    fail_reason=check.fail_reason or "refinement_unavailable",
+                )
+            try:
+                validated_next = self._validate_action(next_action, node_ids)
+            except (ValueError, ValidationError):
+                return SafetyLoopOutcome(
+                    passed=False,
+                    iterations_run=len(iterations),
+                    iterations=tuple(iterations),
+                    selected_action=dict(current_action),
+                    fail_reason="invalid_refined_candidate",
+                )
+            if validated_next == current_action:
+                return SafetyLoopOutcome(
+                    passed=False,
+                    iterations_run=len(iterations),
+                    iterations=tuple(iterations),
+                    selected_action=dict(current_action),
+                    fail_reason="duplicate_refined_candidate",
+                )
+            current_action = validated_next
+
+        final_reason = (
+            iterations[-1].check.fail_reason if iterations else "no_iterations_run"
+        )
         return SafetyLoopOutcome(
             passed=False,
-            iterations_run=len(checks),
-            checks=checks,
+            iterations_run=len(iterations),
+            iterations=tuple(iterations),
+            selected_action=dict(current_action),
             fail_reason=final_reason,
         )
+
+    @staticmethod
+    def _validate_action(
+        action: dict[str, Any], node_ids: list[str]
+    ) -> dict[str, Any]:
+        validated = CandidateAction.model_validate(action)
+        if validated.node_id not in node_ids:
+            raise ValueError("refined candidate node_id is outside request scope")
+        return validated.model_dump()
 
     def _evaluate_iteration(
         self,
@@ -179,6 +292,8 @@ class CounterfactualSafetyLoop:
 
 __all__ = [
     "CounterfactualSafetyLoop",
+    "GreenTimeRatioRefiner",
+    "SafetyIteration",
     "SafetyLoopOutcome",
     "MAX_ITERATIONS",
     "DEFAULT_VC_THRESHOLD",

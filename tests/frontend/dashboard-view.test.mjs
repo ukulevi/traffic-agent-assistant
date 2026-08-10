@@ -68,6 +68,11 @@ function succeededState() {
         completed_at: "2026-08-03T00:00:00Z",
         scenario_summary: { traffic_volume_5m: 120, avg_speed_kmh: 31, max_vc_ratio: 0.72, capacity_version: "cap-v1" },
         audit_record: { trace_id: "trace-1" },
+        safety_iterations: 2,
+        safety_checks: [
+          { iteration: 1, passed: false, max_vc_ratio: 0.94, vc_threshold: 0.9, fail_reason: "vc_ratio" },
+          { iteration: 2, passed: true, max_vc_ratio: 0.84, vc_threshold: 0.9, fail_reason: null },
+        ],
         citations: [{ title: "<img src=x>", provision: "Điều 1", effective_from: "2025-01-01", source_url: "https://example.test" }],
         recommended_action: { node_id: "node_00", executable: false, automatic_actuation: false, requires_operator_approval: true },
       },
@@ -87,6 +92,23 @@ test("render treats citation markup as text and exposes result metrics", () => {
   assert.equal(doc.getElementById("forecast-volume").textContent, "120");
   assert.equal(doc.getElementById("forecast-speed").textContent, "31");
   assert.equal(doc.getElementById("open-decision").disabled, false);
+  assert.equal(doc.getElementById("safety-iterations").textContent, "2 / 3 vòng");
+  assert.equal(doc.getElementById("safety-checks").children.length, 4);
+});
+
+test("failed and expired branches expose no decision or action", () => {
+  for (const status of ["failed", "expired"]) {
+    const doc = new FakeDocument();
+    const view = createDashboardView(doc);
+    const state = succeededState();
+    state.job.status = status;
+    state.job.result.status = status;
+    state.job.result.recommended_action = null;
+    view.render(state, { canApprove: false, canReject: false, canRequestChanges: false });
+
+    assert.equal(doc.getElementById("action-view").textContent, "—");
+    assert.equal(doc.getElementById("open-decision").disabled, true);
+  }
 });
 
 test("readScenario reads trusted tenant and typed candidate action", () => {
