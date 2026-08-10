@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="dashboard.css">
   </head>
   <body>
+    <a class="skip-link" href="#scenario-form">Bỏ qua đến cấu hình</a>
     <a class="skip-link" href="#result-conclusion">Bỏ qua đến kết quả</a>
     <div class="app-shell">
       <header class="app-header">
@@ -27,49 +28,14 @@
           <div class="rail-heading"><span>NETWORK</span><strong>Node registry</strong></div>
           <label for="node-search">Tìm node</label>
           <input id="node-search" type="search" autocomplete="off" placeholder="node_00">
-          <div id="node-list" class="node-list" role="listbox" aria-label="Danh sách node"></div>
+          <div id="node-list" class="node-list" role="group" aria-label="Danh sách node"></div>
           <p class="rail-note">Production dùng allowlist runtime. Demo dùng mạng synthetic <code>mock-network-20-v1</code>.</p>
         </aside>
 
         <div class="workspace">
-          <section id="result-conclusion" class="panel result-panel" aria-labelledby="result-title" tabindex="-1">
-            <div class="panel-heading">
-              <div><p class="section-kicker">KẾT QUẢ · 30 PHÚT</p><h1 id="result-title">Chưa có kết quả mô phỏng</h1></div>
-              <span id="job-status" class="status status-idle">Chưa gửi</span>
-            </div>
-            <section id="result-interpretation" class="interpretation interpretation-idle" aria-labelledby="interpretation-title" aria-live="polite">
-              <h2 id="interpretation-title">Chưa có kết quả để diễn giải</h2>
-              <p id="interpretation-summary">Chọn một node và tạo kịch bản What-If.</p>
-              <p id="interpretation-impact">Các chỉ số kỹ thuật và bằng chứng sẽ xuất hiện tại đây sau khi job hoàn tất.</p>
-              <p><strong>Việc tiếp theo:</strong> <span id="interpretation-next-step">Hãy chạy một kịch bản mô phỏng.</span></p>
-            </section>
-            <div class="forecast-metrics" aria-label="Chỉ số dự báo tổng hợp">
-              <article><span>Lưu lượng giao thông</span><strong id="forecast-volume">—</strong><small>xe/5 phút</small></article>
-              <article><span>Tốc độ trung bình</span><strong id="forecast-speed">—</strong><small>km/h</small></article>
-              <article><span>V/C tối đa</span><strong id="vc-ratio">—</strong><small>V/C = 0.9 là policy MVP</small></article>
-              <article><span>Phiên bản năng lực</span><strong id="capacity-version">—</strong><small>capacity_version</small></article>
-            </div>
-          </section>
-
-          <section class="panel lifecycle-panel" aria-labelledby="lifecycle-title">
-            <div class="panel-heading">
-              <div><p class="section-kicker">JOB LIFECYCLE</p><h2 id="lifecycle-title" tabindex="-1">Theo dõi job</h2></div>
-              <span id="event-count">0 sự kiện</span>
-            </div>
-            <div class="job-summary">
-              <div><span>Job ID</span><code id="job-id">—</code></div>
-              <div><span>Trace ID</span><code id="trace-id">—</code><button id="copy-trace" class="text-button" type="button" disabled>Copy</button><small id="copy-status" role="status"></small></div>
-              <div><span>Model / data</span><code id="versions">—</code></div>
-              <div><span>Server status</span><code id="terminal-status">—</code></div>
-              <div><span>Timestamp</span><code id="result-timestamp">—</code></div>
-            </div>
-            <ol id="events" class="timeline" aria-label="Sự kiện job"></ol>
-            <div id="empty-events" class="empty-state">Chưa có job đang chạy.</div>
-          </section>
-
-          <section class="panel scenario-panel" aria-labelledby="scenario-title">
+        <section id="scenario-form" class="panel scenario-panel" aria-labelledby="scenario-title">
             <div class="panel-heading"><div><p class="section-kicker">WHAT-IF INPUT</p><h2 id="scenario-title">Tạo kịch bản</h2></div><span class="simulation-badge">Simulation only</span></div>
-            <form id="scenario-form">
+            <form>
               <label class="preset-field">Bộ kiểm thử demo
                 <select id="demo-preset" name="preset" aria-describedby="preset-expectation">
                   <optgroup label="Safety cơ bản">
@@ -111,22 +77,41 @@
             </form>
           </section>
 
-          <details class="variable-guide help-panel">
-            <summary>Giải thích biến và dữ liệu demo</summary>
-            <div class="glossary-grid">
-              <article><code>tenant_id</code><strong>Phạm vi dữ liệu</strong><p>Production lấy từ trusted context; demo dùng định danh synthetic.</p></article>
-              <article><code>node_id</code><strong>Nút giao cần đánh giá</strong><p>Production dùng allowlist runtime; demo dùng node_00 đến node_19.</p></article>
-              <article><code>green_time_ratio</code><strong>Tỷ lệ thời gian đèn xanh</strong><p>Giá trị 0–1 chỉ dành cho kịch bản mô phỏng.</p></article>
-              <article><code>scenario_query</code><strong>Câu hỏi phân tích</strong><p>Mô tả sự cố hoặc thay đổi cần đánh giá.</p></article>
-              <article><code>job_id / trace_id</code><strong>Định danh và truy vết</strong><p>Dùng để theo dõi job và audit trail.</p></article>
-              <article><code>model / data</code><strong>Phiên bản tái lập</strong><p>Ghi lại model và dataset tạo kết quả.</p></article>
-              <article><code>V/C</code><strong>Mức sử dụng năng lực</strong><p>V/C = 0.9 là policy cấu hình của MVP, không phải quy định pháp luật.</p></article>
-              <article><code>action payload</code><strong>Kết quả không thực thi</strong><p>Operator luôn quyết định; hệ thống không gửi lệnh hiện trường.</p></article>
+          <section class="panel lifecycle-panel" aria-labelledby="lifecycle-title">
+            <div class="panel-heading">
+              <div><p class="section-kicker">JOB LIFECYCLE</p><h2 id="lifecycle-title" tabindex="-1">Theo dõi job</h2></div>
+              <span id="event-count">0 sự kiện</span>
             </div>
-          </details>
-        </div>
+            <div class="job-summary">
+              <div><span>Job ID</span><code id="job-id">—</code></div>
+              <div><span>Trace ID</span><code id="trace-id">—</code><button id="copy-trace" class="text-button" type="button" disabled>Copy</button><small id="copy-status" role="status"></small></div>
+              <div><span>Model / data</span><code id="versions">—</code></div>
+              <div><span>Server status</span><code id="terminal-status">—</code></div>
+              <div><span>Timestamp</span><code id="result-timestamp">—</code></div>
+            </div>
+            <ol id="events" class="timeline" aria-label="Sự kiện job"></ol>
+            <div id="empty-events" class="empty-state">Chưa có job đang chạy.</div>
+          </section>
 
-        <aside class="evidence-rail">
+          <section id="result-conclusion" class="panel result-panel" aria-labelledby="result-title" tabindex="-1">
+            <div class="panel-heading">
+              <div><p class="section-kicker">KẾT QUẢ · 30 PHÚT</p><h1 id="result-title">Chưa có kết quả mô phỏng</h1></div>
+              <span id="job-status" class="status status-idle">Chưa gửi</span>
+            </div>
+            <section id="result-interpretation" class="interpretation interpretation-idle" aria-labelledby="interpretation-title" aria-live="polite">
+              <h2 id="interpretation-title">Chưa có kết quả để diễn giải</h2>
+              <p id="interpretation-summary">Chọn một node và tạo kịch bản What-If.</p>
+              <p id="interpretation-impact">Các chỉ số kỹ thuật và bằng chứng sẽ xuất hiện tại đây sau khi job hoàn tất.</p>
+              <p><strong>Việc tiếp theo:</strong> <span id="interpretation-next-step">Hãy chạy một kịch bản mô phỏng.</span></p>
+            </section>
+            <div class="forecast-metrics" aria-label="Chỉ số dự báo tổng hợp">
+              <article><span>Lưu lượng giao thông</span><strong id="forecast-volume">—</strong><small>xe/5 phút</small></article>
+              <article><span>Tốc độ trung bình</span><strong id="forecast-speed">—</strong><small>km/h</small></article>
+              <article><span>V/C tối đa</span><strong id="vc-ratio">—</strong><small>V/C = 0.9 là policy MVP</small></article>
+              <article><span>Phiên bản năng lực</span><strong id="capacity-version">—</strong><small>capacity_version</small></article>
+            </div>
+          </section>
+
           <section id="uncertainty-panel" class="panel" aria-labelledby="uncertainty-title">
             <p class="section-kicker">SAFETY GATE</p><h2 id="uncertainty-title">Uncertainty và OOD</h2>
             <div id="safety-state" class="safety-state safety-idle"><span class="state-icon" aria-hidden="true">○</span><div><strong>Chờ kết quả</strong><p id="review-reason">Safety checks sẽ xuất hiện sau khi job hoàn tất.</p></div></div>
@@ -147,7 +132,21 @@
             <button id="open-decision" type="button" disabled>Ghi nhận quyết định</button>
             <div id="decision-result" role="status" aria-live="polite">Đang chờ operator xem xét.</div>
           </section>
-        </aside>
+
+          <details class="variable-guide help-panel">
+            <summary>Giải thích biến và dữ liệu demo</summary>
+            <div class="glossary-grid">
+              <article><code>tenant_id</code><strong>Phạm vi dữ liệu</strong><p>Production lấy từ trusted context; demo dùng định danh synthetic.</p></article>
+              <article><code>node_id</code><strong>Nút giao cần đánh giá</strong><p>Production dùng allowlist runtime; demo dùng node_00 đến node_19.</p></article>
+              <article><code>green_time_ratio</code><strong>Tỷ lệ thời gian đèn xanh</strong><p>Giá trị 0–1 chỉ dành cho kịch bản mô phỏng.</p></article>
+              <article><code>scenario_query</code><strong>Câu hỏi phân tích</strong><p>Mô tả sự cố hoặc thay đổi cần đánh giá.</p></article>
+              <article><code>job_id / trace_id</code><strong>Định danh và truy vết</strong><p>Dùng để theo dõi job và audit trail.</p></article>
+              <article><code>model / data</code><strong>Phiên bản tái lập</strong><p>Ghi lại model và dataset tạo kết quả.</p></article>
+              <article><code>V/C</code><strong>Mức sử dụng năng lực</strong><p>V/C = 0.9 là policy cấu hình của MVP, không phải quy định pháp luật.</p></article>
+              <article><code>action payload</code><strong>Kết quả không thực thi</strong><p>Operator luôn quyết định; hệ thống không gửi lệnh hiện trường.</p></article>
+            </div>
+          </details>
+        </div>
       </main>
     </div>
 
@@ -156,7 +155,8 @@
         <div class="dialog-heading"><h2 id="decision-dialog-title">Ghi nhận quyết định</h2><button id="cancel-decision" type="button" class="icon-button" aria-label="Đóng hộp thoại">×</button></div>
         <div id="decision-context" class="decision-context"></div>
         <fieldset><legend>Quyết định</legend><label><input type="radio" name="decision" value="approved"> Phê duyệt</label><label><input type="radio" name="decision" value="rejected"> Từ chối</label><label><input type="radio" name="decision" value="request_changes"> Yêu cầu chỉnh sửa</label></fieldset>
-        <label for="decision-rationale">Lý do</label><textarea id="decision-rationale" name="rationale" required></textarea>
+        <label for="decision-rationale">Lý do</label>
+        <textarea id="decision-rationale" name="rationale" required></textarea>
         <p id="decision-error" class="error" role="alert"></p>
         <div class="dialog-actions"><button id="dialog-cancel" type="button" class="secondary">Hủy</button><button id="submit-decision" type="submit">Xác nhận audit-only</button></div>
       </form>

@@ -38,6 +38,8 @@ function createView() {
     closeDecisionDialog() {},
     openDecisionDialog() {},
     setHandlers(next) { this.handlers = { ...this.handlers, ...next }; },
+    focusLifecycleCalled: false,
+    focusResultCalled: false,
   };
 }
 
@@ -282,10 +284,79 @@ test("decision conflict is isolated from job transport state", async () => {
   });
   const transportBefore = coordinator.getState().transport.phase;
 
-  await coordinator.submitDecision(decisionForm("approved", "Đã xem xét."));
+  await coordinator.submitDecision(decisionForm(
+    "approved",
+    "Đã xem xét.",
+  ));
 
   assert.equal(coordinator.getState().decision.phase, "conflict");
   assert.equal(coordinator.getState().transport.phase, transportBefore);
+});
+
+test("submit focuses lifecycle after accepted creation", async () => {
+  let streamHandlers;
+  let focusLifecycleCalls = 0;
+  const view = createView();
+  view.focusLifecycle = () => { focusLifecycleCalls += 1; };
+  const api = {
+    createJob: async () => ({ job_id: "job-lifecycle", status: "queued", tenant_id: "demo-operator" }),
+    streamJob(_jobId, handlers) { streamHandlers = handlers; return () => {}; },
+    getJob: async () => ({
+      job_id: "job-lifecycle",
+      status: "running",
+      tenant_id: "demo-operator",
+    }),
+  };
+  const coordinator = createDashboardCoordinator({
+    api,
+    view,
+    resolveContext: async () => demoContext,
+    storage: createStorage(),
+    cryptoImpl: { randomUUID: () => "idem-lifecycle" },
+  });
+
+  await coordinator.bootstrap();
+  await coordinator.submitScenario({ preventDefault() {} });
+
+  assert.equal(focusLifecycleCalls, 1);
+  assert.equal(view.focusResultCalled, false);
+});
+
+test("terminal envelope focuses result only once", async () => {
+  let streamHandlers;
+  const view = createView();
+  let focusResultCalls = 0;
+  view.focusResult = () => { focusResultCalls += 1; };
+  const api = {
+    createJob: async () => ({ job_id: "job-terminal", status: "queued", tenant_id: "demo-operator" }),
+    streamJob(_jobId, handlers) { streamHandlers = handlers; return () => {}; },
+    getJob: async () => ({
+      job_id: "job-terminal",
+      status: "succeeded",
+      tenant_id: "demo-operator",
+      result: {
+        model_version: "model-v1",
+        data_version: "data-v1",
+        completed_at: "2026-08-03T00:00:00Z",
+        audit_record: { trace_id: "trace-terminal" },
+        citations: [{ source_url: "https://example.test", provision: "Điều 1", effective_from: "2025-01-01" }],
+        recommended_action: { executable: false, automatic_actuation: false, requires_operator_approval: true },
+      },
+    }),
+  };
+  const coordinator = createDashboardCoordinator({
+    api,
+    view,
+    resolveContext: async () => demoContext,
+    storage: createStorage(),
+    cryptoImpl: { randomUUID: () => "idem-terminal" },
+  });
+
+  await coordinator.bootstrap();
+  await coordinator.submitScenario({ preventDefault() {} });
+  await streamHandlers.onEvent({ job_id: "job-terminal", status: "succeeded" }, "6");
+
+  assert.equal(focusResultCalls, 1);
 });
 
 test("decision response that claims actuation fails closed", async () => {

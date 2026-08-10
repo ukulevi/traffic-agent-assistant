@@ -26,6 +26,7 @@ class FakeElement {
   showModal() { this.open = true; }
   close() { this.open = false; }
   setAttribute(name, value) { this[name] = value; }
+  removeAttribute(name) { delete this[name]; }
 }
 
 class FakeDocument {
@@ -200,11 +201,11 @@ test("decision dialog focuses the first enabled decision", () => {
   assert.equal(doc.radios[0].focused, undefined);
   assert.equal(doc.radios[1].focused, true);
 });
-
 test("dialog cancel restores focus to the control that opened it", () => {
   const doc = new FakeDocument();
   const trigger = doc.activeElement;
   const view = createDashboardView(doc);
+
   view.openDecisionDialog(
     { jobId: "job-1", traceId: "trace-1", operatorId: "operator-1" },
     { canApprove: true, canReject: true, canRequestChanges: true },
@@ -217,4 +218,28 @@ test("dialog cancel restores focus to the control that opened it", () => {
   assert.equal(prevented, true);
   assert.equal(doc.getElementById("decision-dialog").open, false);
   assert.equal(trigger.focused, true);
+});
+
+test("node list uses pressed semantics instead of listbox", () => {
+  const doc = new FakeDocument();
+  const view = createDashboardView(doc);
+  view.setContext({
+    tenantId: "demo-operator",
+    nodeIds: ["node_00", "node_01"],
+    mode: "demo",
+  });
+
+  const list = doc.getElementById("node-list");
+  assert.equal(list.role, "group");
+  assert.equal(list["aria-label"], "Danh sách node");
+  assert.equal(list.children.length, 2);
+  assert.equal(list.children[0].role, undefined);
+  assert.equal(list.children[0]["aria-pressed"], "false");
+  assert.equal(list.children[0]["aria-selected"], undefined);
+
+  view.setNode("node_01");
+  assert.equal(list.children[0]["aria-pressed"], "false");
+  assert.equal(list.children[0]["aria-current"], undefined);
+  assert.equal(list.children[1]["aria-pressed"], "true");
+  assert.equal(list.children[1]["aria-current"], "true");
 });
