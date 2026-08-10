@@ -131,7 +131,22 @@ không đăng ký endpoint này: chỉ `404` chính xác mới cho dashboard ki�
 OpenAPI provisional để bật demo. Mọi lỗi khác hoặc payload 200 malformed đều
 chuyển UI sang static preview, không được fallback demo.
 
-### 3.2. Tạo job
+### 3.2. Network context synthetic có kiểm soát
+
+`GET /api/v1/network-context` là endpoint read-only chỉ đăng ký trong
+production. `AuthorizedNetworkContextProvider` dùng cùng `UiContextProvider`
+với dashboard bootstrap, load topology đã validate từ registry có version và
+chỉ trả node thuộc trusted scope cùng edge có cả hai đầu mút được phép.
+
+Response có `Cache-Control: no-store`, bốn version
+`network_version`/`routing_graph_version`/`gcn_adjacency_version`/
+`capacity_version`, node/edge có kiểu và claim canonical rằng lưới 4×5 là
+synthetic, không đại diện địa lý thực. Thiếu provider, version/topology không
+hợp lệ hoặc scope chứa node lạ trả `503 NETWORK_CONTEXT_UNAVAILABLE` với thông
+điệp redacted và `trace_id`; không fallback sang topology demo. Demo/test không
+đăng ký endpoint và trả `404`.
+
+### 3.3. Tạo job
 
 `POST /api/v1/what-if-jobs` → HTTP 202
 
@@ -162,13 +177,13 @@ chuyển UI sang static preview, không được fallback demo.
 }
 ```
 
-### 3.3. Theo dõi job
+### 3.4. Theo dõi job
 
 - `GET /api/v1/what-if-jobs/{job_id}`: snapshot trạng thái và result.
 - `GET /api/v1/what-if-jobs/{job_id}/events`: SSE với `stage`, `iteration`, `progress`, `message`, `timestamp`.
 - Status enum: `queued`, `running`, `succeeded`, `needs_review`, `failed`, `expired`.
 
-### 3.4. Kết quả succeeded
+### 3.5. Kết quả succeeded
 
 ```json
 {
@@ -251,7 +266,7 @@ chuyển UI sang static preview, không được fallback demo.
 }
 ```
 
-### 3.5. Kết quả needs_review
+### 3.6. Kết quả needs_review
 
 ```json
 {
@@ -332,7 +347,7 @@ chuyển UI sang static preview, không được fallback demo.
 }
 ```
 
-### 3.6. Error model
+### 3.7. Error model
 
 ```json
 {

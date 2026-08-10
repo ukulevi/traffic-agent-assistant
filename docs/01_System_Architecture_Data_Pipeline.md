@@ -22,6 +22,25 @@
 - Không tuyên bố inference thị giác đồng thời trên 1.000 video stream.
 - Video được xử lý tại biên; chỉ aggregate và audit metadata được truyền/lưu.
 
+### Topology synthetic có version
+
+MVP dùng lưới synthetic 4×5 gồm `node_00` đến `node_19`, theo thứ tự
+row-major và tọa độ `x=i%5`, `y=i//5`. Tọa độ này chỉ phục vụ hiển thị và
+kiểm thử; không đại diện địa lý hoặc mạng đường thực. Mỗi corridor ngang/dọc
+được biểu diễn bằng hai directed edge có ID ổn định và trường cost, distance,
+lane count dương.
+
+`network_version`, `routing_graph_version`, `gcn_adjacency_version` và
+`capacity_version` được trả cùng network context. Routing graph có hướng là
+artifact riêng, không thay thế hoặc materialize lại adjacency tensor của GCN.
+Registry từ chối version lạ, node/edge không hợp lệ, graph mất kết nối hoặc
+thứ tự node không ổn định.
+
+Trong production, `GET /api/v1/network-context` kết hợp topology đã validate
+với node allowlist do `UiContextProvider` tin cậy cung cấp. Chỉ edge có cả hai
+đầu mút được phép mới được trả về; thiếu provider/topology hoặc scope không hợp
+lệ trả lỗi redacted và fail closed, không fallback sang topology demo.
+
 ### 1.1. Chế độ simulation-first cho demo cá nhân
 
 Khi không có phần cứng hiện trường, dữ liệu cảm biến thật hoặc RTSP hợp lệ,

@@ -13,6 +13,7 @@ from stwi.production_components import (
     load_component_factory,
     validate_components,
 )
+from stwi.t4_orchestrator.network_context import AuthorizedNetworkContextProvider
 
 
 VALID_ENV = {
@@ -177,6 +178,14 @@ class ProductionRuntimeCompositionTest(unittest.TestCase):
         self.assertFalse(runtime.store.is_provisional_store)
         self.assertFalse(runtime.orchestrator.uses_provisional_adapters)
         self.assertIs(runtime.components.principal_resolver, runtime.principal_resolver)
+        self.assertIsInstance(
+            runtime.network_context_provider,
+            AuthorizedNetworkContextProvider,
+        )
+        self.assertIs(
+            runtime.network_context_provider.ui_context_provider,
+            runtime.ui_context_provider,
+        )
 
     def test_factory_returning_wrong_shape_fails_closed(self) -> None:
         with patch(

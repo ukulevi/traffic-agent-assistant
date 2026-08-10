@@ -8,6 +8,7 @@ POST & \texttt{/api/v1/what-if-jobs} & Tạo job; trả HTTP 202 \\
 GET & \texttt{/api/v1/what-if-jobs/\{job\_id\}} & Lấy snapshot trạng thái/kết quả \\
 GET & \texttt{/api/v1/what-if-jobs/}\newline\texttt{\{job\_id\}/events} & SSE progress stream \\
 GET & \texttt{/api/v1/ui-context} & Bootstrap dashboard production từ identity và node scope phía server; không cache \\
+GET & \texttt{/api/v1/network-context} & Topology synthetic đã lọc theo trusted node scope; không cache, fail closed \\
 GET & \texttt{/api/v1/status} & Health/readiness \\
 \bottomrule
 \end{longtable}
@@ -43,6 +44,32 @@ không có capability điều khiển hiện trường. Thiếu principal trả
 \texttt{503 UI\_CONTEXT\_UNAVAILABLE}, đều fail closed với trace ID. Demo/test
 không đăng ký endpoint; chỉ 404 chính xác mới cho phép kiểm tra OpenAPI
 provisional để bật demo.
+
+\begin{lstlisting}[caption={Authorized synthetic network context},label={lst:api_network_context}]
+GET /api/v1/network-context
+Cache-Control: no-store
+{
+  "mode": "production",
+  "synthetic": true,
+  "geographic_claim": "M\u1ea1ng 4x5 ho\u00e0n to\u00e0n synthetic, kh\u00f4ng \u0111\u1ea1i di\u1ec7n \u0111\u1ecba l\u00fd th\u1ef1c.",
+  "network_version": "synthetic-grid-20-v1",
+  "routing_graph_version": "synthetic-routing-20-v1",
+  "gcn_adjacency_version": "mock-adjacency-20-v1",
+  "capacity_version": "mock-capacity-20-v1",
+  "nodes": [
+    {"node_id": "node_00", "display_name": "N\u00fat 00", "x": 0.0, "y": 0.0},
+    {"node_id": "node_01", "display_name": "N\u00fat 01", "x": 1.0, "y": 0.0}],
+  "directed_edges": [
+    {"edge_id": "edge-node_00-node_01", "source_node_id": "node_00",
+     "target_node_id": "node_01", "cost": 1.0,
+     "distance_m": 100.0, "lane_count": 2}]
+}
+\end{lstlisting}
+
+Node scope do cùng \texttt{UiContextProvider} tin cậy cung cấp. Chỉ edge có cả
+hai đầu mút thuộc scope mới được trả về. Thiếu provider, topology/version không
+hợp lệ hoặc scope chứa node lạ trả \texttt{503 NETWORK\_CONTEXT\_UNAVAILABLE}
+với thông điệp redacted và trace ID; không fallback topology demo.
 
 Status enum: \texttt{queued}, \texttt{running}, \texttt{succeeded}, \texttt{needs\_review}, \texttt{failed}, \texttt{expired}. Chỉ \texttt{succeeded} có \texttt{recommended\_action}; \texttt{needs\_review} chỉ có candidate với \texttt{executable=false}.
 
