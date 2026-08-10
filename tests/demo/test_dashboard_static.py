@@ -177,6 +177,32 @@ class TestDashboardStatic(unittest.TestCase):
         self.assertIn("applied_by_system", self.js)
         self.assertIn('id="decision-rationale" name="rationale" required', self.html)
 
+    def test_dashboard_uses_five_region_workflow_order(self) -> None:
+        self.assertLess(self.html.index('id="scenario-form"'), self.html.index('id="lifecycle-title"'))
+        self.assertLess(self.html.index('id="lifecycle-title"'), self.html.index('id="result-conclusion"'))
+        self.assertLess(self.html.index('id="result-conclusion"'), self.html.index('id="evidence-panel"'))
+        self.assertLess(self.html.index('id="evidence-panel"'), self.html.index('id="decision-title"'))
+
+    def test_dashboard_has_skip_links_and_node_list_aria(self) -> None:
+        self.assertEqual(self.html.count('class="skip-link"'), 2)
+        self.assertIn('href="#scenario-form"', self.html)
+        self.assertIn('href="#result-conclusion"', self.html)
+        self.assertIn('id="node-list" class="node-list"', self.html)
+        self.assertNotIn('role="option"', self.html)
+        self.assertNotIn('aria-selected="false"', self.html)
+        self.assertIn('aria-pressed', self.view_js)
+        self.assertIn('id="evidence-panel"', self.html)
+        self.assertIn('class="workspace"', self.html)
+        self.assertIn('grid-template-columns: 220px minmax(560px, 1fr)', self.css)
+        self.assertNotIn('.scenario-panel { order:', self.css)
+        self.assertNotIn('.lifecycle-panel { order:', self.css)
+        self.assertNotIn('.result-panel { order:', self.css)
+        self.assertNotIn('#evidence-panel { order:', self.css)
+        self.assertNotIn('#uncertainty-panel { order:', self.css)
+        self.assertNotIn('.decision-panel { order:', self.css)
+        self.assertNotIn('.help-panel { order:', self.css)
+        self.assertNotIn('.node-rail { order:', self.css)
+
 
 if __name__ == "__main__":
     unittest.main()

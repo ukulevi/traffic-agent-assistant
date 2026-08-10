@@ -25,13 +25,15 @@ Mở `http://127.0.0.1:8000/demo/`. Không dùng file `index.html` trực tiếp
 
 ![Tổng quan STWI Operator Dashboard](../assets/demo_walkthrough/01-dashboard-overview.png)
 
-Kiểm tra các vùng chính trước khi chạy:
+Kiểm tra các vùng chính trước khi chạy, theo thứ tự DOM và visual:
 
 - Thanh đầu trang hiển thị `Demo synthetic`, trạng thái kết nối và danh tính operator/tenant.
-- Khối **Tạo kịch bản What-If** chứa preset, node và `green_time_ratio`.
-- Khối **Kết quả 30 phút** hiển thị các số liệu có đơn vị; lifecycle chỉ dùng sáu trạng thái canonical: `queued`, `running`, `succeeded`, `needs_review`, `failed`, `expired`.
-- Evidence rail hiển thị safety gate, uncertainty/OOD, citation, model/data version, `job_id` và `trace_id`.
-- Decision gate chỉ ghi audit. Bản ghi luôn phải cho thấy `applied_by_system=false`.
+- Node registry thanh bên với nút cho `node_00` → `node_19`; mỗi nút dùng `aria-pressed` để báo trạng thái chọn.
+- **Input** — Khối **Tạo kịch bản What-If** chứa preset, node và `green_time_ratio`.
+- **Job lifecycle** — Khối **Theo dõi job** hiển thị `queued`/`running`/terminal status, sự kiện và `trace_id`.
+- **Result** — Khối **Kết quả 30 phút** hiển thị các số liệu có đơn vị trước khi chuyển sang evidence.
+- **Safety/evidence** — Evidence rail hiển thị safety gate, uncertainty/OOD, citation, model/data version, `job_id` và `trace_id`.
+- **Operator review** — Decision gate chỉ ghi audit. Bản ghi luôn phải cho thấy `applied_by_system=false`.
 
 ## 3. Test case cơ sở: `safe` → `succeeded`
 
@@ -135,11 +137,13 @@ Thao tác cho mỗi hàng: chọn preset, kiểm tra node/tỷ lệ tự điền
 
 Không diễn giải các preset này như dữ liệu tai nạn thật, phép đo mực nước, kết luận ô nhiễm gây ùn tắc hoặc khả năng điều khiển hiện trường.
 
-## 6. Bàn phím và sao chép trace ID
+## 6. Bàn phím và thứ tự focus
 
+- Dùng skip link **Bỏ qua đến cấu hình** hoặc **Bỏ qua đến kết quả** để nhảy trực tiếp đến input/result.
 - Nhấn `/` khi không ở trong ô nhập để đưa focus tới ô tìm node.
 - Nhấn `C` khi không ở trong ô nhập để sao chép trace ID của job hiện tại.
-- Dùng `Enter` để kích hoạt nút/control native đang focus.
+- Dùng `Tab` theo thứ tự vùng: node rail → input → lifecycle → result → evidence → decision.
+- Dùng `Enter` để kích hoạt nút/control native đang focus; node rail dùng button + `aria-pressed`, không dùng listbox.
 - Dùng `Esc` để đóng decision dialog; focus phải quay lại control đã mở dialog.
 
 ![Phản hồi sau thao tác sao chép trace ID](../assets/demo_walkthrough/12-clipboard-fallback.png)
