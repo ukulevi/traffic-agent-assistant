@@ -148,6 +148,20 @@ class TestSafetyLoopUnit(unittest.TestCase):
             [0.7, 0.85, 1.0],
         )
 
+    def test_non_converged_policy_returns_last_evaluated_candidate(self):
+        """Never expose a refinement that has no surrogate evidence yet."""
+        _, outcome = self._run_loop(
+            unsafe_vc_scenario(),
+            candidate_action={"node_id": "node-A", "green_time_ratio": 0.4},
+        )
+        self.assertFalse(outcome.passed)
+        self.assertEqual(outcome.iterations_run, MAX_ITERATIONS)
+        self.assertEqual(
+            [item.action["green_time_ratio"] for item in outcome.iterations],
+            [0.4, 0.55, 0.7],
+        )
+        self.assertEqual(outcome.selected_action["green_time_ratio"], 0.7)
+
     def test_compound_failure_reports_all_reasons(self):
         """When multiple gates fail, all are reported in fail_reason."""
         compound = SurrogateScenario(vc_ratio=0.99, uncertainty_score=0.95, ood_score=0.9)

@@ -184,6 +184,11 @@ class CounterfactualSafetyLoop:
                 check.fail_reason,
             )
 
+            # The final bounded iteration has evidence only for current_action.
+            # Do not expose a newly refined, unevaluated hypothesis downstream.
+            if iteration == self._max_iterations:
+                break
+
             next_action = self._refiner.refine(current_action, check, iteration)
             if next_action is None:
                 return SafetyLoopOutcome(
