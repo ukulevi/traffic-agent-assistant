@@ -116,6 +116,16 @@ class DemoSurrogateForecaster:
         return results
 
     def _scenario_for(self, node_id: str, ratio: float) -> SurrogateScenario:
+        if node_id in self._PROFILE_OVERRIDES:
+            return self._PROFILE_OVERRIDES[node_id]
+        if node_id == "node_10":
+            return SurrogateScenario(
+                vc_ratio=0.94 if ratio < 0.85 else 0.84,
+                uncertainty_score=0.10,
+                ood_score=0.05,
+                predicted_volume=132.0 if ratio < 0.85 else 116.0,
+                predicted_speed=26.0 if ratio < 0.85 else 34.0,
+            )
         if ratio <= 0.05 or ratio >= 0.95:
             return SurrogateScenario(
                 vc_ratio=0.96,
@@ -124,9 +134,6 @@ class DemoSurrogateForecaster:
                 predicted_volume=155.0,
                 predicted_speed=18.0,
             )
-        if node_id in self._PROFILE_OVERRIDES:
-            return self._PROFILE_OVERRIDES[node_id]
-
         ratio_delta = ratio - 0.70
         return SurrogateScenario(
             vc_ratio=max(0.10, min(0.89, 0.75 - ratio_delta * 0.30)),
@@ -149,4 +156,23 @@ class DemoSurrogateForecaster:
         return max((result.ood_score for result in results), default=1.0)
 
 
-__all__ = ["DemoSurrogateForecaster", "demo_node_ids"]
+class RefinementDemoSurrogateForecaster(DemoSurrogateForecaster):
+    """Synthetic response curve that proves bounded candidate refinement."""
+
+    def _scenario_for(self, node_id: str, ratio: float) -> SurrogateScenario:
+        if node_id != "node_10":
+            return super()._scenario_for(node_id, ratio)
+        return SurrogateScenario(
+            vc_ratio=0.94 if ratio < 0.85 else 0.84,
+            uncertainty_score=0.10,
+            ood_score=0.05,
+            predicted_volume=132.0 if ratio < 0.85 else 116.0,
+            predicted_speed=26.0 if ratio < 0.85 else 34.0,
+        )
+
+
+__all__ = [
+    "DemoSurrogateForecaster",
+    "RefinementDemoSurrogateForecaster",
+    "demo_node_ids",
+]

@@ -15,10 +15,12 @@ mục đó làm production manifest và không đổi demo sang `STWI_RUNTIME_MO
    `registry/name@sha256:<64-hex>`.
 3. Đặt thư mục artifact baseline/surrogate đã promote. Mỗi thư mục phải chứa
    manifest, model, checksum, calibration và expiry hợp lệ.
-4. Production image phải cung cấp `stwi.production:app`,
-   `stwi.production_worker:app`, trusted principal/UI-context providers và các
-   real model adapters. Repository hiện không giả lập các thành phần này;
-   thiếu chúng phải làm startup thất bại.
+4. Repository cung cấp các entrypoint `stwi.production:app`,
+   `stwi.production_worker:app`, preflight, readiness và migration. Deployment
+   phải đặt `STWI_PRODUCTION_COMPONENT_FACTORY=module:callable`; factory này
+   cung cấp baseline/surrogate thật cùng trusted principal/UI-context providers.
+   Thiếu factory, corpus pháp lý mounted read-only, promoted artifacts hoặc phát
+   hiện marker provisional phải làm startup/readiness thất bại.
 5. Chạy:
 
 ```powershell
@@ -34,12 +36,16 @@ Migration dùng short-lived admin context; API/worker chỉ kết nối bằng
 `stwi_reader_user` cho truy vấn mô phỏng. Sau khi backup và review migration:
 
 ```powershell
-python infra/production/ops.py migration --project-name stwi-prod
+python infra/production/ops.py migration --project-name stwi-prod --approved
 ```
 
-Promoted image phải cung cấp `stwi.production_migrate`. Không chạy DDL từ API
-process, không seed dữ liệu demo/test vào TimescaleDB production và không dùng
-reader credential cho migration.
+`stwi-migrate` là one-shot operations profile tách khỏi API/worker và chỉ nhận
+`STWI_TSDB_ADMIN_DSN`. Container migration còn nhận
+`STWI_PRODUCTION_SCHEMA_PATH`, được ghim tới schema đóng gói tại
+`/app/infra/production/timescaledb-init/01_schema.sql`. Không chạy DDL từ API
+process, không seed dữ liệu
+demo/test vào TimescaleDB production và không dùng reader credential cho
+migration.
 
 ## Startup and readiness
 

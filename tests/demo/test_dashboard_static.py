@@ -122,6 +122,7 @@ class TestDashboardStatic(unittest.TestCase):
         self.assertIn('id="demo-preset"', self.html)
         for profile in (
             "safe",
+            "refinement",
             "unsafe-vc",
             "ood",
             "uncertainty",

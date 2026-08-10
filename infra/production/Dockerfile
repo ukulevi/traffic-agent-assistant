@@ -11,6 +11,7 @@ RUN pip install --no-cache-dir -r /tmp/requirements.lock
 
 COPY pyproject.toml ./
 COPY src/ ./src/
+COPY infra/production/timescaledb-init/01_schema.sql ./infra/production/timescaledb-init/01_schema.sql
 RUN pip install --no-cache-dir --no-deps . \
     && groupadd --system stwi \
     && useradd --system --gid stwi --home-dir /nonexistent --shell /usr/sbin/nologin stwi

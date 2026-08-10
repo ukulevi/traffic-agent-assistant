@@ -174,6 +174,11 @@ Baseline production bắt buộc:
 - `STWI_RUNTIME_MODE=production`, trusted principal/UI-context providers,
   promoted baseline/surrogate artifacts và real T3 adapters phải có đủ; thiếu
   hoặc provisional phải fail startup/readiness;
+- API và worker dùng composition root `stwi.production_components`; deployment
+  bắt buộc inject `STWI_PRODUCTION_COMPONENT_FACTORY=module:callable` và corpus
+  pháp lý read-only. Preflight/readiness chỉ trả mã lỗi đã redaction;
+- migration chạy trong one-shot `stwi-migrate`, cần `--approved` và admin DSN
+  riêng; API/worker không được nhận admin credential;
 - credential do host inject, không có development default và không xuất hiện
   trong repository, log hoặc evidence;
 - migration, backup/restore verification, restart recovery và rollback là thao

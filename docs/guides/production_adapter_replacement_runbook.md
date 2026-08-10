@@ -35,6 +35,9 @@ Corpus manifest writes use UTF-8 explicitly so Vietnamese legal metadata does no
 | `STWI_QDRANT_URL` | Qdrant service URL | Required; no embedded localhost fallback in production adapter |
 | `STWI_QDRANT_API_KEY` | Optional Qdrant credential | Inject from approved secret configuration only |
 | `STWI_REDIS_URL` | Celery broker and persistent job/event store | Required; never embed credentials |
+| `STWI_PRODUCTION_COMPONENT_FACTORY` | `module:callable` tạo baseline/surrogate và trusted identity/UI providers | Required; wrong shape or provisional marker fails closed |
+| `STWI_LEGAL_CORPUS_DIR` | Corpus pháp lý mounted read-only cho RealT3Adapter | Required; không dùng corpus demo fallback |
+| `STWI_TSDB_ADMIN_DSN` | Credential ngắn hạn cho one-shot migration container | Không cấp cho API/worker; khác reader DSN |
 | baseline artifact manifest path | Promoted GCN–LSTM evidence | Must pass checksum, calibration, expiry and promotion validation |
 | surrogate artifact manifest path | Promoted surrogate evidence | Supplies model/data versions and calibrated OOD/uncertainty thresholds |
 | `ROBOFLOW_API_KEY` | Optional hosted workflow inference | Required only when Roboflow path is used; read from env, never logged |
@@ -81,4 +84,6 @@ git diff --check
 - Terminal states are immutable and duplicate Celery delivery cannot execute a terminal job twice.
 - Audit output records exact promoted artifact and manifest checksums.
 - Production startup fails closed when services are missing.
+- API/worker entrypoints share one strict composition root; preflight/readiness
+  report only stable redacted codes.
 - No new dependency or external service is added beyond the approved stack.

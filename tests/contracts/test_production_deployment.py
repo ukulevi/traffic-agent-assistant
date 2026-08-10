@@ -17,6 +17,8 @@ VALID_COMPOSE = """services:
     environment:
       STWI_RUNTIME_MODE: production
       STWI_REDIS_PASSWORD: ${STWI_REDIS_PASSWORD:?required}
+      STWI_PRODUCTION_COMPONENT_FACTORY: ${STWI_PRODUCTION_COMPONENT_FACTORY:?required}
+      STWI_LEGAL_CORPUS_DIR: /run/stwi/legal-corpus
     ports:
       - "${STWI_API_BIND:-127.0.0.1}:${STWI_API_PORT:-8000}:8000"
     read_only: true
@@ -29,11 +31,22 @@ VALID_COMPOSE = """services:
     command: ["celery", "-A", "stwi.production_worker", "worker"]
     environment:
       STWI_RUNTIME_MODE: production
+      STWI_PRODUCTION_COMPONENT_FACTORY: ${STWI_PRODUCTION_COMPONENT_FACTORY:?required}
+      STWI_LEGAL_CORPUS_DIR: /run/stwi/legal-corpus
     read_only: true
     cap_drop: ["ALL"]
     security_opt: ["no-new-privileges:true"]
     healthcheck:
       test: ["CMD", "celery", "inspect", "ping"]
+  stwi-migrate:
+    image: ${STWI_APP_IMAGE:?required promoted image digest}
+    command: ["python", "-m", "stwi.production_migrate", "check"]
+    environment:
+      STWI_RUNTIME_MODE: production
+      STWI_TSDB_ADMIN_DSN: ${STWI_TSDB_ADMIN_DSN:?required}
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
   redis:
     image: redis:7.4.2-alpine@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
     healthcheck:
@@ -64,10 +77,13 @@ USER stwi
 VALID_ENV = """STWI_APP_IMAGE=
 STWI_REDIS_PASSWORD=
 STWI_TSDB_ADMIN_PASSWORD=
+STWI_TSDB_ADMIN_DSN=
 STWI_TSDB_READER_PASSWORD=
 STWI_QDRANT_API_KEY=
 STWI_BASELINE_MANIFEST=
 STWI_SURROGATE_MANIFEST=
+STWI_PRODUCTION_COMPONENT_FACTORY=
+STWI_LEGAL_CORPUS_DIR_HOST=
 """
 
 VALID_RUNBOOK = """# Production baseline
@@ -106,6 +122,17 @@ class ProductionDeploymentValidationTest(unittest.TestCase):
         (production / ".env.example").write_text(env, encoding="utf-8")
         (production / "README.md").write_text(runbook, encoding="utf-8")
         (production / "ops.py").write_text(ops, encoding="utf-8")
+        package = root / "src" / "stwi"
+        package.mkdir(parents=True)
+        for module in (
+            "production_components.py",
+            "production.py",
+            "production_worker.py",
+            "production_preflight.py",
+            "production_health.py",
+            "production_migrate.py",
+        ):
+            (package / module).write_text("# production entrypoint\n", encoding="utf-8")
         init_dir = production / "timescaledb-init"
         init_dir.mkdir()
         (init_dir / "00_create_reader_user.sh").write_text(
@@ -210,6 +237,41 @@ class ProductionDeploymentValidationTest(unittest.TestCase):
         errors = validate_production_deployment(self._root(runbook="# empty"))
         self.assertIn("runbook: missing section Configuration preflight", errors)
         self.assertIn("runbook: missing section Rollback", errors)
+
+    def test_rejects_missing_production_entrypoint_module(self) -> None:
+        root = self._root()
+        (root / "src" / "stwi" / "production_worker.py").unlink()
+
+        errors = validate_production_deployment(root)
+
+        self.assertIn(
+            "application: missing production entrypoint production_worker.py",
+            errors,
+        )
+
+    def test_rejects_missing_component_factory_wiring(self) -> None:
+        compose = VALID_COMPOSE.replace(
+            "      STWI_PRODUCTION_COMPONENT_FACTORY: ${STWI_PRODUCTION_COMPONENT_FACTORY:?required}\n",
+            "",
+        )
+        errors = validate_production_deployment(self._root(compose=compose))
+        self.assertIn(
+            "compose: stwi-api requires STWI_PRODUCTION_COMPONENT_FACTORY",
+            errors,
+        )
+
+    def test_rejects_admin_dsn_on_long_running_services(self) -> None:
+        compose = VALID_COMPOSE.replace(
+            "      STWI_REDIS_PASSWORD: ${STWI_REDIS_PASSWORD:?required}\n",
+            "      STWI_REDIS_PASSWORD: ${STWI_REDIS_PASSWORD:?required}\n"
+            "      STWI_TSDB_ADMIN_DSN: ${STWI_TSDB_ADMIN_DSN:?required}\n",
+            1,
+        )
+        errors = validate_production_deployment(self._root(compose=compose))
+        self.assertIn(
+            "compose: stwi-api must not receive STWI_TSDB_ADMIN_DSN",
+            errors,
+        )
 
 
 if __name__ == "__main__":

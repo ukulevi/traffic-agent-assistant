@@ -270,153 +270,68 @@ Tất cả 25 SQL injection payloads (bao gồm \texttt{UNION SELECT}, \texttt{;
 1 prompt injection bị bỏ sót là kỹ thuật multi-turn jailbreak phức tạp; tuy nhiên safety loop ở Tầng 4 đã phát hiện output bất thường và chuyển job sang trạng thái \texttt{needs\_review}. Đây là cơ chế defense-in-depth hoạt động đúng thiết kế.
 
 %% ============================================================
+
+
 \section{Kết quả Tầng 4 --- Orchestrator}
-\label{sec:eval_t4}
-%% ============================================================
+\label{sec:eval_t4_verified}
 
-\subsection{Job Lifecycle Distribution}
-
-Bảng~\ref{tab:job_lifecycle} thống kê phân bố trạng thái cuối cùng của 200 end-to-end test jobs.
+Kết quả có thể tái lập hiện tại là profile demo offline version 1.0, chạy qua
+FastAPI TestClient với adapter synthetic và không liên hệ dịch vụ live. Manifest
+được ghi atomically và chỉ pass khi đủ 13 capability bắt buộc, không giữ video
+thô, không automatic actuation và đúng action-field semantics.
 
 \begin{table}[H]
 \centering
-\caption{Phân bố trạng thái job trên 200 E2E test runs}
-\label{tab:job_lifecycle}
-\renewcommand{\arraystretch}{1.4}
-\begin{tabular}{p{3.5cm} p{2cm} p{2cm} p{5cm}}
+\caption{Coverage của profile demo offline toàn diện}
+\label{tab:t4_offline_verified}
+\begin{tabular}{p{4.2cm} p{2cm} p{6cm}}
 \toprule
-\textbf{Trạng thái} & \textbf{Số lượng} & \textbf{Tỷ lệ} & \textbf{Ghi chú} \\
+\textbf{Nhóm capability} & \textbf{Số case} & \textbf{Bằng chứng} \\
 \midrule
-\texttt{succeeded} & 168 & 84.0\% & Có \texttt{recommended\_action} \\
+\texttt{succeeded} & 3 & approve, reject và refinement hai candidate \\
 \rowcolor{rowgray}
-\texttt{needs\_review} & 24 & 12.0\% & OOD, high uncertainty, hoặc citation issue \\
-\texttt{failed} & 8 & 4.0\% & Timeout, network error, hoặc policy violation \\
+\texttt{needs\_review} & 4 & V/C, OOD, uncertainty và thiếu citation \\
+\texttt{failed}/\texttt{expired} & 2 & dependency failure và hard deadline; không có action \\
+\rowcolor{rowgray}
+Validation/authorization & 2 & HTTP 422 và tenant-scope HTTP 403, không tạo job \\
+SSE/UI guard & 2 & Last-Event-ID resume và static preview không mutating \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\begin{tcolorbox}[tipbox]
-Chỉ các job ở trạng thái \texttt{succeeded} mới chứa \texttt{recommended\_action}. Tất cả 32 job \texttt{needs\_review} hoặc \texttt{failed} đều \textbf{không} có action --- xác nhận cơ chế fail-closed hoạt động đúng.
-\end{tcolorbox}
+Trong case refinement, candidate đầu có \texttt{green\_time\_ratio=0.70} và
+V/C vượt policy 0,90. Refiner chỉ cho failure V/C cô lập tạo candidate thứ hai
+với ratio 0,85; surrogate chạy lại và các gate pass. OOD, uncertainty cao, thiếu
+citation, validation và dependency failure dừng ngay. Hard limit luôn là ba
+candidate khác nhau, không phải năm vòng và không lặp cùng action để giả hội tụ.
 
-\subsection{Safety Loop Convergence}
+Profile này chứng minh luồng chức năng, fail-closed, audit, SSE và human approval;
+không phải benchmark latency hoặc accuracy production. Surrogate P99 dưới 500 ms,
+E2E P95 không quá 30 giây và P99/hard deadline không quá 180 giây vẫn phải được
+đo lại bằng adapter thật trên contract hardware profile. Profile services có
+ba verdict \texttt{pass}/\texttt{fail}/\texttt{not\_verified}; thiếu dịch vụ
+không được thay bằng mock.
 
-Trong 168 job thành công, safety loop cần trung bình 1,4 vòng lặp để hội tụ. Bảng~\ref{tab:safety_loop} chi tiết phân bố số vòng.
-
-\begin{table}[H]
-\centering
-\caption{Phân bố số vòng lặp safety loop (168 succeeded jobs)}
-\label{tab:safety_loop}
-\renewcommand{\arraystretch}{1.4}
-\begin{tabular}{p{3cm} p{2.5cm} p{2.5cm} p{4cm}}
-\toprule
-\textbf{Số vòng} & \textbf{Số job} & \textbf{Tỷ lệ} & \textbf{Ghi chú} \\
-\midrule
-1 (hội tụ ngay) & 112 & 66.7\% & Không cần counterfactual \\
-\rowcolor{rowgray}
-2 & 41 & 24.4\% & 1 lần điều chỉnh \\
-3 & 12 & 7.1\% & 2 lần điều chỉnh \\
-\rowcolor{rowgray}
-$\geq 4$ (max 5) & 3 & 1.8\% & Kịch bản phức tạp, multi-constraint \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-Không có job nào vượt quá 5 vòng lặp (hard limit $= 5$); 3 job đạt 4--5 vòng đều hội tụ thành công mà không bị timeout.
-
-\subsection{End-to-End Latency}
-
-\begin{table}[H]
-\centering
-\caption{Phân bố latency end-to-end (200 jobs)}
-\label{tab:e2e_latency}
-\renewcommand{\arraystretch}{1.4}
-\begin{tabular}{p{3cm} p{2.5cm} p{2.5cm} p{4cm}}
-\toprule
-\textbf{Percentile} & \textbf{Mục tiêu} & \textbf{Kết quả} & \textbf{Đạt} \\
-\midrule
-P50 & --- & 4.2 s & --- \\
-\rowcolor{rowgray}
-P95 & $\leq 30$ s & 12.7 s & \textcolor{green!50!black}{\textbf{Đạt}} \\
-P99 & $\leq 180$ s & 28.3 s & \textcolor{green!50!black}{\textbf{Đạt}} \\
-\rowcolor{rowgray}
-Max & --- & 47.1 s & --- \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-P95 = 12,7~s chủ yếu đến từ thời gian gọi LLM inference ($\sim$60\% latency) và surrogate evaluation ($\sim$20\%). P99 = 28,3~s rơi vào các job cần 3+ vòng safety loop. Tất cả đều thấp hơn đáng kể so với hard deadline $P_{99} \leq 180$~s.
-
-\subsection{SSE Event Delivery}
-
-\begin{table}[H]
-\centering
-\caption{Kiểm thử SSE (Server-Sent Events)}
-\label{tab:sse_tests}
-\renewcommand{\arraystretch}{1.4}
-\begin{tabular}{p{5.5cm} p{2.5cm} p{2.5cm} p{2cm}}
-\toprule
-\textbf{Chỉ số} & \textbf{Mục tiêu} & \textbf{Kết quả} & \textbf{Đạt} \\
-\midrule
-Event ordering correctness & 100\% & 100\% & \textcolor{green!50!black}{\textbf{Đạt}} \\
-\rowcolor{rowgray}
-Reconnect duplicate prevention & 0 dups & 0 dups & \textcolor{green!50!black}{\textbf{Đạt}} \\
-Event delivery completeness & 100\% & 100\% & \textcolor{green!50!black}{\textbf{Đạt}} \\
-\rowcolor{rowgray}
-Concurrent clients (10 clients) & No loss & No loss & \textcolor{green!50!black}{\textbf{Đạt}} \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-Kiểm thử reconnect mô phỏng mất kết nối 3 giây giữa chừng job: client tự reconnect với \texttt{Last-Event-ID} và nhận đúng các event còn thiếu mà không bị nhân đôi.
-
-%% ============================================================
 \section{Tổng hợp Đánh giá}
-\label{sec:eval_summary}
-%% ============================================================
-
-Bảng~\ref{tab:kpi_summary} tổng hợp toàn bộ KPI chính qua 4 tầng, so sánh với mục tiêu acceptance criteria đã đề ra.
 
 \begin{table}[H]
 \centering
-\caption{Tổng hợp KPI toàn hệ thống --- dữ liệu tổng hợp MVP}
-\label{tab:kpi_summary}
-\renewcommand{\arraystretch}{1.4}
-\begin{tabular}{p{1cm} p{4cm} p{2.5cm} p{2.5cm} p{2cm}}
+\caption{Phân loại bằng chứng và gate còn lại}
+\label{tab:evidence_summary_verified}
+\begin{tabular}{p{4cm} p{3cm} p{5.2cm}}
 \toprule
-\textbf{Tầng} & \textbf{KPI} & \textbf{Mục tiêu} & \textbf{Kết quả} & \textbf{Kết luận} \\
+\textbf{Phạm vi} & \textbf{Trạng thái} & \textbf{Giới hạn} \\
 \midrule
-T1 & Schema validation & $\geq 99\%$ & 99.87\% & \textcolor{green!50!black}{\textbf{Pass}} \\
+Contract/unit/API & Đã kiểm thử tự động & Không thay thế service hoặc browser evidence \\
 \rowcolor{rowgray}
-T1 & Missing ratio & $\leq 3\%$ & 1.94\% & \textcolor{green!50!black}{\textbf{Pass}} \\
-T1 & Ingest lag P99 & $\leq 5$ s & 1.67 s & \textcolor{green!50!black}{\textbf{Pass}} \\
+Demo offline 13 capability & Pass khi manifest version 1.0 hợp lệ & Synthetic, aggregate-only \\
+Production composition & Fail-closed entrypoint có kiểm thử & Cần factory/adapters/artifact thật \\
 \rowcolor{rowgray}
-T2 & Forecast MAE volume & Baseline beat & 9.64 & \textcolor{green!50!black}{\textbf{Pass}} \\
-T2 & Surrogate TTP P99 & $< 500$ ms & 147 ms & \textcolor{green!50!black}{\textbf{Pass}} \\
-\rowcolor{rowgray}
-T2 & Max V/C error & $\leq 0.08$ & 0.053 & \textcolor{green!50!black}{\textbf{Pass}} \\
-T2 & Calibration coverage & $\geq 85\%$ & 88.7\% & \textcolor{green!50!black}{\textbf{Pass}} \\
-\rowcolor{rowgray}
-T3 & Recall@5 & $\geq 0.80$ & 0.86 & \textcolor{green!50!black}{\textbf{Pass}} \\
-T3 & Citation precision & $\geq 95\%$ & 96.7\% & \textcolor{green!50!black}{\textbf{Pass}} \\
-\rowcolor{rowgray}
-T3 & SQL injection blocked & 100\% & 100\% & \textcolor{green!50!black}{\textbf{Pass}} \\
-T3 & Unsupported claims & 0 & 0 & \textcolor{green!50!black}{\textbf{Pass}} \\
-\rowcolor{rowgray}
-T4 & Fail-closed enforcement & 100\% & 100\% & \textcolor{green!50!black}{\textbf{Pass}} \\
-T4 & E2E P95 & $\leq 30$ s & 12.7 s & \textcolor{green!50!black}{\textbf{Pass}} \\
-\rowcolor{rowgray}
-T4 & E2E P99 & $\leq 180$ s & 28.3 s & \textcolor{green!50!black}{\textbf{Pass}} \\
-T4 & SSE reconnect no-dup & 0 dups & 0 dups & \textcolor{green!50!black}{\textbf{Pass}} \\
+Services, RTSP, GPU, SLA & Human Review / not verified & Chỉ pass sau khi có raw benchmark và privacy evidence \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\noindent\textit{\textbf{Lưu ý quan trọng (Provisional Caveat):} Bảng tổng hợp KPI trên phản ánh kết quả đo kiểm provisional trên môi trường kiểm thử với dữ liệu giả lập (synthetic/mock). E2E P95 và P99 được đo trong điều kiện chạy đồng bộ bằng các fake/mock adapters. Trước khi triển khai chính thức (production-ready), bắt buộc phải thay thế toàn bộ bằng các adapter thực tế kết nối cơ sở dữ liệu TimescaleDB, Qdrant và chạy qua Celery/Redis worker thực, đồng thời thực hiện lại toàn bộ quy trình đo benchmark trên profile phần cứng tiêu chuẩn.}
-
-Tất cả 15 KPI đều đạt mục tiêu trên dữ liệu tổng hợp MVP.
-
-%% ============================================================
 \section{Thảo luận và Hạn chế}
 \label{sec:eval_discussion}
 %% ============================================================

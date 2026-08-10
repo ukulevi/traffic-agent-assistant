@@ -74,6 +74,7 @@
                 <select id="demo-preset" name="preset" aria-describedby="preset-expectation">
                   <optgroup label="Safety cơ bản">
                     <option value="safe">Luồng bình thường · succeeded</option>
+                    <option value="refinement">Điều chỉnh có kiểm soát · succeeded sau 2 vòng</option>
                     <option value="unsafe-vc">V/C vượt policy · needs_review</option>
                     <option value="ood">Ngoài phân phối · needs_review</option>
                     <option value="uncertainty">Độ bất định cao · needs_review</option>
@@ -129,6 +130,7 @@
           <section id="uncertainty-panel" class="panel" aria-labelledby="uncertainty-title">
             <p class="section-kicker">SAFETY GATE</p><h2 id="uncertainty-title">Uncertainty và OOD</h2>
             <div id="safety-state" class="safety-state safety-idle"><span class="state-icon" aria-hidden="true">○</span><div><strong>Chờ kết quả</strong><p id="review-reason">Safety checks sẽ xuất hiện sau khi job hoàn tất.</p></div></div>
+            <p>Counterfactual Safety Loop: <strong id="safety-iterations">0 / 3 vòng</strong></p>
             <dl id="safety-checks"></dl>
           </section>
           <section id="evidence-panel" class="panel" aria-labelledby="evidence-title">

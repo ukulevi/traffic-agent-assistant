@@ -61,20 +61,31 @@ Ngưỡng V/C mặc định `0.9` là cấu hình MVP, không phải luật. Saf
 - constraints người vận hành;
 - dữ liệu thiếu/degraded.
 
-### 2.2. Fail-closed
+### 2.2. Refinement có giới hạn
+
+Mỗi iteration ghi một candidate có kiểu và khác candidate trước đó. MVP chỉ
+cho phép refiner tăng `green_time_ratio` theo bước cấu hình khi **duy nhất** gate
+V/C thất bại, citation hợp lệ và uncertainty/OOD vẫn đạt ngưỡng. Sau mỗi lần
+điều chỉnh, surrogate được chạy lại bằng candidate mới; tối đa ba candidate.
+
+OOD, uncertainty cao, thiếu citation, input/action không hợp lệ, lỗi dependency
+hoặc candidate mới trùng/ngoài scope đều dừng ngay và fail closed. Cơ chế này
+không phải optimizer tổng quát và không tự áp dụng action ngoài hiện trường.
+
+### 2.3. Fail-closed
 
 | Điều kiện | Trạng thái |
 |---|---|
 | Tất cả check pass và có citation | `succeeded` + `recommended_action` |
 | Không hội tụ sau 3 vòng | `needs_review` + `candidate_action` |
 | OOD/uncertainty cao | `needs_review`; không gọi candidate là recommendation |
-| Thiếu citation còn hiệu lực | `needs_review` hoặc `failed` tùy loại lỗi |
+| Thiếu citation còn hiệu lực | `needs_review`; không refinement và không recommendation |
 | Tool/runtime lỗi không phục hồi | `failed` |
 | Vượt 180 giây | `expired` |
 
 MVP không có actuator. Ngay cả `succeeded` vẫn cần operator phê duyệt và quyết định được ghi vào audit log.
 
-### 2.3. Resilience Policy for Dependency Failures
+### 2.4. Resilience Policy for Dependency Failures
 
 Để đảm bảo an toàn hệ thống, STWI áp dụng chính sách **fail-closed tuyệt đối** (từ chối mọi cơ chế fail-open hoặc fallback phỏng đoán) đối với lỗi từ các hệ thống phụ thuộc (TimescaleDB, Qdrant, Celery, Redis, model inference, LLM call, tool execution).
 

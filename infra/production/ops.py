@@ -66,7 +66,7 @@ def build_command(
         raise ValueError("project name must match ^[a-z][a-z0-9-]{2,40}$")
     if action not in SUPPORTED_ACTIONS:
         raise ValueError(f"unsupported action: {action}")
-    if action in {"restore-verify", "rollback"} and not approved:
+    if action in {"migration", "restore-verify", "rollback"} and not approved:
         raise ValueError(f"{action} requires explicit --approved")
 
     if action == "preflight":
@@ -100,10 +100,12 @@ def build_command(
                 "run",
                 "--rm",
                 "--no-deps",
-                "stwi-api",
+                "stwi-migrate",
                 "python",
                 "-m",
                 "stwi.production_migrate",
+                "apply",
+                "--approved",
             )
         ]
     if action == "backup":
