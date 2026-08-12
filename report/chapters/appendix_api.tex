@@ -13,6 +13,36 @@ GET & \texttt{/api/v1/status} & Health/readiness \\
 \bottomrule
 \end{longtable}
 
+\begin{lstlisting}[caption={Create-job request có incident tùy chọn},label={lst:api_create_request}]
+{
+  "tenant_id": "tenant-a",
+  "scenario_time": "2026-06-21T08:00:00+07:00",
+  "incident": {
+    "event_type": "lane_closure",
+    "affected_node_ids": ["node_01"],
+    "severity": "high",
+    "duration_minutes": 45,
+    "description": "Synthetic lane closure hypothesis",
+    "lane_closure_ratio": 0.5
+  },
+  "candidate_action": {
+    "node_id": "node_00",
+    "green_time_ratio": 0.7
+  },
+  "node_ids": ["node_00", "node_01"],
+  "scenario_query": "Danh gia kich ban tong hop",
+  "horizons_minutes": [5, 10, 15, 30],
+  "jurisdiction": "VN",
+  "vc_threshold": 0.9
+}
+\end{lstlisting}
+
+\texttt{incident} có thể là \texttt{null}; khi đó request không có sự cố nhưng
+vẫn đánh giá \texttt{candidate\_action}. Production từ chối scope ngoài
+allowlist với \texttt{403} \nolinkurl{AUTH_NODE_SCOPE_DENIED}; provider scope không khả
+dụng trả \texttt{503} \nolinkurl{UI_CONTEXT_UNAVAILABLE}. Không response nào tiết lộ
+allowlist phía server.
+
 \begin{lstlisting}[caption={Create-job response},label={lst:api_create}]
 {
   "job_id": "wf_01J...",

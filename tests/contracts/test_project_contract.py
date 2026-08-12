@@ -44,6 +44,42 @@ class ProjectContractTest(unittest.TestCase):
         self.assertEqual(sources["36/2024/QH15"]["effective_from"], "2025-01-01")
         self.assertTrue(all(item["source_url"].startswith("https://") for item in sources.values()))
 
+    def test_incident_contract_has_approved_types_and_bounds(self):
+        incident = CONTRACT["incident_contract"]
+        self.assertEqual(
+            incident["event_types"],
+            [
+                "accident",
+                "flood",
+                "lane_closure",
+                "demand_surge",
+                "signal_change",
+            ],
+        )
+        self.assertEqual(incident["severity_levels"], ["low", "medium", "high"])
+        self.assertEqual(incident["affected_nodes"], {"min": 1, "max": 1})
+        self.assertEqual(
+            incident["bounds"],
+            {
+                "duration_minutes": {"min": 1, "max": 180},
+                "description_length": {"min": 1, "max": 1000},
+                "lane_closure_ratio": {"min": 0.0, "max": 1.0},
+                "demand_multiplier": {
+                    "exclusive_min": 1.0,
+                    "max": 3.0,
+                },
+                "green_time_ratio_delta": {"min": -1.0, "max": 1.0},
+            },
+        )
+        self.assertEqual(
+            incident["signal_change"]["supported_fields"],
+            ["green_time_ratio_delta"],
+        )
+        self.assertFalse(
+            incident["signal_change"]["offset_seconds_delta_supported"]
+        )
+        self.assertFalse(incident["description_selects_simulation_behavior"])
+
 
 if __name__ == "__main__":
     unittest.main()

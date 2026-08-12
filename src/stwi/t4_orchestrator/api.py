@@ -147,7 +147,15 @@ def create_app(
         raise RuntimeError("Production runtime rejects provisional job dispatchers.")
 
     try:
-        from fastapi import BackgroundTasks, FastAPI, Header, HTTPException, Response
+        from fastapi import (
+            BackgroundTasks,
+            FastAPI,
+            Header,
+            HTTPException,
+            Request,
+            Response,
+        )
+        from fastapi.exceptions import RequestValidationError
         from fastapi.responses import JSONResponse, StreamingResponse
         from fastapi.staticfiles import StaticFiles
     except ImportError as exc:
@@ -222,6 +230,33 @@ def create_app(
                 },
             )
 
+    def resolve_ui_scope(principal: ServerPrincipal) -> UiContextScope:
+        """Resolve the principal's trusted node scope or fail closed."""
+        try:
+            if ui_context_provider is None:
+                raise UiContextResolutionError(
+                    "UI context provider is not configured"
+                )
+            scope = ui_context_provider.resolve(principal=principal)
+            if not isinstance(scope, UiContextScope):
+                raise UiContextResolutionError(
+                    "UI context provider returned an invalid scope"
+                )
+            return scope
+        except Exception as exc:
+            trace_id = str(uuid.uuid4())
+            logger.error(
+                "UI context unavailable code=UI_CONTEXT_UNAVAILABLE trace_id=%s",
+                trace_id,
+            )
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "code": "UI_CONTEXT_UNAVAILABLE",
+                    "message": "Trusted UI context is unavailable",
+                    "trace_id": trace_id,
+                },
+            ) from exc
     app = FastAPI(
         title="STWI What-If API",
         description=(
@@ -230,6 +265,22 @@ def create_app(
         ),
         version="0.4.0-provisional",
     )
+
+    @app.exception_handler(RequestValidationError)
+    async def redact_request_validation_error(
+        _request: Request,
+        exc: RequestValidationError,
+    ) -> JSONResponse:
+        """Return useful field locations without reflecting untrusted input."""
+        errors = [
+            {
+                "type": error.get("type", "value_error"),
+                "loc": error.get("loc", ()),
+                "msg": "Request validation failed",
+            }
+            for error in exc.errors()
+        ]
+        return JSONResponse(status_code=422, content={"detail": errors})
     app.mount(
         "/demo",
         StaticFiles(directory=Path(__file__).with_name("static"), html=True),
@@ -249,39 +300,20 @@ def create_app(
                 PrincipalRole.ADMIN,
                 PrincipalRole.READONLY,
             )
-            try:
-                scope = ui_context_provider.resolve(principal=principal)
-                if not isinstance(scope, UiContextScope):
-                    raise UiContextResolutionError(
-                        "UI context provider returned an invalid scope"
-                    )
-                can_record_decision = scope.record_decision and principal.has_any_role(
-                    PrincipalRole.OPERATOR,
-                    PrincipalRole.ADMIN,
-                )
-                payload = UiContextResponse(
-                    tenant_id=principal.tenant_id,
-                    operator_id=principal.operator_id,
-                    roles=sorted(principal.roles, key=lambda role: role.value),
-                    node_ids=list(scope.node_ids),
-                    capabilities=UiCapabilities(
-                        record_decision=can_record_decision,
-                    ),
-                )
-            except Exception as exc:
-                trace_id = str(uuid.uuid4())
-                logger.error(
-                    "UI context unavailable code=UI_CONTEXT_UNAVAILABLE trace_id=%s",
-                    trace_id,
-                )
-                raise HTTPException(
-                    status_code=503,
-                    detail={
-                        "code": "UI_CONTEXT_UNAVAILABLE",
-                        "message": "Trusted UI context is unavailable",
-                        "trace_id": trace_id,
-                    },
-                ) from exc
+            scope = resolve_ui_scope(principal)
+            can_record_decision = scope.record_decision and principal.has_any_role(
+                PrincipalRole.OPERATOR,
+                PrincipalRole.ADMIN,
+            )
+            payload = UiContextResponse(
+                tenant_id=principal.tenant_id,
+                operator_id=principal.operator_id,
+                roles=sorted(principal.roles, key=lambda role: role.value),
+                node_ids=list(scope.node_ids),
+                capabilities=UiCapabilities(
+                    record_decision=can_record_decision,
+                ),
+            )
             response.headers["Cache-Control"] = "no-store"
             return payload
 
@@ -344,6 +376,23 @@ def create_app(
             PrincipalRole.ADMIN,
         )
         require_tenant(principal, request.tenant_id)
+        if _settings.mode == RuntimeMode.PRODUCTION:
+            scope = resolve_ui_scope(principal)
+            if not set(request.node_ids).issubset(scope.node_ids):
+                trace_id = str(uuid.uuid4())
+                logger.warning(
+                    "Auth boundary denied request "
+                    "code=AUTH_NODE_SCOPE_DENIED trace_id=%s",
+                    trace_id,
+                )
+                raise HTTPException(
+                    status_code=403,
+                    detail={
+                        "code": "AUTH_NODE_SCOPE_DENIED",
+                        "message": "Requested node scope is not authorized",
+                        "trace_id": trace_id,
+                    },
+                )
         if _settings.mode == RuntimeMode.DEMO:
             from stwi.t4_orchestrator.demo_adapters import demo_node_ids
 

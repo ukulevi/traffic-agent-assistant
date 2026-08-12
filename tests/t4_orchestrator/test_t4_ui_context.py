@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import unittest
+from datetime import datetime
 
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
@@ -11,6 +12,7 @@ from stwi.config.runtime import RuntimeMode, RuntimeSettings
 from stwi.t4_orchestrator.api import create_app
 from stwi.t4_orchestrator.auth import PrincipalRole, ServerPrincipal
 from stwi.t4_orchestrator.ui_context import UiCapabilities, UiContextScope
+from stwi.t4_orchestrator.contracts import JobEnvelope, JobStatus, WhatIfJobRequest
 
 
 class TestUiContextScope(unittest.TestCase):
@@ -91,11 +93,51 @@ class ProvisionalUiContextProvider(TrustedUiContextProvider):
     is_provisional_provider = True
 
 
+class TrustedJobStore:
+    is_provisional_store = False
+
+    def create(self, request: WhatIfJobRequest) -> JobEnvelope:
+        return JobEnvelope(
+            job_id="job-authorized-scope",
+            status=JobStatus.QUEUED,
+            tenant_id=request.tenant_id,
+            request=request,
+        )
+
+
+class TrustedDispatcher:
+    is_provisional_dispatcher = False
+
+    def dispatch(self, job_id: str, request: WhatIfJobRequest) -> None:
+        del job_id, request
+
+
+def job_body(node_id: str = "node_00", *, incident: bool = False) -> dict[str, object]:
+    body: dict[str, object] = {
+        "tenant_id": "tenant-a",
+        "scenario_time": datetime(2025, 6, 1, 8, 0).isoformat(),
+        "candidate_action": {"node_id": node_id, "green_time_ratio": 0.7},
+        "node_ids": [node_id],
+        "scenario_query": "Đánh giá giả định tổng hợp.",
+    }
+    if incident:
+        body["incident"] = {
+            "event_type": "accident",
+            "affected_node_ids": [node_id],
+            "severity": "high",
+            "duration_minutes": 30,
+            "description": "Tai nạn tổng hợp để đánh giá what-if.",
+        }
+    return body
+
+
 def production_app(
     *,
     principal: ServerPrincipal | None = None,
     principal_resolver: object | None = None,
     provider: object | None = None,
+    store: object | None = None,
+    dispatcher: object | None = None,
 ) -> object:
     resolved_principal = principal or ServerPrincipal(
         tenant_id="tenant-a",
@@ -103,13 +145,13 @@ def production_app(
         roles=frozenset({PrincipalRole.OPERATOR}),
     )
     return create_app(
-        store=object(),
+        store=store or TrustedJobStore(),
         orchestrator=object(),
         settings=RuntimeSettings(mode=RuntimeMode.PRODUCTION, job_concurrency=1),
         principal_resolver=(
             principal_resolver or TrustedPrincipalResolver(resolved_principal)
         ),
-        dispatcher=object(),
+        dispatcher=dispatcher or TrustedDispatcher(),
         ui_context_provider=(
             provider
             if provider is not None
@@ -234,6 +276,33 @@ class TestUiContextApi(unittest.TestCase):
             TestClient(app).get("/api/v1/ui-context").status_code,
             404,
         )
+
+    def test_create_job_accepts_only_server_authorized_production_nodes(self) -> None:
+        client = TestClient(production_app())
+
+        allowed = client.post("/api/v1/what-if-jobs", json=job_body("node_00"))
+        denied = client.post(
+            "/api/v1/what-if-jobs",
+            json=job_body("node_99", incident=True),
+        )
+
+        self.assertEqual(allowed.status_code, 202)
+        self.assertEqual(denied.status_code, 403)
+        detail = denied.json()["detail"]
+        self.assertEqual(detail["code"], "AUTH_NODE_SCOPE_DENIED")
+        self.assertTrue(detail["trace_id"])
+        self.assertNotIn("node_00", denied.text)
+
+    def test_create_job_fails_closed_when_production_scope_is_unavailable(self) -> None:
+        response = TestClient(
+            production_app(provider=FailingUiContextProvider())
+        ).post("/api/v1/what-if-jobs", json=job_body())
+
+        self.assertEqual(response.status_code, 503)
+        detail = response.json()["detail"]
+        self.assertEqual(detail["code"], "UI_CONTEXT_UNAVAILABLE")
+        self.assertTrue(detail["trace_id"])
+        self.assertNotIn("scope registry", response.text)
 
 
 if __name__ == "__main__":

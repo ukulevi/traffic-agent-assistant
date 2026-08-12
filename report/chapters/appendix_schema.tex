@@ -14,12 +14,26 @@ Feature order, node registry, adjacency, capacity, scaler và model đều có v
 
 \begin{lstlisting}[caption={Các schema cốt lõi}]
 IncidentVector:
-  event_type: enum
-  affected_node_ids: list[str]
-  lane_closure_ratio: float[0,1]
-  demand_multiplier: float
-  duration_minutes: int
-  signal_plan_delta: object|null
+  event_type: accident|flood|lane_closure|demand_surge|signal_change
+  affected_node_ids: list[str]  # exactly one node in MVP
+  severity: low|medium|high
+  duration_minutes: int[1,180]
+  description: str[1,1000]  # never selects simulation behavior
+  lane_closure_ratio: float[0,1]|null
+  demand_multiplier: float(1,3]|null
+  signal_plan_delta: SignalPlanDelta|null
+      green_time_ratio_delta: float[-1,1]
+# signal offset deferred beyond MVP
+# exactly one event-specific parameter:
+# lane_closure -> lane_closure_ratio
+# demand_surge -> demand_multiplier
+# signal_change -> signal_plan_delta
+# accident/flood -> none
+
+WhatIfJobRequest:
+  incident: IncidentVector|null
+  candidate_action: CandidateAction  # required, non-executable hypothesis
+  node_ids: list[str]  # production server-authorized scope
 
 SimulationQuery:
   job_id: str

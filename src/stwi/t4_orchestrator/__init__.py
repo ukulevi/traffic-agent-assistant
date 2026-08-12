@@ -2,9 +2,13 @@
 
 from stwi.t4_orchestrator.contracts import (
     AuditRecord,
+    IncidentSeverity,
+    IncidentType,
+    IncidentVector,
     JobEnvelope,
     JobStatus,
     SafetyCheckResult,
+    SignalPlanDelta,
     WhatIfJobRequest,
     WhatIfJobResult,
 )
@@ -30,6 +34,10 @@ from stwi.t4_orchestrator.safety_loop import CounterfactualSafetyLoop
 __all__ = [
     # Contracts
     "JobStatus",
+    "IncidentSeverity",
+    "IncidentType",
+    "IncidentVector",
+    "SignalPlanDelta",
     "WhatIfJobRequest",
     "WhatIfJobResult",
     "AuditRecord",

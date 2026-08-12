@@ -17,13 +17,24 @@ from stwi.t4_orchestrator.orchestrator import WhatIfOrchestrator
 from stwi.t4_orchestrator.redis_job_store import RedisJobStore
 
 
-def request() -> WhatIfJobRequest:
+def request(*, with_incident: bool = False) -> WhatIfJobRequest:
+    incident = None
+    if with_incident:
+        incident = {
+            "event_type": "signal_change",
+            "affected_node_ids": ["node-A"],
+            "severity": "low",
+            "duration_minutes": 20,
+            "description": "Thay đổi tỷ lệ xanh tổng hợp.",
+            "signal_plan_delta": {"green_time_ratio_delta": 0.1},
+        }
     return WhatIfJobRequest(
         tenant_id="tenant-a",
         scenario_time=datetime(2025, 6, 1, 8, 0),
         candidate_action={"node_id": "node-A", "green_time_ratio": 0.7},
         node_ids=["node-A"],
         scenario_query="traffic safety",
+        incident=incident,
     )
 
 
@@ -141,6 +152,17 @@ class TestRedisJobStore(unittest.TestCase):
         self.store.release_execution(envelope.job_id)
         self.assertTrue(self.store.acquire_execution(envelope.job_id, 180))
 
+    def test_typed_incident_survives_redis_store_recreation(self) -> None:
+        envelope = self.store.create(request(with_incident=True))
+
+        persisted = RedisJobStore(self.redis, prefix="test").get(envelope.job_id)
+
+        self.assertEqual(persisted.request.incident, envelope.request.incident)
+        self.assertEqual(
+            persisted.request.incident.signal_plan_delta.green_time_ratio_delta,
+            0.1,
+        )
+
 
 class FakeCelery:
     def __init__(self) -> None:
@@ -162,6 +184,19 @@ class TestCeleryDispatcher(unittest.TestCase):
         self.assertEqual(celery.calls[0]["task_id"], "job-123")
         self.assertEqual(celery.calls[0]["args"][0], "job-123")
         self.assertEqual(celery.calls[0]["args"][1]["tenant_id"], "tenant-a")
+
+    def test_dispatch_payload_preserves_typed_incident(self) -> None:
+        celery = FakeCelery()
+
+        CeleryJobDispatcher(celery).dispatch(
+            "job-incident",
+            request(with_incident=True),
+        )
+
+        payload = celery.calls[0]["args"][1]
+        restored = WhatIfJobRequest.model_validate(payload)
+        self.assertEqual(restored.incident.event_type.value, "signal_change")
+        self.assertEqual(restored.incident.affected_node_ids, ("node-A",))
 
     def test_registered_celery_task_executes_persisted_job_once(self) -> None:
         from celery import Celery

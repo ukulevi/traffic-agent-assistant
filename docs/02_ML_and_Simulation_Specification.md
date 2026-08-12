@@ -109,11 +109,20 @@ flowchart TB
 | Trường | Kiểu | Mô tả |
 |---|---|---|
 | `event_type` | enum | accident, flood, lane_closure, demand_surge, signal_change |
-| `affected_node_ids` | list[string] | Node chịu tác động |
+| `affected_node_ids` | list[string] | Đúng một node chịu tác động trong MVP |
+| `severity` | enum | low, medium, high |
 | `lane_closure_ratio` | float [0,1] | Tỷ lệ làn bị đóng |
-| `demand_multiplier` | float | Hệ số nhu cầu |
-| `duration_minutes` | integer | Thời lượng giả định |
-| `signal_plan_delta` | object/null | Thay đổi green ratio/offset nếu có |
+| `demand_multiplier` | float (1,3] | Hệ số nhu cầu tổng hợp |
+| `duration_minutes` | integer [1,180] | Thời lượng giả định |
+| `description` | string [1,1000] | Văn bản không tin cậy, chỉ dùng giải thích/audit |
+| `signal_plan_delta` | object/null | Chỉ hỗ trợ `green_time_ratio_delta` trong [-1,1] ở MVP |
+
+`project_contract.json` là nguồn duy nhất cho các bound trên. `lane_closure`,
+`demand_surge` và `signal_change` lần lượt bắt buộc đúng tham số riêng; tham số
+không thuộc event bị từ chối thay vì bỏ qua. Signal offset được hoãn khỏi MVP.
+`description` và `scenario_query` không được dùng để chọn simulation behavior.
+`incident=None` là input không có sự cố, nhưng job vẫn đánh giá
+`candidate_action` không thực thi như một giả thuyết what-if.
 
 `SimulationResult` chứa metrics theo node/horizon: volume, speed, V/C, uncertainty; summary chứa network delay, clearance time và max V/C.
 
