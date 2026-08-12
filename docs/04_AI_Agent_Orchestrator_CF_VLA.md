@@ -154,6 +154,14 @@ hợp lệ hoặc scope chứa node lạ trả `503 NETWORK_CONTEXT_UNAVAILABLE`
 {
   "tenant_id": "test-tenant",
   "scenario_time": "2026-06-21T08:00:00+07:00",
+  "incident": {
+    "event_type": "lane_closure",
+    "affected_node_ids": ["node_01"],
+    "severity": "high",
+    "duration_minutes": 45,
+    "description": "Giả định đóng làn tổng hợp phục vụ what-if.",
+    "lane_closure_ratio": 0.5
+  },
   "candidate_action": {
     "node_id": "node_00",
     "green_time_ratio": 0.7
@@ -165,6 +173,20 @@ hợp lệ hoặc scope chứa node lạ trả `503 NETWORK_CONTEXT_UNAVAILABLE`
   "vc_threshold": 0.9
 }
 ```
+
+`incident` là optional để giữ tương thích: bỏ trường này hoặc gửi `null` nghĩa
+input không có sự cố, trong khi `candidate_action` vẫn là giả thuyết what-if bắt
+buộc và không thể thực thi. Mỗi incident MVP có đúng một node thuộc `node_ids`.
+Năm event hợp lệ là `accident`, `flood`, `lane_closure`, `demand_surge` và
+`signal_change`; bound canonical nằm trong `project_contract.json`. Mô tả tự do
+không chọn tham số hoặc kết quả mô phỏng. `signal_change` chỉ nhận
+`green_time_ratio_delta`; signal offset được hoãn khỏi MVP.
+
+Trong production, API còn đối chiếu toàn bộ `node_ids` với allowlist do
+`UiContextProvider` resolve cho principal. Scope vượt quyền trả
+`403 AUTH_NODE_SCOPE_DENIED`; provider lỗi/invalid trả
+`503 UI_CONTEXT_UNAVAILABLE`. Không có fallback sang demo và response không
+tiết lộ server allowlist.
 
 ```json
 {
@@ -380,8 +402,9 @@ Error codes tối thiểu: `INVALID_SCENARIO`, `UNKNOWN_NODE`, `SIMULATION_UNAVA
 1. API examples parse được và đúng status/field contract.
 2. `recommended_action` không xuất hiện ở bất kỳ status nào ngoài `succeeded`.
 3. `needs_review` luôn có `candidate_action.executable=false`.
-4. `candidate_action.node_id` phải thuộc `node_ids`; demo mode chỉ nhận node
-   trong mạng synthetic có version `node_00` đến `node_19`.
+4. `candidate_action.node_id` và incident node phải thuộc `node_ids`; production
+   còn yêu cầu toàn bộ `node_ids` thuộc trusted principal allowlist, còn demo chỉ
+   nhận node trong mạng synthetic có version `node_00` đến `node_19`.
 5. Quyết định `approved` chỉ hợp lệ khi job là `succeeded`; các terminal state
    khác chỉ có thể bị từ chối hoặc yêu cầu chỉnh sửa trong audit.
 4. OOD, thiếu citation, policy fail và timeout đều được test.

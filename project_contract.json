@@ -58,6 +58,47 @@
     "uncertainty_policy": "calibrated on held-out validation data",
     "out_of_distribution_policy": "retrieve evidence and return needs_review; never blend retrieved rows into online input"
   },
+  "incident_contract": {
+    "event_types": [
+      "accident",
+      "flood",
+      "lane_closure",
+      "demand_surge",
+      "signal_change"
+    ],
+    "severity_levels": ["low", "medium", "high"],
+    "affected_nodes": {
+      "min": 1,
+      "max": 1
+    },
+    "bounds": {
+      "duration_minutes": {
+        "min": 1,
+        "max": 180
+      },
+      "description_length": {
+        "min": 1,
+        "max": 1000
+      },
+      "lane_closure_ratio": {
+        "min": 0.0,
+        "max": 1.0
+      },
+      "demand_multiplier": {
+        "exclusive_min": 1.0,
+        "max": 3.0
+      },
+      "green_time_ratio_delta": {
+        "min": -1.0,
+        "max": 1.0
+      }
+    },
+    "signal_change": {
+      "supported_fields": ["green_time_ratio_delta"],
+      "offset_seconds_delta_supported": false
+    },
+    "description_selects_simulation_behavior": false
+  },
   "runtime": {
     "surrogate_p99_ms": 500,
     "e2e_p95_ms": 30000,

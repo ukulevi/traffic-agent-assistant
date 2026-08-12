@@ -1,5 +1,12 @@
 """Pydantic contracts: tensor, API, IncidentVector, SimulationResult, Citation, legal, query."""
 
+from stwi.contracts.incident import (
+    IncidentSeverity,
+    IncidentType,
+    IncidentVector,
+    SignalPlanDelta,
+)
+
 from stwi.contracts.knowledge import (
     Aggregation,
     Citation,
@@ -20,6 +27,9 @@ __all__ = [
     "Aggregation",
     "Citation",
     "FailureCode",
+    "IncidentSeverity",
+    "IncidentType",
+    "IncidentVector",
     "LegalChunk",
     "LegalDocument",
     "Metric",
@@ -30,4 +40,5 @@ __all__ = [
     "SimulationQuery",
     "SimulationQueryExecutor",
     "StructuredFailure",
+    "SignalPlanDelta",
 ]

@@ -365,6 +365,42 @@ class TestWhatIfJobRequest(unittest.TestCase):
         with self.assertRaises(Exception):
             make_request(scenario_query="   ")
 
+    def test_incident_is_optional_for_incident_free_candidate_evaluation(self):
+        request = make_request()
+        self.assertIsNone(request.incident)
+        self.assertEqual(request.candidate_action.node_id, "node-A")
+
+    def test_typed_incident_node_must_be_in_request_analysis_scope(self):
+        incident = {
+            "event_type": "lane_closure",
+            "affected_node_ids": ["node-B"],
+            "severity": "high",
+            "duration_minutes": 45,
+            "description": "Giả định đóng làn tổng hợp.",
+            "lane_closure_ratio": 0.5,
+        }
+        with self.assertRaises(Exception):
+            make_request(incident=incident, node_ids=["node-A"])
+
+        request = make_request(incident=incident, node_ids=["node-A", "node-B"])
+        self.assertEqual(request.incident.event_type.value, "lane_closure")
+        self.assertEqual(request.incident.affected_node_ids, ("node-B",))
+
+    def test_incident_survives_json_round_trip(self):
+        request = make_request(
+            incident={
+                "event_type": "demand_surge",
+                "affected_node_ids": ["node-A"],
+                "severity": "medium",
+                "duration_minutes": 30,
+                "description": "Nhu cầu tăng tổng hợp.",
+                "demand_multiplier": 1.5,
+            }
+        )
+        restored = WhatIfJobRequest.model_validate(request.model_dump(mode="json"))
+        self.assertEqual(restored.incident, request.incident)
+        self.assertEqual(restored.incident.demand_multiplier, 1.5)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -70,6 +70,14 @@ POST /api/v1/what-if-jobs
 {
   "tenant_id": "tenant-a",
   "scenario_time": "2026-06-21T08:00:00+07:00",
+  "incident": {
+    "event_type": "lane_closure",
+    "affected_node_ids": ["node_00"],
+    "severity": "high",
+    "duration_minutes": 45,
+    "description": "Synthetic lane closure hypothesis",
+    "lane_closure_ratio": 0.50
+  },
   "candidate_action": {
     "node_id": "node_00",
     "green_time_ratio": 0.70
@@ -88,6 +96,13 @@ HTTP/1.1 202 Accepted
   "tenant_id": "tenant-a"
 }
 \end{lstlisting}
+
+Trường \texttt{incident} là tùy chọn: bỏ trường hoặc gửi \texttt{null} nghĩa
+input không có sự cố, nhưng \texttt{candidate\_action} vẫn là giả thuyết what-if
+bắt buộc và không thể thực thi. MVP chỉ nhận một incident node trong
+\texttt{node\_ids}; production tiếp tục đối chiếu toàn bộ scope với allowlist
+phía server. Bound lấy từ \texttt{project\_contract.json}; mô tả tự do không
+chọn hành vi mô phỏng, và signal offset chưa thuộc MVP.
 
 \subsection{Trạng thái và SSE}
 

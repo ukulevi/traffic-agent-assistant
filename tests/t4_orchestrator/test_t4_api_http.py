@@ -116,6 +116,26 @@ class TestCreateJob(unittest.TestCase):
         resp = client.post("/api/v1/what-if-jobs", json=make_body(vc_threshold=1.5))
         self.assertEqual(resp.status_code, 422)
 
+    def test_request_validation_response_does_not_echo_incident_description(self):
+        marker = "SENSITIVE-INCIDENT-MARKER"
+        client = make_client()
+        resp = client.post(
+            "/api/v1/what-if-jobs",
+            json=make_body(
+                incident={
+                    "event_type": "lane_closure",
+                    "affected_node_ids": ["node-A"],
+                    "severity": "high",
+                    "duration_minutes": 30,
+                    "description": marker,
+                }
+            ),
+        )
+
+        self.assertEqual(resp.status_code, 422)
+        self.assertNotIn(marker, resp.text)
+        self.assertNotIn("input", resp.text)
+
     def test_demo_mode_rejects_node_outside_mock_network(self):
         settings = RuntimeSettings(mode=RuntimeMode.DEMO, job_concurrency=1)
         client = make_client(settings=settings)

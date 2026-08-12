@@ -16,6 +16,13 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from stwi.contracts.incident import (
+    IncidentSeverity,
+    IncidentType,
+    IncidentVector,
+    SignalPlanDelta,
+)
+
 
 # =============================================================================
 # Job lifecycle statuses (from project_contract.json)
@@ -53,6 +60,13 @@ class WhatIfJobRequest(BaseModel):
         description="Tenant scope for row ownership and audit",
     )
     scenario_time: datetime = Field(..., description="Time context for legal/temporal filtering")
+    incident: IncidentVector | None = Field(
+        None,
+        description=(
+            "Typed incident hypothesis; null means incident-free input while "
+            "candidate_action remains the evaluated what-if hypothesis"
+        ),
+    )
     candidate_action: CandidateAction = Field(
         ..., description="Proposed action (e.g. {'node_id': 'A', 'green_time_ratio': 0.7})"
     )
@@ -81,6 +95,10 @@ class WhatIfJobRequest(BaseModel):
             raise ValueError("node_ids must not contain blank identifiers")
         if self.candidate_action.node_id not in self.node_ids:
             raise ValueError("candidate_action.node_id must be present in node_ids")
+        if self.incident is not None and not set(
+            self.incident.affected_node_ids
+        ).issubset(self.node_ids):
+            raise ValueError("incident affected node must be present in node_ids")
         return self
 
 
@@ -270,6 +288,10 @@ class JobEnvelope(BaseModel):
 
 __all__ = [
     "JobStatus",
+    "IncidentSeverity",
+    "IncidentType",
+    "IncidentVector",
+    "SignalPlanDelta",
     "CandidateAction",
     "WhatIfJobRequest",
     "WhatIfJobResult",
