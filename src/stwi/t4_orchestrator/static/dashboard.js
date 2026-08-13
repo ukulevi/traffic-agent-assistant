@@ -3,6 +3,7 @@ import { resolveDashboardContext } from "./dashboard-mode.js";
 import {
   createInitialState,
   deriveDecisionPolicy,
+  deriveRouteViewModel,
   evaluateEvidence,
   reduceDashboardState,
   TERMINAL_STATUSES,
@@ -115,11 +116,12 @@ export function createDashboardCoordinator({
         },
       };
     }
-    view.render(state, deriveDecisionPolicy(state));
-    networkMap?.setJobState({
-      ...(state.job.result || {}),
+    const routeViewModel = deriveRouteViewModel({
       status: state.job.status,
+      result: state.job.result,
     });
+    view.render(state, deriveDecisionPolicy(state), routeViewModel);
+    networkMap?.setJobState(routeViewModel);
   }
 
   function currentOperation(jobId, epoch) {

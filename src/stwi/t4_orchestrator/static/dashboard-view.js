@@ -112,6 +112,47 @@ export function createDashboardView(doc = document) {
     }
   }
 
+  function renderRoutes(routeViewModel = {}) {
+    const routes = Array.isArray(routeViewModel.routes) ? routeViewModel.routes : [];
+    text(byId("route-heading"), routeViewModel.routeHeading || "Hành lang điều hướng");
+    const rows = byId("route-rows");
+    rows.replaceChildren();
+    for (const route of routes) {
+      const row = doc.createElement("tr");
+      row.className = `route-row route-row-${route.kind}`;
+      row.dataset.routeId = route.routeId;
+
+      const verdict = doc.createElement("td");
+      verdict.textContent = `${route.rank ? `#${route.rank}` : "Candidate"} · ${route.statusLabel}`;
+      verdict.dataset.status = route.kind;
+
+      const path = doc.createElement("td");
+      path.textContent = `${route.routeId} · ${route.nodeSequence.join(" → ")}`;
+
+      const metrics = doc.createElement("td");
+      metrics.textContent = [
+        `V/C ${route.maxVcRatio}`,
+        `Tốc độ ${route.avgSpeedKmh} km/h`,
+        `Trễ ${route.delayProxySeconds} giây`,
+        `Uncertainty ${route.uncertaintyScore}`,
+        `OOD ${route.oodScore}`,
+        route.reviewReasons.length ? `Lý do: ${route.reviewReasons.join(", ")}` : null,
+      ].filter(Boolean).join(" · ");
+
+      const provenance = doc.createElement("td");
+      provenance.textContent = [
+        `model ${route.provenance.modelVersion}`,
+        `data ${route.provenance.dataVersion}`,
+        `topology ${route.provenance.topologyVersion}`,
+      ].join(" · ");
+
+      row.append(verdict, path, metrics, provenance);
+      rows.append(row);
+    }
+    byId("route-empty").hidden = routes.length > 0;
+    byId("route-table").hidden = routes.length === 0;
+  }
+
   function renderInterpretation(result, status) {
     const interpretation = byId("result-interpretation");
     interpretation.className = `interpretation interpretation-${
@@ -142,7 +183,7 @@ export function createDashboardView(doc = document) {
     );
   }
 
-  function render(state, policy) {
+  function render(state, policy, routeViewModel = {}) {
     const status = state.job.status;
     const result = state.job.result;
     const metrics = metricsFrom(result);
@@ -188,6 +229,7 @@ export function createDashboardView(doc = document) {
     renderCitations(result?.citations || []);
     renderEvents(state.job.events || []);
     renderSafetyChecks(result?.safety_checks || [], result?.safety_iterations || 0);
+    renderRoutes(routeViewModel);
     renderInterpretation(result, status);
     doc.documentElement.dataset.runtimeMode = state.context.mode;
   }

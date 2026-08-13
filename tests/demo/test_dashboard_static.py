@@ -237,6 +237,26 @@ class TestDashboardStatic(unittest.TestCase):
         self.assertIn(".network-map", self.css)
         self.assertIn(".network-fallback", self.css)
 
+    def test_dashboard_exposes_accessible_route_evidence_without_color_only_state(self) -> None:
+        for element_id in (
+            "route-evidence",
+            "route-heading",
+            "route-table",
+            "route-rows",
+            "route-empty",
+        ):
+            self.assertIn(f'id="{element_id}"', self.html)
+        self.assertIn('aria-label="Bảng bằng chứng hành lang"', self.html)
+        self.assertIn('tabindex="0"', self.html)
+        self.assertIn("Nét liền", self.html)
+        self.assertIn("nét đứt", self.html)
+        self.assertIn(".route-row-candidate", self.css)
+        self.assertIn("border-left: 6px dashed", self.css)
+        self.assertIn(".route-table-wrap:focus-visible", self.css)
+        self.assertIn("@media (max-width: 590px)", self.css)
+        self.assertNotIn("innerHTML", self.map_js)
+        self.assertNotIn("innerHTML", self.view_js)
+
 
 if __name__ == "__main__":
     unittest.main()

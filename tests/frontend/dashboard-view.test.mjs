@@ -74,7 +74,7 @@ function succeededState() {
           { iteration: 2, passed: true, max_vc_ratio: 0.84, vc_threshold: 0.9, fail_reason: null },
         ],
         citations: [{ title: "<img src=x>", provision: "Điều 1", effective_from: "2025-01-01", source_url: "https://example.test" }],
-        recommended_action: { node_id: "node_00", executable: false, automatic_actuation: false, requires_operator_approval: true },
+        recommended_action: { node_id: "node_00", executable: false, automatic_actuation: false, requires_operator_approval: true, applied_by_system: false },
       },
     },
     transport: { phase: "streaming" },
@@ -94,6 +94,76 @@ test("render treats citation markup as text and exposes result metrics", () => {
   assert.equal(doc.getElementById("open-decision").disabled, false);
   assert.equal(doc.getElementById("safety-iterations").textContent, "2 / 3 vòng");
   assert.equal(doc.getElementById("safety-checks").children.length, 4);
+});
+
+test("route table renders the same normalized route identity and complete evidence", () => {
+  const doc = new FakeDocument();
+  const view = createDashboardView(doc);
+  const routeViewModel = {
+    status: "succeeded",
+    routeHeading: "Hành lang được khuyến nghị",
+    routes: [{
+      routeId: "route-01",
+      kind: "recommendation",
+      rank: 1,
+      statusLabel: "Đã qua safety gate",
+      nodeSequence: ["node_06", "node_01", "node_02", "node_08"],
+      maxVcRatio: 0.78,
+      avgSpeedKmh: 28.5,
+      delayProxySeconds: 42,
+      uncertaintyScore: 0.12,
+      oodScore: 0.08,
+      reviewReasons: [],
+      provenance: {
+        modelVersion: "surrogate-v1",
+        dataVersion: "sumo-v1",
+        topologyVersion: "synthetic-routing-20-v1",
+      },
+    }],
+  };
+
+  view.render(succeededState(), { canApprove: true, canReject: true, canRequestChanges: true }, routeViewModel);
+
+  assert.equal(doc.getElementById("route-heading").textContent, "Hành lang được khuyến nghị");
+  const rows = doc.getElementById("route-rows").children;
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].dataset.routeId, "route-01");
+  assert.equal(rows[0].children[0].textContent, "#1 · Đã qua safety gate");
+  assert.match(rows[0].children[1].textContent, /node_06 → node_01 → node_02 → node_08/);
+  assert.match(rows[0].children[2].textContent, /V\/C 0.78/);
+  assert.match(rows[0].children[3].textContent, /surrogate-v1/);
+});
+
+test("needs-review table uses explicit candidate labels and no-route state is announced", () => {
+  const doc = new FakeDocument();
+  const view = createDashboardView(doc);
+  const state = succeededState();
+  state.job.status = "needs_review";
+  const candidateModel = {
+    status: "needs_review",
+    routeHeading: "Hành lang cần xem xét",
+    routes: [{
+      routeId: "route-review",
+      kind: "candidate",
+      rank: null,
+      statusLabel: "Chưa qua safety gate",
+      nodeSequence: ["node_06", "node_01"],
+      maxVcRatio: 0.94,
+      avgSpeedKmh: 12,
+      delayProxySeconds: 80,
+      uncertaintyScore: 0.4,
+      oodScore: 0.2,
+      reviewReasons: ["vc_threshold_exceeded"],
+      provenance: { modelVersion: "m1", dataVersion: "d1", topologyVersion: "t1" },
+    }],
+  };
+
+  view.render(state, { canApprove: false, canReject: true, canRequestChanges: true }, candidateModel);
+  assert.equal(doc.getElementById("route-rows").children[0].className, "route-row route-row-candidate");
+  assert.match(doc.getElementById("route-rows").children[0].children[2].textContent, /Lý do: vc_threshold_exceeded/);
+
+  view.render(state, { canApprove: false, canReject: true, canRequestChanges: true }, { ...candidateModel, routes: [] });
+  assert.equal(doc.getElementById("route-empty").hidden, false);
 });
 
 test("failed and expired branches expose no decision or action", () => {
