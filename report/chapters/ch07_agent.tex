@@ -7,7 +7,7 @@ Tầng 4 là workflow hỗ trợ quyết định, không phải actuator. LangGr
 Counterfactual Safety Loop (CSL) lấy cảm hứng từ CF-VLA nhưng STWI không phải mô hình Vision--Language--Action end-to-end. Hệ thống áp dụng ý tưởng tự phản biện lên dữ liệu, mô phỏng và căn cứ pháp lý.
 
 Mỗi vòng CSL đánh giá một candidate có kiểu và khác candidate trước. Refiner
-MVP chỉ tăng 	exttt{green\_time\_ratio} khi failure duy nhất là V/C, trong khi
+MVP chỉ tăng \texttt{green\_time\_ratio} khi failure duy nhất là V/C, trong khi
 citation, uncertainty và OOD đều hợp lệ; surrogate sau đó chạy lại với candidate
 mới. OOD, uncertainty cao, thiếu citation, input không hợp lệ hoặc lỗi dependency
 dừng ngay. Vòng lặp tối đa ba candidate, fail closed và không phải optimizer hay
