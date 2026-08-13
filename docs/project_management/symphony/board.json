@@ -1347,7 +1347,7 @@
       "title": "Deliver comprehensive hybrid demo and presenter guidance",
       "lane": "Orchestrator/API/Release",
       "owner_agent": "ReleaseQaAgent / LeadCoordinator",
-      "status": "Human Review",
+      "status": "Done",
       "priority": "P1",
       "dependencies": ["STWI-SYM-043", "STWI-SYM-044"],
       "evidence": [
@@ -1357,19 +1357,19 @@
         "docs/project_management/symphony/mvp_demo_acceptance.md"
       ],
       "acceptance_criteria": [
-        "Offline profile covers all 13 catalog capabilities with a versioned atomic manifest.",
+        "Offline profile covers all 17 catalog capabilities with a versioned atomic manifest.",
         "Services profile preserves pass/fail/not_verified without mock substitution.",
-        "Dashboard, 7-minute and 15-minute scripts cover success, refinement, fail-closed, audit and recovery.",
+        "Dashboard and the 8-10 minute showcase cover success, refinement, fail-closed, audit and recovery.",
         "Browser, frontend, docs, report and release QA evidence is recorded without production or SLA overclaim."
       ],
       "checks": [
-        "Offline profile passes all 13 mandatory capabilities and writes schema version 1.0 evidence on 2026-08-10.",
-        "Frontend interaction suite passes 45 tests on 2026-08-10.",
+        "Offline profile passes all 17 mandatory capabilities and writes schema version 1.0 aggregate-only evidence on 2026-08-13.",
+        "Full Python suite passes 476 tests with 11 intentional skips; frontend interaction suite passes 81 tests on 2026-08-13.",
         "Services profile honestly reports Docker fail plus Redis/Celery, Qdrant and TimescaleDB not_verified; no mock substitution.",
-        "In-app browser blocked both loopback URLs and Chrome connector was unavailable; visual browser QA remains open.",
-        "XeLaTeX was unavailable and bundled Tectonic did not finish; PDF build and visual inspection remain open."
+        "Browser QA passes for the input-first dashboard at 1280 px and 390 px, the fail-closed provisional runtime, and the 31-slide presentation without console errors or horizontal overflow.",
+        "PR #51 fast-guards and build-pdf pass; the 85-page XeLaTeX artifact and affected pages were visually inspected before merge e760ca396e9da70420e2b428562d2c57ba0b0940."
       ],
-      "next_action": "Human-review the dashboard in a browser with loopback access and build/render the report with XeLaTeX; retain RTSP, GPU, SLA and deployment as separate gates."
+      "next_action": "Keep the accepted demo synthetic-only; retain RTSP, contract-profile GPU/SLA and production deployment as separate Human Review gates."
     },
     {
       "id": "STWI-SYM-046",

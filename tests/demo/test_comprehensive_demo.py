@@ -10,6 +10,20 @@ from stwi.demo.scenarios import offline_scenarios
 
 
 class ComprehensiveOfflineDemoTest(unittest.TestCase):
+    def test_demo_acceptance_matches_verified_release_evidence(self) -> None:
+        acceptance = (
+            Path(__file__).resolve().parents[2]
+            / "docs"
+            / "project_management"
+            / "symphony"
+            / "mvp_demo_acceptance.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("17 capabilities", acceptance)
+        self.assertNotIn("13 capabilities", acceptance)
+        self.assertIn("Browser acceptance: pass", acceptance)
+        self.assertIn("PDF acceptance: pass", acceptance)
+
     def test_every_catalog_capability_passes_offline(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary) / "offline.json"

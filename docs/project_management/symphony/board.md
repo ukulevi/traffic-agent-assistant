@@ -5,7 +5,7 @@ Last reviewed: 2026-08-13
 ## Readiness Handoff Summary
 
 - Evidence base: project_contract.json
-- Todo: 0 | In Progress: 0 | Human Review: 6 | Rework: 0 | Done: 46
+- Todo: 0 | In Progress: 0 | Human Review: 5 | Rework: 0 | Done: 47
 - Requires human review for: contract changes, dashboard scope changes, legal/SOP source approval, vision promotion threshold changes, production credentials or external services
 - Report command: python scripts/project_management/symphony_report.py
 - Daily agent update: enabled
@@ -18,10 +18,10 @@ Last reviewed: 2026-08-13
 | Backlog | 2 |
 | Todo | 0 |
 | In Progress | 0 |
-| Human Review | 6 |
+| Human Review | 5 |
 | Rework | 0 |
 | Merging | 0 |
-| Done | 46 |
+| Done | 47 |
 | Canceled | 1 |
 | Duplicate | 1 |
 
@@ -78,11 +78,6 @@ Last reviewed: 2026-08-13
   Evidence: project_contract.json, docs/guides/surrogate_benchmark_evidence.md
   Acceptance: Benchmark uses the 8 CPU / 32 GB RAM / 12-16 GB GPU profile.; Evidence is measured and records load, versions, percentiles, and failures.; Surrogate P99, E2E P95, and hard deadline meet contract or report FAIL.; Raw results remain private.
   Next: Wait for contract-profile hardware and all runtime dependencies.
-- `STWI-SYM-045` [P1] Deliver comprehensive hybrid demo and presenter guidance (Orchestrator/API/Release, ReleaseQaAgent / LeadCoordinator)
-  Evidence: src/stwi/demo, scripts/demo/run_mvp_smoke.py, docs/guides/mvp_demo_runbook.md, docs/project_management/symphony/mvp_demo_acceptance.md
-  Acceptance: Offline profile covers all 13 catalog capabilities with a versioned atomic manifest.; Services profile preserves pass/fail/not_verified without mock substitution.; Dashboard, 7-minute and 15-minute scripts cover success, refinement, fail-closed, audit and recovery.; Browser, frontend, docs, report and release QA evidence is recorded without production or SLA overclaim.
-  Next: Human-review the dashboard in a browser with loopback access and build/render the report with XeLaTeX; retain RTSP, GPU, SLA and deployment as separate gates.
-  Checks: Offline profile passes all 13 mandatory capabilities and writes schema version 1.0 evidence on 2026-08-10.; Frontend interaction suite passes 45 tests on 2026-08-10.; Services profile honestly reports Docker fail plus Redis/Celery, Qdrant and TimescaleDB not_verified; no mock substitution.; In-app browser blocked both loopback URLs and Chrome connector was unavailable; visual browser QA remains open.; XeLaTeX was unavailable and bundled Tectonic did not finish; PDF build and visual inspection remain open.
 
 ### Rework
 
@@ -284,6 +279,11 @@ Last reviewed: 2026-08-13
   Acceptance: Compose-referenced Python modules exist and reject missing/provisional components.; API/worker use Redis, Celery, RealT3 and promoted artifacts without fake fallback.; Preflight/readiness output is redacted and migration uses a separate approved admin-only process.; External adapters, artifacts, services and deployment remain explicit Human Review gates.
   Next: Keep promoted adapters, artifacts, services and deployment approval in their existing external Human Review gates.
   Checks: Full unittest discovery passes 414 tests with 6 intentional skips on 2026-08-10.; Production deployment validator passes on 2026-08-10.; Docker Compose operations profile config renders successfully with placeholder QA values on 2026-08-10.
+- `STWI-SYM-045` [P1] Deliver comprehensive hybrid demo and presenter guidance (Orchestrator/API/Release, ReleaseQaAgent / LeadCoordinator)
+  Evidence: src/stwi/demo, scripts/demo/run_mvp_smoke.py, docs/guides/mvp_demo_runbook.md, docs/project_management/symphony/mvp_demo_acceptance.md
+  Acceptance: Offline profile covers all 17 catalog capabilities with a versioned atomic manifest.; Services profile preserves pass/fail/not_verified without mock substitution.; Dashboard and the 8-10 minute showcase cover success, refinement, fail-closed, audit and recovery.; Browser, frontend, docs, report and release QA evidence is recorded without production or SLA overclaim.
+  Next: Keep the accepted demo synthetic-only; retain RTSP, contract-profile GPU/SLA and production deployment as separate Human Review gates.
+  Checks: Offline profile passes all 17 mandatory capabilities and writes schema version 1.0 aggregate-only evidence on 2026-08-13.; Full Python suite passes 476 tests with 11 intentional skips; frontend interaction suite passes 81 tests on 2026-08-13.; Services profile honestly reports Docker fail plus Redis/Celery, Qdrant and TimescaleDB not_verified; no mock substitution.; Browser QA passes for the input-first dashboard at 1280 px and 390 px, the fail-closed provisional runtime, and the 31-slide presentation without console errors or horizontal overflow.; PR #51 fast-guards and build-pdf pass; the 85-page XeLaTeX artifact and affected pages were visually inspected before merge e760ca396e9da70420e2b428562d2c57ba0b0940.
 - `STWI-SYM-046` / TRA-62 [P2] Reorder operator workflow and align accessibility order (Orchestrator/API/Release, OrchestratorReleaseAgent)
   Evidence: docs/superpowers/specs/2026-08-10-stwi-incident-routing-map-design.md, docs/superpowers/plans/2026-08-10-stwi-incident-routing-map.md, src/stwi/t4_orchestrator/static/index.html
   Acceptance: Input, lifecycle, result, evidence and operator review follow one canonical DOM, visual and tab order.; Desktop and mobile expose input as the first meaningful workspace region.; Focus progression, decision policy and non-executable semantics remain unchanged.
