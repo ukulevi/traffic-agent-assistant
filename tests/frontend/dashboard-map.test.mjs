@@ -81,7 +81,11 @@ function fakeLeaflet() {
       return marker;
     },
     polyline(points, options) {
-      const line = { points, options: { ...options } };
+      const line = {
+        points,
+        options: { ...options },
+        bindTooltip(label) { line.tooltip = label; return line; },
+      };
       record.polylineCalls.push(line);
       return line;
     },
@@ -162,6 +166,84 @@ test("job states never fabricate an overlay before typed route evidence exists",
   routeGroup.addLayer({ untyped: true });
   view.setJobState({ status: "expired", recommended_route: ["node_00", "node_01"] });
   assert.equal(routeGroup.layers.length, 0);
+});
+
+test("map renders normalized recommendations with route identity and solid evidence style", () => {
+  const { record, view } = fixture();
+  view.setTopology(SYNTHETIC_NETWORK_CONTEXT);
+  view.setJobState({
+    status: "succeeded",
+    routes: [{
+      routeId: "route-01",
+      kind: "recommendation",
+      rank: 1,
+      statusLabel: "Đã qua safety gate",
+      nodeSequence: ["node_00", "node_01", "node_02"],
+      edgeIds: ["edge-node_00-node_01", "edge-node_01-node_02"],
+    }],
+  });
+
+  const routeLine = record.groups[2].layers[0];
+  assert.deepEqual(routeLine.points, [[0, 0], [0, 1], [0, 2]]);
+  assert.equal(routeLine.options.dashArray, null);
+  assert.equal(routeLine.options.className, "route-overlay route-overlay-recommendation");
+  assert.match(routeLine.tooltip, /route-01/);
+  assert.match(routeLine.tooltip, /Đã qua safety gate/);
+});
+
+test("candidate overlays use a non-color dashed pattern and failed states clear them", () => {
+  const { record, view } = fixture();
+  view.setTopology(SYNTHETIC_NETWORK_CONTEXT);
+  view.setJobState({
+    status: "needs_review",
+    routes: [{
+      routeId: "route-review",
+      kind: "candidate",
+      rank: null,
+      statusLabel: "Chưa qua safety gate",
+      nodeSequence: ["node_05", "node_06"],
+      edgeIds: ["edge-node_05-node_06"],
+    }],
+  });
+  assert.equal(record.groups[2].layers[0].options.dashArray, "8 6");
+  assert.equal(record.groups[2].layers[0].options.className, "route-overlay route-overlay-candidate");
+
+  view.setJobState({ status: "failed", routes: [{ routeId: "ignored", nodeSequence: ["node_00", "node_01"] }] });
+  assert.equal(record.groups[2].layers.length, 0);
+});
+
+test("map rejects a route whose nodes do not form authorized directed hops", () => {
+  const { record, view } = fixture();
+  view.setTopology(SYNTHETIC_NETWORK_CONTEXT);
+  view.setJobState({
+    status: "succeeded",
+    routes: [{
+      routeId: "route-invalid-hop",
+      kind: "recommendation",
+      statusLabel: "Đã qua safety gate",
+      nodeSequence: ["node_00", "node_06"],
+      edgeIds: ["edge-node_00-node_06"],
+    }],
+  });
+
+  assert.equal(record.groups[2].layers.length, 0);
+});
+
+test("map rejects a route whose edge identity does not match its node hop", () => {
+  const { record, view } = fixture();
+  view.setTopology(SYNTHETIC_NETWORK_CONTEXT);
+  view.setJobState({
+    status: "succeeded",
+    routes: [{
+      routeId: "route-wrong-edge",
+      kind: "recommendation",
+      statusLabel: "Đã qua safety gate",
+      nodeSequence: ["node_00", "node_01"],
+      edgeIds: ["edge-node_01-node_00"],
+    }],
+  });
+
+  assert.equal(record.groups[2].layers.length, 0);
 });
 
 test("fallback table remains usable when Leaflet is unavailable", () => {

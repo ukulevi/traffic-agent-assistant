@@ -73,7 +73,161 @@ function isSafeAction(action) {
   return isObject(action)
     && action.executable === false
     && action.automatic_actuation === false
-    && action.requires_operator_approval === true;
+    && action.requires_operator_approval === true
+    && action.applied_by_system === false;
+}
+
+const isFiniteNonNegative = (value) => Number.isFinite(value) && value >= 0;
+const isFinitePositive = (value) => Number.isFinite(value) && value > 0;
+
+function isValidRoute(route) {
+  return isObject(route)
+    && isNonEmptyString(route.route_id)
+    && isNonEmptyString(route.boundary_entry_node)
+    && isNonEmptyString(route.boundary_exit_node)
+    && Array.isArray(route.node_sequence)
+    && route.node_sequence.length >= 2
+    && route.node_sequence.every(isNonEmptyString)
+    && new Set(route.node_sequence).size === route.node_sequence.length
+    && route.node_sequence[0] === route.boundary_entry_node
+    && route.node_sequence.at(-1) === route.boundary_exit_node
+    && Array.isArray(route.edge_ids)
+    && route.edge_ids.length === route.node_sequence.length - 1
+    && route.edge_ids.every(isNonEmptyString)
+    && isFinitePositive(route.base_cost)
+    && isFinitePositive(route.distance_m)
+    && isNonEmptyString(route.topology_version);
+}
+
+function isValidEvaluation(evaluation) {
+  if (!isObject(evaluation) || !isValidRoute(evaluation.route)) return false;
+  const reasons = evaluation.rejection_reasons;
+  if (!Array.isArray(reasons) || !reasons.every(isNonEmptyString)) return false;
+  if (
+    !isFiniteNonNegative(evaluation.max_vc_ratio)
+    || !isFiniteNonNegative(evaluation.avg_speed_kmh)
+    || !isFiniteNonNegative(evaluation.delay_proxy_seconds)
+    || !isFiniteNonNegative(evaluation.uncertainty_score)
+    || !isFiniteNonNegative(evaluation.ood_score)
+    || typeof evaluation.passed !== "boolean"
+    || typeof evaluation.evidence_complete !== "boolean"
+    || !isNonEmptyString(evaluation.model_version)
+    || !isNonEmptyString(evaluation.data_version)
+    || !isNonEmptyString(evaluation.topology_version)
+    || evaluation.topology_version !== evaluation.route.topology_version
+  ) return false;
+  if (evaluation.passed) {
+    return evaluation.evidence_complete && reasons.length === 0;
+  }
+  return reasons.length > 0;
+}
+
+function routesMatch(left, right) {
+  return left.route_id === right.route_id
+    && left.boundary_entry_node === right.boundary_entry_node
+    && left.boundary_exit_node === right.boundary_exit_node
+    && left.base_cost === right.base_cost
+    && left.distance_m === right.distance_m
+    && left.topology_version === right.topology_version
+    && left.node_sequence.length === right.node_sequence.length
+    && left.node_sequence.every((nodeId, index) => nodeId === right.node_sequence[index])
+    && left.edge_ids.length === right.edge_ids.length
+    && left.edge_ids.every((edgeId, index) => edgeId === right.edge_ids[index]);
+}
+
+function normalizedRoute(evaluation, { kind, rank = null } = {}) {
+  return Object.freeze({
+    routeId: evaluation.route.route_id,
+    kind,
+    rank,
+    statusLabel: evaluation.passed ? "Đã qua safety gate" : "Chưa qua safety gate",
+    nodeSequence: Object.freeze([...evaluation.route.node_sequence]),
+    edgeIds: Object.freeze([...evaluation.route.edge_ids]),
+    baseCost: evaluation.route.base_cost,
+    distanceM: evaluation.route.distance_m,
+    maxVcRatio: evaluation.max_vc_ratio,
+    avgSpeedKmh: evaluation.avg_speed_kmh,
+    delayProxySeconds: evaluation.delay_proxy_seconds,
+    uncertaintyScore: evaluation.uncertainty_score,
+    oodScore: evaluation.ood_score,
+    reviewReasons: Object.freeze([...evaluation.rejection_reasons]),
+    provenance: Object.freeze({
+      modelVersion: evaluation.model_version,
+      dataVersion: evaluation.data_version,
+      topologyVersion: evaluation.topology_version,
+    }),
+  });
+}
+
+function normalizeRecommendation(value) {
+  if (
+    !isObject(value)
+    || !isValidRoute(value.route)
+    || !isValidEvaluation(value.evaluation)
+    || !routesMatch(value.route, value.evaluation.route)
+    || !Number.isInteger(value.rank)
+    || value.rank < 1
+    || value.rank > 3
+    || value.executable !== false
+    || value.requires_operator_approval !== true
+    || value.applied_by_system !== false
+    || value.evaluation.passed !== true
+  ) return null;
+  return normalizedRoute(value.evaluation, { kind: "recommendation", rank: value.rank });
+}
+
+function normalizeCandidate(value) {
+  if (!isValidEvaluation(value) || value.passed !== false) return null;
+  return normalizedRoute(value, { kind: "candidate" });
+}
+
+export function deriveRouteViewModel(envelope) {
+  const status = JOB_STATUSES.includes(envelope?.status) ? envelope.status : null;
+  const empty = {
+    status,
+    routeHeading: status === "needs_review" ? "Hành lang cần xem xét" : "Hành lang điều hướng",
+    routes: Object.freeze([]),
+    hasValidEvidence: false,
+    hasMalformedRouteEvidence: false,
+    canApprove: false,
+  };
+  if (!TERMINAL_STATUSES.has(status) || ["failed", "expired"].includes(status)) {
+    return Object.freeze(empty);
+  }
+
+  const action = status === "succeeded"
+    ? envelope?.result?.recommended_action
+    : envelope?.result?.candidate_action;
+  const routeKey = status === "succeeded" ? "route_recommendations" : "route_candidates";
+  if (!isObject(action) || !Object.hasOwn(action, routeKey)) return Object.freeze(empty);
+
+  const rawRoutes = action[routeKey];
+  const normalize = status === "succeeded" ? normalizeRecommendation : normalizeCandidate;
+  if (!Array.isArray(rawRoutes) || rawRoutes.length === 0 || rawRoutes.length > 3) {
+    return Object.freeze({ ...empty, hasMalformedRouteEvidence: true });
+  }
+  const routes = rawRoutes.map(normalize);
+  const routeIds = routes.filter(Boolean).map((route) => route.routeId);
+  const ranks = routes.filter(Boolean).map((route) => route.rank).filter((rank) => rank !== null);
+  const collectionValid = routes.every(Boolean)
+    && new Set(routeIds).size === routeIds.length
+    && new Set(ranks).size === ranks.length
+    && (status !== "succeeded"
+      || ranks.every((rank, index) => rank === index + 1));
+  if (!collectionValid) {
+    return Object.freeze({ ...empty, hasMalformedRouteEvidence: true });
+  }
+
+  const hasValidEvidence = routes.every((route) => route.kind === "recommendation");
+  return Object.freeze({
+    ...empty,
+    routeHeading: status === "succeeded"
+      ? "Hành lang được khuyến nghị"
+      : "Hành lang cần xem xét",
+    routes: Object.freeze(routes),
+    hasValidEvidence,
+    canApprove: status === "succeeded" && hasValidEvidence,
+  });
 }
 
 function isCompleteCitation(citation) {
@@ -113,12 +267,21 @@ export function deriveDecisionPolicy(state) {
       && state.job.evidence?.phase === "demo_provisional_valid");
   const noDecision = !state.job.decisionRecord;
   const transportSafe = state.transport.phase !== "protocol_error";
+  const routeViewModel = deriveRouteViewModel({
+    status: state.job.status,
+    result: state.job.result,
+  });
+  const action = state.job.result?.recommended_action;
+  const declaresRoutes = isObject(action)
+    && Object.hasOwn(action, "route_recommendations");
+  const routeEvidenceAllowed = !declaresRoutes || routeViewModel.canApprove;
 
   return {
     canApprove: canDecide
       && noDecision
       && transportSafe
       && evidenceAllowed
+      && routeEvidenceAllowed
       && state.job.status === "succeeded"
       && isSafeAction(state.job.result?.recommended_action),
     canReject: canDecide

@@ -152,6 +152,21 @@
             </div>
           </section>
 
+          <section id="route-evidence" class="panel route-panel" aria-labelledby="route-heading">
+            <div class="panel-heading">
+              <div><p class="section-kicker">ROUTE EVIDENCE · NON-EXECUTABLE</p><h2 id="route-heading">Hành lang điều hướng</h2></div>
+              <span class="simulation-badge">Operator review bắt buộc</span>
+            </div>
+            <p class="route-disclosure">Các tuyến chỉ là bằng chứng mô phỏng trên mạng synthetic. Nét liền biểu thị recommendation đã qua safety gate; nét đứt biểu thị candidate cần xem xét.</p>
+            <div class="route-table-wrap" role="region" aria-label="Bảng bằng chứng hành lang" tabindex="0">
+              <table id="route-table" class="route-table" hidden>
+                <thead><tr><th scope="col">Trạng thái</th><th scope="col">Tuyến</th><th scope="col">Chỉ số</th><th scope="col">Provenance</th></tr></thead>
+                <tbody id="route-rows"></tbody>
+              </table>
+            </div>
+            <p id="route-empty" class="empty-state" role="status" aria-live="polite">Chưa có route evidence hợp lệ cho trạng thái hiện tại.</p>
+          </section>
+
           <section id="uncertainty-panel" class="panel" aria-labelledby="uncertainty-title">
             <p class="section-kicker">SAFETY GATE</p><h2 id="uncertainty-title">Uncertainty và OOD</h2>
             <div id="safety-state" class="safety-state safety-idle"><span class="state-icon" aria-hidden="true">○</span><div><strong>Chờ kết quả</strong><p id="review-reason">Safety checks sẽ xuất hiện sau khi job hoàn tất.</p></div></div>

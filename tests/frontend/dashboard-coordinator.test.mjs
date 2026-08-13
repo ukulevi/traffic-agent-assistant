@@ -27,7 +27,7 @@ function createView() {
     handlers: {},
     renders: [],
     context: null,
-    render(state, policy) { this.renders.push({ state, policy }); },
+    render(state, policy, routeViewModel) { this.renders.push({ state, policy, routeViewModel }); },
     readScenario: () => ({ ...scenario }),
     setContext(context) { this.context = context; },
     setScenario() {},
@@ -42,6 +42,85 @@ function createView() {
     focusResultCalled: false,
   };
 }
+
+test("coordinator shares one derived route view model with table and map", async () => {
+  const view = createView();
+  const mapModels = [];
+  let streamHandlers;
+  const recommendation = {
+    route: {
+      route_id: "route-01",
+      boundary_entry_node: "node_00",
+      boundary_exit_node: "node_01",
+      node_sequence: ["node_00", "node_01"],
+      edge_ids: ["edge-node_00-node_01"],
+      base_cost: 1,
+      distance_m: 100,
+      topology_version: "synthetic-routing-20-v1",
+    },
+    evaluation: {
+      route: {
+        route_id: "route-01",
+        boundary_entry_node: "node_00",
+        boundary_exit_node: "node_01",
+        node_sequence: ["node_00", "node_01"],
+        edge_ids: ["edge-node_00-node_01"],
+        base_cost: 1,
+        distance_m: 100,
+        topology_version: "synthetic-routing-20-v1",
+      },
+      max_vc_ratio: 0.7,
+      avg_speed_kmh: 30,
+      delay_proxy_seconds: 20,
+      uncertainty_score: 0.1,
+      ood_score: 0.1,
+      passed: true,
+      rejection_reasons: [],
+      evidence_complete: true,
+      model_version: "m1",
+      data_version: "d1",
+      topology_version: "synthetic-routing-20-v1",
+    },
+    rank: 1,
+    executable: false,
+    requires_operator_approval: true,
+    applied_by_system: false,
+  };
+  const envelope = {
+    ...succeededEnvelope,
+    result: {
+      ...succeededEnvelope.result,
+      recommended_action: {
+        ...succeededEnvelope.result.recommended_action,
+        route_recommendations: [recommendation],
+      },
+    },
+  };
+  const api = {
+    createJob: async () => ({ job_id: "job-1", status: "queued", tenant_id: "demo-operator" }),
+    streamJob(_jobId, handlers) { streamHandlers = handlers; return () => {}; },
+    getJob: async () => envelope,
+  };
+  const coordinator = createDashboardCoordinator({
+    api,
+    view,
+    resolveContext: async () => demoContext,
+    storage: createStorage(),
+    cryptoImpl: { randomUUID: () => "idem-route" },
+    mapFactory: () => ({
+      setTopology() {}, setSelection() {}, destroy() {},
+      setJobState(model) { mapModels.push(model); },
+    }),
+  });
+
+  await coordinator.bootstrap();
+  await coordinator.submitScenario({ preventDefault() {} });
+  await streamHandlers.onEvent({ job_id: "job-1", status: "succeeded" }, "route-evt");
+
+  const tableModel = view.renders.at(-1).routeViewModel;
+  assert.equal(tableModel.routes[0].routeId, "route-01");
+  assert.equal(mapModels.at(-1), tableModel);
+});
 
 const demoContext = Object.freeze({
   mode: "demo",
@@ -70,6 +149,7 @@ const succeededEnvelope = Object.freeze({
       executable: false,
       automatic_actuation: false,
       requires_operator_approval: true,
+      applied_by_system: false,
     },
   },
 });
@@ -168,7 +248,7 @@ test("submit persists active job and uses SSE as primary monitor", async () => {
         completed_at: "2026-08-03T00:00:00Z",
         audit_record: { trace_id: "trace-1" },
         citations: [{ source_url: "https://example.test", provision: "Điều 1", effective_from: "2025-01-01" }],
-        recommended_action: { executable: false, automatic_actuation: false, requires_operator_approval: true },
+        recommended_action: { executable: false, automatic_actuation: false, requires_operator_approval: true, applied_by_system: false },
       },
     }),
   };
@@ -340,7 +420,7 @@ test("terminal envelope focuses result only once", async () => {
         completed_at: "2026-08-03T00:00:00Z",
         audit_record: { trace_id: "trace-terminal" },
         citations: [{ source_url: "https://example.test", provision: "Điều 1", effective_from: "2025-01-01" }],
-        recommended_action: { executable: false, automatic_actuation: false, requires_operator_approval: true },
+        recommended_action: { executable: false, automatic_actuation: false, requires_operator_approval: true, applied_by_system: false },
       },
     }),
   };

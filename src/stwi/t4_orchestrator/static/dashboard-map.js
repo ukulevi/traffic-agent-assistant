@@ -187,9 +187,48 @@ export function createDashboardMap(
 
   function setJobState(jobState = {}) {
     routeGroup?.clearLayers();
-    // The current WhatIfJobResult contract has no typed route evidence.
-    // Keep the lifecycle hook fail-closed; TRA-63 will add validated overlays.
-    void jobState;
+    if (
+      !map
+      || !topology
+      || !["succeeded", "needs_review"].includes(jobState.status)
+      || !Array.isArray(jobState.routes)
+    ) return;
+
+    const nodeLookup = new Map(topology.nodes.map((node) => [node.node_id, node]));
+    const edgeLookup = new Map(edgesOf(topology).map((edge) => [edge.edge_id, edge]));
+    for (const route of jobState.routes) {
+      if (
+        !route
+        || typeof route.routeId !== "string"
+        || !Array.isArray(route.nodeSequence)
+        || route.nodeSequence.length < 2
+        || !Array.isArray(route.edgeIds)
+        || route.edgeIds.length !== route.nodeSequence.length - 1
+        || !["recommendation", "candidate"].includes(route.kind)
+      ) continue;
+      const nodes = route.nodeSequence.map((candidate) => nodeLookup.get(candidate));
+      if (nodes.some((node) => !node)) continue;
+      const validEdges = route.edgeIds.every((edgeId, index) => {
+        const edge = edgeLookup.get(edgeId);
+        return edge
+          && edge.source_node_id === route.nodeSequence[index]
+          && edge.target_node_id === route.nodeSequence[index + 1];
+      });
+      if (!validEdges) continue;
+      const recommendation = route.kind === "recommendation";
+      const line = L.polyline(
+        nodes.map((node) => [node.y, node.x]),
+        {
+          color: recommendation ? "#006699" : "#8a4b00",
+          weight: recommendation ? 6 : 5,
+          opacity: recommendation ? 0.9 : 0.85,
+          dashArray: recommendation ? null : "8 6",
+          className: `route-overlay route-overlay-${route.kind}`,
+        },
+      );
+      line.bindTooltip?.(`${route.routeId} · ${route.statusLabel || "Route evidence"}`);
+      routeGroup.addLayer(line);
+    }
   }
 
   return Object.freeze({
