@@ -9,6 +9,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Protocol
 
+from stwi.contracts.incident import IncidentVector
 from stwi.t4_orchestrator.contracts import (
     JobEnvelope,
     JobEvent,
@@ -63,6 +64,7 @@ class ScenarioForecaster(Protocol):
         horizons_minutes: list[int],
         candidate_action: dict[str, Any],
         scenario_time: datetime,
+        incident: IncidentVector | None,
     ) -> list[ScenarioForecast]:
         ...
 

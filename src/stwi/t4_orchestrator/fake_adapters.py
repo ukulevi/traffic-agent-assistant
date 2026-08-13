@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
+from stwi.contracts.incident import IncidentVector
 
 # =============================================================================
 # Forecast result shapes
@@ -136,8 +137,13 @@ class FakeSurrogateForecaster:
         horizons_minutes: list[int],
         candidate_action: dict[str, Any],
         scenario_time: datetime,
+        incident: IncidentVector | None,
     ) -> list[ScenarioForecastResult]:
         """Return synthetic scenario predictions with safety metrics."""
+        if incident is not None:
+            raise ValueError(
+                "non-null incident requires an incident-aware adapter"
+            )
         results = []
         for node_id in node_ids:
             scenario = self._node_overrides.get(node_id, self._default)

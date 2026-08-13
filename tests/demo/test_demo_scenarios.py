@@ -10,6 +10,9 @@ EXPECTED_CASES = {
     "safe_rejection",
     "refinement_success",
     "unsafe_vc",
+    "flood_any_node",
+    "lane_closure_any_node",
+    "demand_surge_any_node",
     "ood",
     "high_uncertainty",
     "missing_citation",
@@ -37,6 +40,25 @@ class DemoScenarioCatalogTest(unittest.TestCase):
                         {"succeeded", "needs_review", "failed", "expired"},
                     )
                     self.assertRegex(scenario.node_id or "", r"^node_(0[0-9]|1[0-9])$")
+
+    def test_catalog_keeps_event_type_independent_from_node(self) -> None:
+        cases = {item.name: item for item in offline_scenarios()}
+        self.assertEqual(cases["unsafe_vc"].event_type, "accident")
+        self.assertEqual(cases["flood_any_node"].event_type, "flood")
+        self.assertEqual(cases["lane_closure_any_node"].event_type, "lane_closure")
+        self.assertEqual(cases["demand_surge_any_node"].event_type, "demand_surge")
+        self.assertEqual(cases["refinement_success"].event_type, "signal_change")
+        self.assertEqual(cases["safe_approval"].event_type, None)
+        self.assertEqual(
+            len({cases[name].node_id for name in (
+                "unsafe_vc",
+                "flood_any_node",
+                "lane_closure_any_node",
+                "demand_surge_any_node",
+                "refinement_success",
+            )}),
+            5,
+        )
 
     def test_catalog_records_are_immutable(self) -> None:
         scenario = offline_scenarios()[0]

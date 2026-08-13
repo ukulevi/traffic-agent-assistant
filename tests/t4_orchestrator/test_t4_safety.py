@@ -19,6 +19,7 @@ import unittest
 import uuid
 from datetime import datetime
 
+from stwi.contracts.incident import IncidentVector
 from stwi.t4_orchestrator.contracts import JobStatus, SafetyCheckResult
 from stwi.t4_orchestrator.fake_adapters import (
     FakeSurrogateForecaster,
@@ -68,6 +69,7 @@ class TestSafetyLoopUnit(unittest.TestCase):
             horizons_minutes=[5],
             candidate_action={},
             scenario_time=datetime(2025, 6, 1),
+            incident=None,
         )
         return surrogate, results
 
@@ -87,6 +89,7 @@ class TestSafetyLoopUnit(unittest.TestCase):
             candidate_action=candidate_action
             or {"node_id": "node-A", "green_time_ratio": 0.7},
             scenario_time=SCENARIO_TIME,
+            incident=None,
             has_citations=has_citations,
             initial_results=results,
         )
@@ -181,7 +184,15 @@ class TestSafetyLoopUnit(unittest.TestCase):
                 super().__init__()
                 self.requested_ratios: list[float] = []
 
-            def predict(self, node_ids, horizons_minutes, candidate_action, scenario_time):
+            def predict(
+                self,
+                node_ids,
+                horizons_minutes,
+                candidate_action,
+                scenario_time,
+                incident,
+            ):
+                self.assert_incident = incident
                 ratio = float(candidate_action["green_time_ratio"])
                 self.requested_ratios.append(ratio)
                 vc_ratio = 0.95 if ratio < 0.25 else 0.82
@@ -203,12 +214,14 @@ class TestSafetyLoopUnit(unittest.TestCase):
             [5],
             {"node_id": "node-A", "green_time_ratio": 0.10},
             SCENARIO_TIME,
+            None,
         )
         outcome = CounterfactualSafetyLoop(surrogate=surrogate).run(
             node_ids=["node-A"],
             horizons_minutes=[5],
             candidate_action={"node_id": "node-A", "green_time_ratio": 0.10},
             scenario_time=SCENARIO_TIME,
+            incident=None,
             has_citations=True,
             initial_results=initial,
         )
@@ -309,6 +322,62 @@ class TestOrchestratorSafetyIntegration(unittest.TestCase):
         self.assertEqual(result.status, JobStatus.FAILED)
         self.assertIsNone(result.recommended_action)
         self.assertIsNone(result.candidate_action)
+
+    def test_same_immutable_incident_reaches_initial_and_refined_predictions(self):
+        class RecordingSurrogate(FakeSurrogateForecaster):
+            def __init__(self) -> None:
+                super().__init__()
+                self.incidents: list[IncidentVector | None] = []
+
+            def predict(
+                self,
+                node_ids,
+                horizons_minutes,
+                candidate_action,
+                scenario_time,
+                incident,
+            ):
+                self.incidents.append(incident)
+                ratio = float(candidate_action["green_time_ratio"])
+                scenario = unsafe_vc_scenario() if ratio < 0.85 else safe_scenario()
+                original = self._default
+                self._default = scenario
+                try:
+                    return super().predict(
+                        node_ids,
+                        horizons_minutes,
+                        candidate_action,
+                        scenario_time,
+                        incident=None,
+                    )
+                finally:
+                    self._default = original
+
+        typed_incident = IncidentVector.model_validate(
+            {
+                "event_type": "accident",
+                "affected_node_ids": ["node-A"],
+                "severity": "medium",
+                "duration_minutes": 30,
+                "description": "Synthetic accident",
+            }
+        )
+        from stwi.t4_orchestrator.contracts import WhatIfJobRequest
+
+        request = WhatIfJobRequest(
+            tenant_id=TENANT,
+            scenario_time=SCENARIO_TIME,
+            incident=typed_incident,
+            candidate_action={"node_id": "node-A", "green_time_ratio": 0.7},
+            node_ids=["node-A"],
+            scenario_query="quyền nghĩa vụ người sử dụng đường",
+        )
+        surrogate = RecordingSurrogate()
+        result = WhatIfOrchestrator(surrogate=surrogate).run("incident-refinement", request)
+
+        self.assertEqual(result.status, JobStatus.SUCCEEDED)
+        self.assertGreaterEqual(len(surrogate.incidents), 2)
+        self.assertTrue(all(item is request.incident for item in surrogate.incidents))
 
 
 class TestSafetyCheckResultContract(unittest.TestCase):

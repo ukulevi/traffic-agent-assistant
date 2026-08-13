@@ -22,7 +22,7 @@ class TestMvpSmoke(unittest.TestCase):
         self.assertEqual(evidence["verdict"], "pass")
         self.assertFalse(evidence["live_services_contacted"])
         self.assertFalse(evidence["raw_video_retained"])
-        self.assertEqual(len(evidence["capabilities"]), 13)
+        self.assertEqual(len(evidence["capabilities"]), 16)
         self.assertEqual(
             [case["name"] for case in evidence["capabilities"]],
             [
@@ -30,6 +30,9 @@ class TestMvpSmoke(unittest.TestCase):
                 "safe_rejection",
                 "refinement_success",
                 "unsafe_vc",
+                "flood_any_node",
+                "lane_closure_any_node",
+                "demand_surge_any_node",
                 "ood",
                 "high_uncertainty",
                 "missing_citation",
@@ -45,6 +48,21 @@ class TestMvpSmoke(unittest.TestCase):
             self.assertEqual(case["status"], "pass")
             self.assertFalse(case["applied_by_system"])
             self.assertFalse(case["automatic_actuation"])
+        incident_cases = {
+            case["name"]: case for case in evidence["capabilities"]
+            if case["name"] in {
+                "unsafe_vc",
+                "flood_any_node",
+                "lane_closure_any_node",
+                "demand_surge_any_node",
+                "refinement_success",
+            }
+        }
+        self.assertEqual(
+            {case["details"]["event_type"] for case in incident_cases.values()},
+            {"accident", "flood", "lane_closure", "demand_surge", "signal_change"},
+        )
+        self.assertTrue(all("description" not in case["details"] for case in incident_cases.values()))
 
 
 if __name__ == "__main__":

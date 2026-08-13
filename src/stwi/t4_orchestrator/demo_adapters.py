@@ -9,6 +9,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
+from stwi.contracts.incident import IncidentType, IncidentVector
 from stwi.t1_pipeline.mock_data import generate_mock_network
 from stwi.t4_orchestrator.fake_adapters import (
     ScenarioForecastResult,
@@ -27,62 +28,41 @@ class DemoSurrogateForecaster:
 
     is_provisional_adapter = True
 
-    _PROFILE_OVERRIDES = {
-        "node_01": SurrogateScenario(
-            vc_ratio=0.95,
-            uncertainty_score=0.10,
-            ood_score=0.05,
-            predicted_volume=145.0,
-            predicted_speed=24.0,
-        ),
-        "node_02": SurrogateScenario(
-            vc_ratio=0.72,
-            uncertainty_score=0.10,
-            ood_score=0.85,
-            predicted_volume=108.0,
-            predicted_speed=43.0,
-        ),
-        "node_03": SurrogateScenario(
-            vc_ratio=0.73,
-            uncertainty_score=0.90,
-            ood_score=0.05,
-            predicted_volume=110.0,
-            predicted_speed=41.0,
-        ),
-        "node_05": SurrogateScenario(
+    _EVENT_PROFILES = {
+        IncidentType.ACCIDENT: SurrogateScenario(
             vc_ratio=0.94,
             uncertainty_score=0.18,
             ood_score=0.15,
             predicted_volume=138.0,
             predicted_speed=22.0,
         ),
-        "node_06": SurrogateScenario(
+        IncidentType.FLOOD: SurrogateScenario(
             vc_ratio=0.98,
             uncertainty_score=0.25,
             ood_score=0.30,
             predicted_volume=72.0,
             predicted_speed=12.0,
         ),
-        "node_07": SurrogateScenario(
+        IncidentType.LANE_CLOSURE: SurrogateScenario(
             vc_ratio=0.92,
             uncertainty_score=0.15,
             ood_score=0.10,
             predicted_volume=118.0,
             predicted_speed=27.0,
         ),
-        "node_08": SurrogateScenario(
+        IncidentType.DEMAND_SURGE: SurrogateScenario(
             vc_ratio=0.97,
             uncertainty_score=0.20,
             ood_score=0.15,
             predicted_volume=175.0,
             predicted_speed=21.0,
         ),
-        "node_09": SurrogateScenario(
-            vc_ratio=0.78,
-            uncertainty_score=0.82,
-            ood_score=0.60,
-            predicted_volume=105.0,
-            predicted_speed=36.0,
+        IncidentType.SIGNAL_CHANGE: SurrogateScenario(
+            vc_ratio=0.84,
+            uncertainty_score=0.10,
+            ood_score=0.05,
+            predicted_volume=116.0,
+            predicted_speed=34.0,
         ),
     }
 
@@ -92,14 +72,25 @@ class DemoSurrogateForecaster:
         horizons_minutes: list[int],
         candidate_action: dict[str, Any],
         scenario_time: datetime,
+        incident: IncidentVector | None,
     ) -> list[ScenarioForecastResult]:
         """Return aggregate-only scenario estimates for the selected profile."""
 
         del scenario_time
+        if incident is not None:
+            incident_node = incident.affected_node_ids[0]
+            if incident_node not in demo_node_ids():
+                raise ValueError("incident node is outside the demo registry")
+            if incident_node not in node_ids:
+                raise ValueError("incident node is outside the analysis scope")
+        action_node_id = str(candidate_action["node_id"])
+        if action_node_id not in node_ids:
+            raise ValueError("candidate action node is outside the analysis scope")
         ratio = float(candidate_action["green_time_ratio"])
         results: list[ScenarioForecastResult] = []
         for node_id in node_ids:
-            profile = self._scenario_for(node_id, ratio)
+            node_ratio = ratio if node_id == action_node_id else 0.70
+            profile = self._scenario_for(node_id, node_ratio, incident)
             for horizon in horizons_minutes:
                 horizon_pressure = max(horizon - 5, 0) / 25
                 results.append(
@@ -115,17 +106,20 @@ class DemoSurrogateForecaster:
                 )
         return results
 
-    def _scenario_for(self, node_id: str, ratio: float) -> SurrogateScenario:
-        if node_id in self._PROFILE_OVERRIDES:
-            return self._PROFILE_OVERRIDES[node_id]
-        if node_id == "node_10":
-            return SurrogateScenario(
-                vc_ratio=0.94 if ratio < 0.85 else 0.84,
-                uncertainty_score=0.10,
-                ood_score=0.05,
-                predicted_volume=132.0 if ratio < 0.85 else 116.0,
-                predicted_speed=26.0 if ratio < 0.85 else 34.0,
-            )
+    def _scenario_for(
+        self,
+        node_id: str,
+        ratio: float,
+        incident: IncidentVector | None,
+    ) -> SurrogateScenario:
+        if incident is not None:
+            incident_node = incident.affected_node_ids[0]
+            if incident_node == node_id:
+                return self._EVENT_PROFILES[incident.event_type]
+        return self._normal_scenario(ratio)
+
+    @staticmethod
+    def _normal_scenario(ratio: float) -> SurrogateScenario:
         if ratio <= 0.05 or ratio >= 0.95:
             return SurrogateScenario(
                 vc_ratio=0.96,
@@ -159,9 +153,18 @@ class DemoSurrogateForecaster:
 class RefinementDemoSurrogateForecaster(DemoSurrogateForecaster):
     """Synthetic response curve that proves bounded candidate refinement."""
 
-    def _scenario_for(self, node_id: str, ratio: float) -> SurrogateScenario:
-        if node_id != "node_10":
-            return super()._scenario_for(node_id, ratio)
+    def _scenario_for(
+        self,
+        node_id: str,
+        ratio: float,
+        incident: IncidentVector | None,
+    ) -> SurrogateScenario:
+        if (
+            incident is None
+            or incident.event_type is not IncidentType.SIGNAL_CHANGE
+            or incident.affected_node_ids[0] != node_id
+        ):
+            return super()._scenario_for(node_id, ratio, incident)
         return SurrogateScenario(
             vc_ratio=0.94 if ratio < 0.85 else 0.84,
             uncertainty_score=0.10,

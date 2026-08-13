@@ -43,8 +43,6 @@
                     <option value="safe">Luồng bình thường · succeeded</option>
                     <option value="refinement">Điều chỉnh có kiểm soát · succeeded sau 2 vòng</option>
                     <option value="unsafe-vc">V/C vượt policy · needs_review</option>
-                    <option value="ood">Ngoài phân phối · needs_review</option>
-                    <option value="uncertainty">Độ bất định cao · needs_review</option>
                     <option value="missing-evidence">Thiếu căn cứ · needs_review</option>
                     <option value="extreme">Green time cực trị · needs_review</option>
                   </optgroup>
@@ -53,7 +51,7 @@
                     <option value="flood">Ngập lụt · tốc độ rất thấp</option>
                     <option value="lane-closure">Đóng làn · V/C vượt policy</option>
                     <option value="demand-surge">Nhu cầu tăng · lưu lượng cao</option>
-                    <option value="environmental-anomaly">Tín hiệu môi trường bất thường · OOD</option>
+                    <option value="signal-change">Thay đổi tín hiệu · typed incident</option>
                   </optgroup>
                   <option value="custom">Tùy chỉnh thủ công</option>
                 </select>
@@ -70,6 +68,30 @@
                   </select>
                   <small>Chỉ node thuộc registry hiện hành.</small>
                 </label>
+              </div>
+              <div class="field-grid" aria-label="Sự cố synthetic có kiểu">
+                <label>Loại sự cố
+                  <select id="event-type" name="event-type">
+                    <option value="">Không có sự cố</option>
+                    <option value="accident">Tai nạn</option>
+                    <option value="flood">Ngập lụt</option>
+                    <option value="lane_closure">Đóng làn</option>
+                    <option value="demand_surge">Nhu cầu tăng</option>
+                    <option value="signal_change">Thay đổi tín hiệu</option>
+                  </select>
+                  <small>Mô tả tự do không chọn outcome mô phỏng.</small>
+                </label>
+                <label>Mức độ
+                  <select id="incident-severity" name="incident-severity">
+                    <option value="low">Thấp</option>
+                    <option value="medium" selected>Trung bình</option>
+                    <option value="high">Cao</option>
+                  </select>
+                </label>
+                <label>Thời lượng (phút)<input id="incident-duration" name="incident-duration" type="number" min="1" max="180" value="30"></label>
+                <label id="lane-closure-field" hidden>Tỷ lệ đóng làn<input id="lane-closure-ratio" name="lane-closure-ratio" type="number" min="0" max="1" step="0.05" value="0.5"></label>
+                <label id="demand-multiplier-field" hidden>Hệ số nhu cầu<input id="demand-multiplier" name="demand-multiplier" type="number" min="1.01" max="3" step="0.01" value="1.5"></label>
+                <label id="signal-delta-field" hidden>Δ tỷ lệ đèn xanh<input id="signal-plan-delta" name="signal-plan-delta" type="number" min="-1" max="1" step="0.05" value="0.1"></label>
               </div>
               <label>Green time ratio <output id="green-value" for="green-time">0.70 · 70%</output><input id="green-time" name="green" type="range" min="0" max="1" step="0.05" value="0.7" aria-describedby="green-help"><small id="green-help">Chỉ dùng trong mô phỏng; không phải lệnh điều khiển.</small></label>
               <label>Mô tả tình huống<textarea id="scenario-query" name="query" required>Đánh giá quyền và nghĩa vụ người sử dụng đường tại node_00.</textarea><small>Dùng cho phân tích và truy xuất bằng chứng pháp lý/SOP.</small></label>

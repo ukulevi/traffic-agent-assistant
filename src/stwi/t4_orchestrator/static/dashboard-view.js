@@ -60,6 +60,7 @@ export function createDashboardView(doc = document) {
   const rationale = byId("decision-rationale");
   let returnFocus = null;
   let handlers = {};
+  let authorizedNodeIds = [];
 
   function renderCitations(citations = []) {
     const list = byId("citations");
@@ -193,6 +194,26 @@ export function createDashboardView(doc = document) {
 
   function readScenario() {
     const nodeId = byId("node-id").value.trim();
+    const eventType = byId("event-type").value;
+    let incident = null;
+    if (eventType) {
+      incident = {
+        event_type: eventType,
+        affected_node_ids: [nodeId],
+        severity: byId("incident-severity").value,
+        duration_minutes: Number(byId("incident-duration").value),
+        description: byId("scenario-query").value.trim(),
+      };
+      if (eventType === "lane_closure") {
+        incident.lane_closure_ratio = Number(byId("lane-closure-ratio").value);
+      } else if (eventType === "demand_surge") {
+        incident.demand_multiplier = Number(byId("demand-multiplier").value);
+      } else if (eventType === "signal_change") {
+        incident.signal_plan_delta = {
+          green_time_ratio_delta: Number(byId("signal-plan-delta").value),
+        };
+      }
+    }
     return {
       tenant_id: byId("tenant-id").value.trim(),
       scenario_time: new Date().toISOString(),
@@ -200,7 +221,8 @@ export function createDashboardView(doc = document) {
         node_id: nodeId,
         green_time_ratio: Number(byId("green-time").value),
       },
-      node_ids: [nodeId],
+      node_ids: authorizedNodeIds.length > 0 ? [...authorizedNodeIds] : [nodeId],
+      incident,
       scenario_query: byId("scenario-query").value.trim(),
       jurisdiction: "VN",
     };
@@ -215,6 +237,7 @@ export function createDashboardView(doc = document) {
     list.replaceChildren();
     list.setAttribute("role", "group");
     list.setAttribute("aria-label", "Danh sách node");
+    authorizedNodeIds = [...(context.nodeIds || [])];
     for (const nodeId of context.nodeIds || []) {
       const option = doc.createElement("option");
       option.value = nodeId;
@@ -231,8 +254,30 @@ export function createDashboardView(doc = document) {
     byId("demo-preset").parentElement && (byId("demo-preset").parentElement.hidden = context.mode === "production");
   }
 
-  function setScenario({ nodeId, ratio, query, expectation }) {
-    byId("node-id").value = nodeId;
+  function syncIncidentFields(eventType = byId("event-type").value) {
+    byId("lane-closure-field").hidden = eventType !== "lane_closure";
+    byId("demand-multiplier-field").hidden = eventType !== "demand_surge";
+    byId("signal-delta-field").hidden = eventType !== "signal_change";
+  }
+
+  function setScenario({
+    eventType = "",
+    severity = "medium",
+    durationMinutes = 30,
+    laneClosureRatio = 0.5,
+    demandMultiplier = 1.5,
+    signalPlanDelta = 0.1,
+    ratio,
+    query,
+    expectation,
+  }) {
+    byId("event-type").value = eventType;
+    byId("incident-severity").value = severity;
+    byId("incident-duration").value = String(durationMinutes);
+    byId("lane-closure-ratio").value = String(laneClosureRatio);
+    byId("demand-multiplier").value = String(demandMultiplier);
+    byId("signal-plan-delta").value = String(signalPlanDelta);
+    syncIncidentFields(eventType);
     byId("green-time").value = String(ratio);
     text(byId("green-value"), `${Number(ratio).toFixed(2)} · ${Math.round(Number(ratio) * 100)}%`);
     byId("scenario-query").value = query;
@@ -321,6 +366,19 @@ export function createDashboardView(doc = document) {
   byId("demo-preset").addEventListener("change", (event) => handlers.selectPreset?.(event.currentTarget.value));
   byId("green-time").addEventListener("input", (event) => handlers.changeRatio?.(Number(event.currentTarget.value)));
   byId("node-id").addEventListener("change", (event) => handlers.selectNode?.(event.currentTarget.value));
+  byId("event-type").addEventListener("change", (event) => {
+    syncIncidentFields(event.currentTarget.value);
+    handlers.changeScenario?.();
+  });
+  byId("incident-severity").addEventListener("change", () => handlers.changeScenario?.());
+  for (const fieldId of [
+    "incident-duration",
+    "lane-closure-ratio",
+    "demand-multiplier",
+    "signal-plan-delta",
+  ]) {
+    byId(fieldId).addEventListener("input", () => handlers.changeScenario?.());
+  }
   byId("scenario-query").addEventListener("input", () => handlers.changeScenario?.());
   byId("node-search").addEventListener("input", (event) => handlers.searchNodes?.(event.currentTarget.value));
   doc.addEventListener("keydown", (event) => {
