@@ -5,7 +5,7 @@ Last reviewed: 2026-08-13
 ## Readiness Handoff Summary
 
 - Evidence base: project_contract.json
-- Todo: 0 | In Progress: 1 | Human Review: 6 | Rework: 0 | Done: 45
+- Todo: 0 | In Progress: 0 | Human Review: 6 | Rework: 0 | Done: 46
 - Requires human review for: contract changes, dashboard scope changes, legal/SOP source approval, vision promotion threshold changes, production credentials or external services
 - Report command: python scripts/project_management/symphony_report.py
 - Daily agent update: enabled
@@ -17,11 +17,11 @@ Last reviewed: 2026-08-13
 |---|---:|
 | Backlog | 2 |
 | Todo | 0 |
-| In Progress | 1 |
+| In Progress | 0 |
 | Human Review | 6 |
 | Rework | 0 |
 | Merging | 0 |
-| Done | 45 |
+| Done | 46 |
 | Canceled | 1 |
 | Duplicate | 1 |
 
@@ -53,11 +53,7 @@ Last reviewed: 2026-08-13
 
 ### In Progress
 
-- `STWI-SYM-053` / TRA-64 [P2] Complete integrated QA and synchronize release artifacts (Orchestrator/API/Release, ReleaseQaAgent / LeadCoordinator)
-  Evidence: scripts/demo/run_mvp_smoke.py, docs/guides/mvp_demo_runbook.md, docs/superpowers/plans/2026-08-10-stwi-incident-routing-map.md
-  Acceptance: Comprehensive smoke covers baseline, five independent incidents, route success, needs-review and failure branches.; Runbook, report, slides and Symphony state describe the same synthetic workflow without production overclaim.; Full Python, frontend, docs, PDF and visual release QA evidence is recorded.; No local companion state, build output, secret or private evidence is staged.
-  Next: Create the dedicated TRA-64 PR, use CI to build and inspect the report PDF, then merge and mark Linear Done.
-  Checks: Linear readback: TRA-64 is In Progress and all seven prerequisite tickets are Done on 2026-08-13.; Offline smoke passes all 17 capabilities; browser QA covers the responsive dashboard, fail-closed runtime and four synchronized slides.
+- None
 
 ### Human Review
 
@@ -323,6 +319,11 @@ Last reviewed: 2026-08-13
   Acceptance: Map and fallback table render one validated route view-model with matching IDs and metrics.; Needs-review routes remain candidates and cannot be approved.; Failed and expired jobs expose no action or route overlay.; Responsive, keyboard, non-color and focus behavior pass frontend and browser checks.
   Next: Merged through PR #50; use the shared validated route view-model for map, table and operator review.
   Checks: Linear readback: TRA-63 is Done on 2026-08-13.; PR #50 is attached to TRA-63 and merged on main.
+- `STWI-SYM-053` / TRA-64 [P2] Complete integrated QA and synchronize release artifacts (Orchestrator/API/Release, ReleaseQaAgent / LeadCoordinator)
+  Evidence: scripts/demo/run_mvp_smoke.py, docs/guides/mvp_demo_runbook.md, docs/superpowers/plans/2026-08-10-stwi-incident-routing-map.md
+  Acceptance: Comprehensive smoke covers baseline, five independent incidents, route success, needs-review and failure branches.; Runbook, report, slides and Symphony state describe the same synthetic workflow without production overclaim.; Full Python, frontend, docs, PDF and visual release QA evidence is recorded.; No local companion state, build output, secret or private evidence is staged.
+  Next: Maintain the synthetic-only demo boundary; production service, latency and field-accuracy gates remain separate evidence work.
+  Checks: Linear readback: TRA-64 is Done and all seven prerequisite tickets are Done on 2026-08-13.; Offline smoke passes all 17 capabilities; full Python 476 tests pass with 11 intentional skips and frontend 81 tests pass.; PR #51 fast-guards and build-pdf pass at head 237564a; the 85-page CI PDF and affected pages were visually inspected with no remaining overlap or malformed command.; Browser QA covers the input-first responsive dashboard, fail-closed runtime and four synchronized slides without console errors or horizontal overflow.
 
 ### Canceled
 

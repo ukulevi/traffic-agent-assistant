@@ -1554,7 +1554,7 @@
       "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-64/stwi-sym-053-complete-integrated-qa-and-synchronize-release-artifacts",
       "lane": "Orchestrator/API/Release",
       "owner_agent": "ReleaseQaAgent / LeadCoordinator",
-      "status": "In Progress",
+      "status": "Done",
       "priority": "P2",
       "dependencies": ["STWI-SYM-052"],
       "evidence": [
@@ -1568,8 +1568,8 @@
         "Full Python, frontend, docs, PDF and visual release QA evidence is recorded.",
         "No local companion state, build output, secret or private evidence is staged."
       ],
-      "next_action": "Create the dedicated TRA-64 PR, use CI to build and inspect the report PDF, then merge and mark Linear Done.",
-      "checks": ["Linear readback: TRA-64 is In Progress and all seven prerequisite tickets are Done on 2026-08-13.", "Offline smoke passes all 17 capabilities; browser QA covers the responsive dashboard, fail-closed runtime and four synchronized slides."]
+      "next_action": "Maintain the synthetic-only demo boundary; production service, latency and field-accuracy gates remain separate evidence work.",
+      "checks": ["Linear readback: TRA-64 is Done and all seven prerequisite tickets are Done on 2026-08-13.", "Offline smoke passes all 17 capabilities; full Python 476 tests pass with 11 intentional skips and frontend 81 tests pass.", "PR #51 fast-guards and build-pdf pass at head 237564a; the 85-page CI PDF and affected pages were visually inspected with no remaining overlap or malformed command.", "Browser QA covers the input-first responsive dashboard, fail-closed runtime and four synchronized slides without console errors or horizontal overflow."]
     }
   ]
 }
