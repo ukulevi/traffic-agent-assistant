@@ -201,14 +201,15 @@ def build_production_runtime(settings: ProductionSettings) -> ProductionRuntime:
             corpus_dir=settings.legal_corpus_dir,
         )
     )
+    topology = build_synthetic_topology()
     orchestrator = WhatIfOrchestrator(
         baseline=components.baseline,
         surrogate=components.surrogate,
         t3=t3,
         settings=settings.runtime,
         runtime_artifacts=artifacts,
+        network_topology=topology,
     )
-    topology = build_synthetic_topology()
     network_context_provider = AuthorizedNetworkContextProvider(
         registry=NetworkTopologyRegistry((topology,)),
         network_version=topology.network_version,

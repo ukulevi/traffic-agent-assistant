@@ -35,6 +35,38 @@ WhatIfJobRequest:
   candidate_action: CandidateAction  # required, non-executable hypothesis
   node_ids: list[str]  # production server-authorized scope
 
+RouteCandidate:
+  route_id: str
+  topology_version: str
+  boundary_entry_node: str
+  boundary_exit_node: str
+  node_sequence: list[str]  # directed, simple, incident-avoiding
+  edge_ids: list[str]       # exactly len(node_sequence)-1
+  base_cost: float>0
+  distance_m: float>0
+
+RouteEvaluation:
+  route: RouteCandidate
+  max_vc_ratio: float
+  avg_speed_kmh: float
+  delay_proxy_seconds: float
+  uncertainty_score: float
+  ood_score: float
+  passed: bool
+  rejection_reasons: list[str]
+  evidence_complete: bool
+  model_version: str
+  data_version: str
+  topology_version: str
+
+RouteRecommendation:
+  route: RouteCandidate
+  evaluation: RouteEvaluation  # must pass with complete evidence
+  rank: int[1,3]
+  executable: false
+  requires_operator_approval: true
+  applied_by_system: false
+
 SimulationQuery:
   job_id: str
   node_ids: list[str]

@@ -99,6 +99,30 @@
     },
     "description_selects_simulation_behavior": false
   },
+  "route_contract": {
+    "max_candidates": 3,
+    "graph_kind": "directed",
+    "simple_paths_only": true,
+    "incident_avoiding": true,
+    "ranking_order": [
+      "safety_pass",
+      "max_vc_ratio",
+      "uncertainty_score",
+      "ood_score",
+      "delay_proxy_seconds",
+      "base_cost",
+      "distance_m",
+      "route_id"
+    ],
+    "required_provenance": [
+      "model_version",
+      "data_version",
+      "topology_version"
+    ],
+    "executable": false,
+    "requires_operator_approval": true,
+    "applied_by_system": false
+  },
   "runtime": {
     "surrogate_p99_ms": 500,
     "e2e_p95_ms": 30000,

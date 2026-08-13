@@ -20,7 +20,10 @@ import uuid
 from datetime import datetime
 
 from stwi.contracts.incident import IncidentVector
+from stwi.t1_pipeline.network_topology import build_synthetic_topology
 from stwi.t4_orchestrator.contracts import JobStatus, SafetyCheckResult
+from stwi.t4_orchestrator.demo_adapters import DemoSurrogateForecaster, demo_node_ids
+from stwi.t4_orchestrator.route_evaluation import RouteImpactEvaluator
 from stwi.t4_orchestrator.fake_adapters import (
     FakeSurrogateForecaster,
     ScenarioForecastResult,
@@ -378,6 +381,105 @@ class TestOrchestratorSafetyIntegration(unittest.TestCase):
         self.assertEqual(result.status, JobStatus.SUCCEEDED)
         self.assertGreaterEqual(len(surrogate.incidents), 2)
         self.assertTrue(all(item is request.incident for item in surrogate.incidents))
+
+
+class TestOrchestratorRouteIntegration(unittest.TestCase):
+    def _request(self):
+        from stwi.t4_orchestrator.contracts import WhatIfJobRequest
+
+        return WhatIfJobRequest(
+            tenant_id=TENANT,
+            scenario_time=SCENARIO_TIME,
+            incident={
+                "event_type": "signal_change",
+                "affected_node_ids": ["node_07"],
+                "severity": "medium",
+                "duration_minutes": 30,
+                "description": "Synthetic signal hypothesis",
+                "signal_plan_delta": {"green_time_ratio_delta": 0.15},
+            },
+            candidate_action={"node_id": "node_07", "green_time_ratio": 0.85},
+            node_ids=list(demo_node_ids()),
+            scenario_query="quyền nghĩa vụ người sử dụng đường",
+        )
+
+    def _orchestrator(self, **overrides):
+        values = {
+            "surrogate": DemoSurrogateForecaster(),
+            "network_topology": build_synthetic_topology(),
+        }
+        values.update(overrides)
+        return WhatIfOrchestrator(**values)
+
+    def test_succeeded_incident_job_contains_ranked_non_executable_routes(self):
+        result = self._orchestrator().run("route-success", self._request())
+
+        self.assertEqual(result.status, JobStatus.SUCCEEDED)
+        routes = result.recommended_action["route_recommendations"]
+        self.assertEqual([item["rank"] for item in routes], [1, 2, 3])
+        self.assertTrue(
+            all(item["evaluation"]["evidence_complete"] for item in routes)
+        )
+        self.assertTrue(
+            all("node_07" not in item["route"]["node_sequence"] for item in routes)
+        )
+        self.assertTrue(all(item["executable"] is False for item in routes))
+        self.assertTrue(
+            all(item["requires_operator_approval"] is True for item in routes)
+        )
+        self.assertTrue(all(item["applied_by_system"] is False for item in routes))
+
+    def test_no_generated_route_needs_review_without_fabrication(self):
+        class NoRoutesGenerator:
+            def generate(self, *args, **kwargs):
+                return ()
+
+        result = self._orchestrator(route_generator=NoRoutesGenerator()).run(
+            "route-empty",
+            self._request(),
+        )
+
+        self.assertEqual(result.status, JobStatus.NEEDS_REVIEW)
+        self.assertIsNone(result.recommended_action)
+        self.assertEqual(result.candidate_action["route_candidates"], [])
+        self.assertIn("no_passing_route", result.needs_review_reason or "")
+
+    def test_route_evaluator_timeout_expires_without_action(self):
+        class TimeoutEvaluator:
+            def evaluate_all(self, **kwargs):
+                raise TimeoutError("route evaluator timed out")
+
+        result = self._orchestrator(route_evaluator=TimeoutEvaluator()).run(
+            "route-timeout",
+            self._request(),
+        )
+
+        self.assertEqual(result.status, JobStatus.EXPIRED)
+        self.assertIsNone(result.recommended_action)
+        self.assertIsNone(result.candidate_action)
+
+    def test_route_evaluator_dependency_failure_fails_without_action(self):
+        class CrashEvaluator:
+            def evaluate_all(self, **kwargs):
+                raise RuntimeError("route evaluator unavailable")
+
+        result = self._orchestrator(route_evaluator=CrashEvaluator()).run(
+            "route-failed",
+            self._request(),
+        )
+
+        self.assertEqual(result.status, JobStatus.FAILED)
+        self.assertIsNone(result.recommended_action)
+        self.assertIsNone(result.candidate_action)
+
+    def test_topology_version_mismatch_needs_review(self):
+        result = self._orchestrator(
+            expected_routing_graph_version="stale-routing-v0"
+        ).run("route-version-mismatch", self._request())
+
+        self.assertEqual(result.status, JobStatus.NEEDS_REVIEW)
+        self.assertIsNone(result.recommended_action)
+        self.assertIn("topology_version_mismatch", result.needs_review_reason or "")
 
 
 class TestSafetyCheckResultContract(unittest.TestCase):

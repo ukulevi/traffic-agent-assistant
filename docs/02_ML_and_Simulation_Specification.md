@@ -49,6 +49,26 @@ Không suy ra rằng hai version hoặc hai cấu trúc này có thể hoán đ�
 topology chỉ đăng ký metadata và routing graph; không thay đổi `A[N,N]`, tensor
 shape, feature order hay đường inference của GCN–LSTM.
 
+### 1.1. Phân tích hành lang tránh sự cố cục bộ
+
+`LocalDiversionGenerator` chỉ đọc directed routing graph đã validate. Với một
+incident node, generator lấy predecessor/successor cục bộ, loại incident node
+và edge đóng, rồi tìm simple path có hướng theo thứ tự ổn định. Mỗi job giữ tối
+đa ba candidate; search có hard expansion budget và không dùng NetworkX, OD
+input, bản đồ ngoài hoặc dịch vụ routing.
+
+`RouteImpactEvaluator` yêu cầu surrogate tạo aggregate forecast riêng cho từng
+path với đúng `IncidentVector`; forecast toàn mạng dùng chung không đủ điều kiện
+promote route. Evaluator kiểm tra đủ duy nhất mọi cặp node/horizon, edge và
+version, rồi ghi `max_vc_ratio`,
+`avg_speed_kmh`, travel-time proxy theo khoảng cách/speed, uncertainty và OOD.
+`RouteSafetyGate` chỉ rank evaluation đã pass theo thứ tự lexicographic trong
+`project_contract.json`; không dùng công thức trọng số tự đặt. Thiếu evidence,
+path sai, version mismatch, V/C cao, uncertainty cao hoặc OOD đều bị loại.
+Không có route pass thì job là `needs_review`, không tạo recommendation giả.
+Mọi route luôn `executable=false`, `requires_operator_approval=true` và
+`applied_by_system=false`.
+
 ## 2. Dữ liệu, split và baseline
 
 ### 2.0. Phạm vi demo simulation-first
