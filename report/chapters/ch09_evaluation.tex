@@ -277,7 +277,7 @@ Tất cả 25 SQL injection payloads (bao gồm \texttt{UNION SELECT}, \texttt{;
 
 Kết quả có thể tái lập hiện tại là profile demo offline version 1.0, chạy qua
 FastAPI TestClient với adapter synthetic và không liên hệ dịch vụ live. Manifest
-được ghi atomically và chỉ pass khi đủ 13 capability bắt buộc, không giữ video
+được ghi atomically và chỉ pass khi đủ 17 capability bắt buộc, không giữ video
 thô, không automatic actuation và đúng action-field semantics.
 
 \begin{table}[H]
@@ -288,9 +288,9 @@ thô, không automatic actuation và đúng action-field semantics.
 \toprule
 \textbf{Nhóm capability} & \textbf{Số case} & \textbf{Bằng chứng} \\
 \midrule
-\texttt{succeeded} & 3 & approve, reject và refinement hai candidate \\
+\texttt{succeeded} & 3 & baseline approve, safe reject và route recommendation sau refinement \\
 \rowcolor{rowgray}
-\texttt{needs\_review} & 4 & V/C, OOD, uncertainty và thiếu citation \\
+\texttt{needs\_review} & 8 & bốn incident fail-closed, route không có candidate, OOD, uncertainty và thiếu citation \\
 \texttt{failed}/\texttt{expired} & 2 & dependency failure và hard deadline; không có action \\
 \rowcolor{rowgray}
 Validation/authorization & 2 & HTTP 422 và tenant-scope HTTP 403, không tạo job \\
@@ -299,11 +299,17 @@ SSE/UI guard & 2 & Last-Event-ID resume và static preview không mutating \\
 \end{tabular}
 \end{table}
 
-Trong case refinement, candidate đầu có \texttt{green\_time\_ratio=0.70} và
+Năm incident canonical được chạy trên năm node khác nhau để chứng minh event và
+node là input độc lập. Trong case route recommendation, candidate đầu có
+\texttt{green\_time\_ratio=0.70} và
 V/C vượt policy 0,90. Refiner chỉ cho failure V/C cô lập tạo candidate thứ hai
 với ratio 0,85; surrogate chạy lại và các gate pass. OOD, uncertainty cao, thiếu
 citation, validation và dependency failure dừng ngay. Hard limit luôn là ba
 candidate khác nhau, không phải năm vòng và không lặp cùng action để giả hội tụ.
+Route pass có ba recommendation được đánh giá riêng và ghi đủ
+model/data/topology version. Case \texttt{route\_needs\_review} dùng generator
+demo trả rỗng có chủ đích, ghi \texttt{route\_count=0} và fail closed thay vì
+tạo route minh họa.
 
 Profile này chứng minh luồng chức năng, fail-closed, audit, SSE và human approval;
 không phải benchmark latency hoặc accuracy production. Surrogate P99 dưới 500 ms,
@@ -324,7 +330,7 @@ không được thay bằng mock.
 \midrule
 Contract/unit/API & Đã kiểm thử tự động & Không thay thế service hoặc browser evidence \\
 \rowcolor{rowgray}
-Demo offline 13 capability & Pass khi manifest version 1.0 hợp lệ & Synthetic, aggregate-only \\
+Demo offline 17 capability & Pass khi manifest version 1.0 hợp lệ & Synthetic, aggregate-only; topology/route không đại diện địa lý thực \\
 Production composition & Fail-closed entrypoint có kiểm thử & Cần factory/adapters/artifact thật \\
 \rowcolor{rowgray}
 Services, RTSP, GPU, SLA & Human Review / not verified & Chỉ pass sau khi có raw benchmark và privacy evidence \\

@@ -22,17 +22,18 @@ class TestMvpSmoke(unittest.TestCase):
         self.assertEqual(evidence["verdict"], "pass")
         self.assertFalse(evidence["live_services_contacted"])
         self.assertFalse(evidence["raw_video_retained"])
-        self.assertEqual(len(evidence["capabilities"]), 16)
+        self.assertEqual(len(evidence["capabilities"]), 17)
         self.assertEqual(
             [case["name"] for case in evidence["capabilities"]],
             [
-                "safe_approval",
+                "normal_baseline",
                 "safe_rejection",
-                "refinement_success",
-                "unsafe_vc",
+                "route_recommendation",
+                "accident_any_node",
                 "flood_any_node",
                 "lane_closure_any_node",
                 "demand_surge_any_node",
+                "route_needs_review",
                 "ood",
                 "high_uncertainty",
                 "missing_citation",
@@ -51,11 +52,11 @@ class TestMvpSmoke(unittest.TestCase):
         incident_cases = {
             case["name"]: case for case in evidence["capabilities"]
             if case["name"] in {
-                "unsafe_vc",
+                "accident_any_node",
                 "flood_any_node",
                 "lane_closure_any_node",
                 "demand_surge_any_node",
-                "refinement_success",
+                "route_recommendation",
             }
         }
         self.assertEqual(

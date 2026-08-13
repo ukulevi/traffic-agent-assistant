@@ -1,17 +1,19 @@
 # MVP Operator Dashboard
 
 Run the API with the existing orchestrator extra, then open `/demo/` on the
-same origin. The dashboard follows a five-region operator workflow:
+same origin. The dashboard follows an input-first six-region operator workflow:
 
 1. **Input** — configuration at the top: tenant, node, green-time ratio,
    scenario description, and demo presets.
 2. **Job lifecycle** — monitor `queued`/`running`/terminal status, events,
    `trace_id`, model/data versions, and timestamps.
-3. **Result** — read the terminal simulation envelope, aggregate forecast
+3. **Network and route evidence** — inspect the tile-free synthetic 20-node map;
+   route table and overlay share the same route ID and provenance.
+4. **Result** — read the terminal simulation envelope, aggregate forecast
    metrics, and Vietnamese interpretation before moving to evidence.
-4. **Safety/evidence** — review uncertainty/OOD checks, counterfactual safety
+5. **Safety/evidence** — review uncertainty/OOD checks, counterfactual safety
    iterations, citations, and the non-executable action payload.
-5. **Operator review** — explicitly approve, reject, or request changes for
+6. **Operator review** — explicitly approve, reject, or request changes for
    audit only.
 
 The dashboard is provisional and aggregate-only. It never displays raw video,
@@ -23,17 +25,22 @@ action.
 In demo mode, the input panel groups deterministic presets into `Safety cơ bản`
 and `Tình huống vận hành`. The first group covers `succeeded`, V/C policy
 failure, OOD, high uncertainty, missing legal evidence, and an extreme
-green-time ratio. The operational group maps accident, flood, lane closure, and
-demand surge to bounded aggregate synthetic profiles, while environmental
-anomaly maps to OOD/uncertainty review. The canonical synthetic network
+green-time ratio. The operational group maps accident, flood, lane closure,
+demand surge and signal change to bounded aggregate synthetic profiles. The
+canonical synthetic network
 identifiers are `node_00` through `node_19`, matching `mock-network-20-v1`. The
 API rejects a node outside that registry before creating a demo job.
 
-The environmental preset is an explicitly synthetic correlation signal. It
-does not claim that CO, CO2, NOx, PM2.5, or PM10 causes congestion; it does not
-forecast air quality, water depth, rainfall, or health impacts. Free text gives
-operator context and legal/SOP retrieval only: it is not parsed into simulation
-parameters, and the UI never determines the terminal status itself.
+Incident type and node are independent inputs. Selecting a preset changes the
+typed incident fields but never locks it to a particular node. The Leaflet view
+uses a local, tile-free 4×5 synthetic layout and makes no real-geography claim.
+A succeeded incident job may show at most three evaluated
+`route_recommendations`; `needs_review` shows only `route_candidates`. Failed and
+expired envelopes expose no route overlay. Every route is non-executable,
+versioned, and requires operator approval.
+
+Free text gives operator context and legal/SOP retrieval only: it is not parsed
+into simulation parameters, and the UI never determines terminal status.
 
 The request boundary uses a typed candidate action. Its node must be present in
 `node_ids`, green-time ratio remains bounded to `[0, 1]`, and blank identifiers

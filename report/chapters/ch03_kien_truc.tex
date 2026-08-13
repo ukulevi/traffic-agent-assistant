@@ -175,10 +175,10 @@ B1 & Tiếp nhận \& Phân rã & Operator nhập câu hỏi. Orchestrator phân
 B2 & Mô phỏng Số liệu & Simulation Agent chạy baseline và surrogate; kết quả có uncertainty được ghi theo job vào TimescaleDB. \\
 B3 & Truy xuất Tri thức & Legal Agent dùng Typed Query Service và Semantic Search để lấy SOP + căn cứ pháp lý. \\
 \rowcolor{rowgray}
-B4 & Sinh Đề xuất Sơ bộ & Evaluation Agent tổng hợp kết quả từ B2 và B3, sinh phương án phân luồng. \\
+B4 & Sinh Đề xuất Sơ bộ & Evaluation Agent tổng hợp kết quả từ B2 và B3, sinh candidate không executable. \\
 B5 & Counterfactual Safety Loop & Mô phỏng lại và kiểm tra policy có version; V/C 0,9 chỉ là ngưỡng mặc định cấu hình. \\
 \rowcolor{rowgray}
-B6 & Hiệu chỉnh hoặc review & Lặp tối đa 3 lần; không hội tụ/OOD/thiếu citation thì fail closed và chuyển operator review. \\
+B6 & Route evidence hoặc review & Sau khi CSL pass, incident job đánh giá tối đa ba route trên topology có version; không có route pass, OOD hoặc thiếu citation thì fail closed. \\
 B7 & Xuất Báo cáo & Phương án an toàn được định dạng JSON + text và đẩy lên Dashboard. \\
 \bottomrule
 \end{tabular}

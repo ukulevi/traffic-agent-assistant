@@ -1,11 +1,11 @@
 # STWI MVP Readiness Symphony
 
-Last reviewed: 2026-08-10
+Last reviewed: 2026-08-13
 
 ## Readiness Handoff Summary
 
 - Evidence base: project_contract.json
-- Todo: 0 | In Progress: 0 | Human Review: 7 | Rework: 0 | Done: 37
+- Todo: 0 | In Progress: 1 | Human Review: 6 | Rework: 0 | Done: 45
 - Requires human review for: contract changes, dashboard scope changes, legal/SOP source approval, vision promotion threshold changes, production credentials or external services
 - Report command: python scripts/project_management/symphony_report.py
 - Daily agent update: enabled
@@ -17,11 +17,11 @@ Last reviewed: 2026-08-10
 |---|---:|
 | Backlog | 2 |
 | Todo | 0 |
-| In Progress | 0 |
-| Human Review | 7 |
+| In Progress | 1 |
+| Human Review | 6 |
 | Rework | 0 |
 | Merging | 0 |
-| Done | 37 |
+| Done | 45 |
 | Canceled | 1 |
 | Duplicate | 1 |
 
@@ -53,7 +53,11 @@ Last reviewed: 2026-08-10
 
 ### In Progress
 
-- None
+- `STWI-SYM-053` / TRA-64 [P2] Complete integrated QA and synchronize release artifacts (Orchestrator/API/Release, ReleaseQaAgent / LeadCoordinator)
+  Evidence: scripts/demo/run_mvp_smoke.py, docs/guides/mvp_demo_runbook.md, docs/superpowers/plans/2026-08-10-stwi-incident-routing-map.md
+  Acceptance: Comprehensive smoke covers baseline, five independent incidents, route success, needs-review and failure branches.; Runbook, report, slides and Symphony state describe the same synthetic workflow without production overclaim.; Full Python, frontend, docs, PDF and visual release QA evidence is recorded.; No local companion state, build output, secret or private evidence is staged.
+  Next: Create the dedicated TRA-64 PR, use CI to build and inspect the report PDF, then merge and mark Linear Done.
+  Checks: Linear readback: TRA-64 is In Progress and all seven prerequisite tickets are Done on 2026-08-13.; Offline smoke passes all 17 capabilities; browser QA covers the responsive dashboard, fail-closed runtime and four synchronized slides.
 
 ### Human Review
 
@@ -78,11 +82,6 @@ Last reviewed: 2026-08-10
   Evidence: project_contract.json, docs/guides/surrogate_benchmark_evidence.md
   Acceptance: Benchmark uses the 8 CPU / 32 GB RAM / 12-16 GB GPU profile.; Evidence is measured and records load, versions, percentiles, and failures.; Surrogate P99, E2E P95, and hard deadline meet contract or report FAIL.; Raw results remain private.
   Next: Wait for contract-profile hardware and all runtime dependencies.
-- `STWI-SYM-043` [P1] Implement bounded Counterfactual Safety Loop refinement (Orchestrator/API/Release, OrchestratorReleaseAgent)
-  Evidence: src/stwi/t4_orchestrator/safety_loop.py, tests/t4_orchestrator/test_t4_safety.py, docs/04_AI_Agent_Orchestrator_CF_VLA.md
-  Acceptance: Each recorded iteration evaluates a distinct typed candidate.; Only an isolated V/C failure may be refined and at most three candidates are evaluated.; OOD, uncertainty, citation, validation and dependency failures stop immediately and fail closed.; Recommended/candidate action semantics and human approval remain unchanged.
-  Next: Human-review the updated report after a XeLaTeX build becomes available.
-  Checks: Full unittest discovery passes 414 tests with 6 intentional skips on 2026-08-10.; Offline comprehensive demo passes all 13 mandatory capabilities on 2026-08-10.; Documentation, contract, JavaScript syntax and git whitespace gates pass; PDF visual QA remains unavailable.
 - `STWI-SYM-045` [P1] Deliver comprehensive hybrid demo and presenter guidance (Orchestrator/API/Release, ReleaseQaAgent / LeadCoordinator)
   Evidence: src/stwi/demo, scripts/demo/run_mvp_smoke.py, docs/guides/mvp_demo_runbook.md, docs/project_management/symphony/mvp_demo_acceptance.md
   Acceptance: Offline profile covers all 13 catalog capabilities with a versioned atomic manifest.; Services profile preserves pass/fail/not_verified without mock substitution.; Dashboard, 7-minute and 15-minute scripts cover success, refinement, fail-closed, audit and recovery.; Browser, frontend, docs, report and release QA evidence is recorded without production or SLA overclaim.
@@ -279,11 +278,51 @@ Last reviewed: 2026-08-10
   Acceptance: Production starts with approved stack components and no provisional/in-memory dependency.; No dev secret, public database port, raw error, or docs-only health check is accepted.; Runtime uses least privilege and reproducibly pinned dependencies/images.; Migration, backup/restore, recovery and rollback have bounded operator commands and explicit external Human Review gates.
   Next: Production topology baseline is merged; real deployment, monitoring, restore drill and SLA evidence remain TRA-51 Human Review gates.
   Checks: TRA-50 production baseline is present on main at f4a1a84.; Static production deployment contract and bounded operations tests pass on 2026-08-03.
+- `STWI-SYM-043` [P1] Implement bounded Counterfactual Safety Loop refinement (Orchestrator/API/Release, OrchestratorReleaseAgent)
+  Evidence: src/stwi/t4_orchestrator/safety_loop.py, tests/t4_orchestrator/test_t4_safety.py, docs/04_AI_Agent_Orchestrator_CF_VLA.md
+  Acceptance: Each recorded iteration evaluates a distinct typed candidate.; Only an isolated V/C failure may be refined and at most three candidates are evaluated.; OOD, uncertainty, citation, validation and dependency failures stop immediately and fail closed.; Recommended/candidate action semantics and human approval remain unchanged.
+  Next: Human-review the updated report after a XeLaTeX build becomes available.
+  Checks: Full unittest discovery passes 414 tests with 6 intentional skips on 2026-08-10.; Offline comprehensive demo passes all 13 mandatory capabilities on 2026-08-10.; Documentation, contract, JavaScript syntax and git whitespace gates pass; PDF visual QA remains unavailable.
 - `STWI-SYM-044` [P1] Implement fail-closed production composition entrypoints (Orchestrator/API/Release, OrchestratorReleaseAgent / ReleaseQaAgent)
   Evidence: src/stwi/production_components.py, src/stwi/production.py, src/stwi/production_worker.py, src/stwi/production_health.py, src/stwi/production_migrate.py
   Acceptance: Compose-referenced Python modules exist and reject missing/provisional components.; API/worker use Redis, Celery, RealT3 and promoted artifacts without fake fallback.; Preflight/readiness output is redacted and migration uses a separate approved admin-only process.; External adapters, artifacts, services and deployment remain explicit Human Review gates.
   Next: Keep promoted adapters, artifacts, services and deployment approval in their existing external Human Review gates.
   Checks: Full unittest discovery passes 414 tests with 6 intentional skips on 2026-08-10.; Production deployment validator passes on 2026-08-10.; Docker Compose operations profile config renders successfully with placeholder QA values on 2026-08-10.
+- `STWI-SYM-046` / TRA-62 [P2] Reorder operator workflow and align accessibility order (Orchestrator/API/Release, OrchestratorReleaseAgent)
+  Evidence: docs/superpowers/specs/2026-08-10-stwi-incident-routing-map-design.md, docs/superpowers/plans/2026-08-10-stwi-incident-routing-map.md, src/stwi/t4_orchestrator/static/index.html
+  Acceptance: Input, lifecycle, result, evidence and operator review follow one canonical DOM, visual and tab order.; Desktop and mobile expose input as the first meaningful workspace region.; Focus progression, decision policy and non-executable semantics remain unchanged.
+  Next: Merged on main; continue with the independent topology ticket STWI-SYM-049 / TRA-61.
+  Checks: Hermes Rework 2 returned Human Review with 9 allowed files and no scope violation on 2026-08-10.; Independent Python dashboard tests pass: 20/20.; Independent frontend tests pass: 20/20; dashboard-view.js syntax passes.; validate_docs.py and project contract tests pass; git diff --check passes.; Browser QA passes at 1280x720 and 390x844 with canonical vertical workspace order, no horizontal overflow, and no console warning/error.; Linear readback: TRA-62 is Done on 2026-08-10.; PR #44 passed fast-guards and build-pdf, then admin squash-merged as da76e141e5ec6c87768b97902d56f0d3e631b535 on 2026-08-10; superseded draft PR #43 was closed.
+- `STWI-SYM-047` / TRA-59 [P1] Add typed IncidentVector and contract validation (Orchestrator/API/Release, OrchestratorReleaseAgent / LeadCoordinator)
+  Evidence: project_contract.json, docs/superpowers/specs/2026-08-10-stwi-incident-routing-map-design.md, docs/superpowers/plans/2026-08-10-stwi-incident-routing-map.md
+  Acceptance: IncidentVector is optional, typed, event-specific and scoped to exactly one allowlisted node for the MVP.; Free-text descriptions cannot select simulation behavior.; Existing API, status, tensor, action and fail-closed invariants remain unchanged.; Contract-risk changes receive Human Review before merge.
+  Next: Merged through PR #47; retain the typed contract as the foundation for incident and routing work.
+  Checks: Linear readback: TRA-59 is Done on 2026-08-13.; PR #47 is attached to TRA-59 and merged on main.
+- `STWI-SYM-048` / TRA-60 [P2] Decouple demo incident profiles from node identity (ML/Simulation, MLSimulationAgent)
+  Evidence: src/stwi/t4_orchestrator/demo_adapters.py, src/stwi/t4_orchestrator/static/dashboard.js, docs/superpowers/plans/2026-08-10-stwi-incident-routing-map.md
+  Acceptance: Every canonical incident can run at every allowlisted demo node.; Incident profile selection uses typed event fields, not node ID or free text.; The same immutable incident survives every safety refinement call.
+  Next: Merged through PR #48; use the event/node cross-product as the canonical synthetic demo behavior.
+  Checks: Linear readback: TRA-60 is Done on 2026-08-13.; PR #48 is attached to TRA-60 and merged on main.
+- `STWI-SYM-049` / TRA-61 [P1] Define versioned synthetic 4x5 topology and routing graph (Data/Vision, DataVisionAgent / MLSimulationAgent)
+  Evidence: src/stwi/t1_pipeline/mock_data.py, docs/superpowers/specs/2026-08-10-stwi-incident-routing-map-design.md, docs/superpowers/plans/2026-08-10-stwi-incident-routing-map.md
+  Acceptance: The synthetic grid has 20 stable nodes, unique coordinates and validated directed edges.; Routing graph and GCN adjacency remain separate versioned artifacts.; Authorized network context fails closed and makes no real-geography claim.
+  Next: Merged through PR #45; retain the versioned synthetic topology as the authorized routing/map source.
+  Checks: Linear readback: TRA-61 moved to In Progress with hermes-approved on 2026-08-10.; User approved ticket-specific external transfer of nine bounded source/test/docs files; no secrets, raw video, private data, model weights, .env files, logs or project_contract.json are included.; Linear readback: TRA-61 is Done on 2026-08-13; PR #45 is attached and merged on main.
+- `STWI-SYM-050` / TRA-66 [P2] Add pinned offline-safe Leaflet network view (Orchestrator/API/Release, OrchestratorReleaseAgent)
+  Evidence: src/stwi/t4_orchestrator/static, docs/superpowers/specs/2026-08-10-stwi-incident-routing-map-design.md, docs/superpowers/plans/2026-08-10-stwi-incident-routing-map.md
+  Acceptance: Leaflet 1.9.4 is vendored with its license and loads without external tiles, fonts or analytics.; L.CRS.Simple renders the visibly synthetic topology and stays synchronized with node selection.; An accessible table remains usable when the map is unavailable.
+  Next: Merged through PR #46; keep the Leaflet network view local, tile-free and synthetic-only.
+  Checks: Linear readback: TRA-66 is Done on 2026-08-13.; PR #46 is attached to TRA-66 and merged on main.
+- `STWI-SYM-051` / TRA-65 [P1] Generate and evaluate bounded local diversion candidates (ML/Simulation, MLSimulationAgent / OrchestratorReleaseAgent)
+  Evidence: docs/superpowers/specs/2026-08-10-stwi-incident-routing-map-design.md, docs/superpowers/plans/2026-08-10-stwi-incident-routing-map.md, src/stwi/t4_orchestrator/safety_loop.py
+  Acceptance: At most three deterministic directed simple paths avoid the incident node and use valid graph edges.; Every recommendation has typed evaluation evidence and matching model, data and topology versions.; Invalid, uncertain, OOD, unsafe or unevaluated paths fail closed and never become executable actions.; Safety behavior receives Human Review before merge.
+  Next: Merged through PR #49; retain candidate-specific evidence and fail-closed route evaluation.
+  Checks: Linear readback: TRA-65 is Done on 2026-08-13.; PR #49 is attached to TRA-65 and merged on main.
+- `STWI-SYM-052` / TRA-63 [P2] Integrate route evidence into dashboard and operator review (Orchestrator/API/Release, OrchestratorReleaseAgent)
+  Evidence: src/stwi/t4_orchestrator/static/dashboard-state.js, src/stwi/t4_orchestrator/static/dashboard-view.js, docs/superpowers/plans/2026-08-10-stwi-incident-routing-map.md
+  Acceptance: Map and fallback table render one validated route view-model with matching IDs and metrics.; Needs-review routes remain candidates and cannot be approved.; Failed and expired jobs expose no action or route overlay.; Responsive, keyboard, non-color and focus behavior pass frontend and browser checks.
+  Next: Merged through PR #50; use the shared validated route view-model for map, table and operator review.
+  Checks: Linear readback: TRA-63 is Done on 2026-08-13.; PR #50 is attached to TRA-63 and merged on main.
 
 ### Canceled
 

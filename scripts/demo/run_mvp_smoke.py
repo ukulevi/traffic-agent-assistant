@@ -102,6 +102,7 @@ def _orchestrator_for(profile: str) -> object:
     baseline: object = FakeBaselineForecaster()
     surrogate: object = DemoSurrogateForecaster()
     timeout_seconds = 180.0
+    route_generator: object | None = None
 
     if profile == "refinement":
         surrogate = RefinementDemoSurrogateForecaster()
@@ -122,19 +123,40 @@ def _orchestrator_for(profile: str) -> object:
         baseline = FailingBaseline()
     elif profile == "deadline_exceeded":
         timeout_seconds = 0.0
+    elif profile == "route_no_candidates":
+
+        class NoSyntheticRoutes:
+            def generate(
+                self, *_args: object, **_kwargs: object
+            ) -> tuple[object, ...]:
+                return ()
+
+        route_generator = NoSyntheticRoutes()
 
     return WhatIfOrchestrator(
         baseline=baseline,
         surrogate=surrogate,
         settings=settings,
         timeout_seconds=timeout_seconds,
+        route_generator=route_generator,
     )
+
+
+def _policy_version() -> str:
+    """Return the machine-readable contract version used by the smoke run."""
+
+    contract = json.loads((ROOT / "project_contract.json").read_text(encoding="utf-8"))
+    version = contract.get("contract_version")
+    if not isinstance(version, str) or not version:
+        raise RuntimeError("project contract version is unavailable")
+    return version
 
 
 def _run_job_case(scenario: object) -> object:
     from stwi.demo.evidence import CapabilityEvidence, CapabilityStatus
 
-    client = _client_for(_orchestrator_for(scenario.profile or "safe"))
+    orchestrator = _orchestrator_for(scenario.profile or "safe")
+    client = _client_for(orchestrator)
     jurisdiction = "DEMO-NONE" if scenario.profile == "missing_citation" else "VN"
     accepted = client.post(
         "/api/v1/what-if-jobs",
@@ -156,6 +178,16 @@ def _run_job_case(scenario: object) -> object:
     stream = client.get(f"/api/v1/what-if-jobs/{job_id}/events")
     terminal_event_count = stream.text.count("event: result")
     result = envelope["result"]
+    action = result["recommended_action"] or result["candidate_action"] or {}
+    if "route_recommendations" in action:
+        routes = action["route_recommendations"]
+        route_status = "recommended"
+    elif "route_candidates" in action:
+        routes = action["route_candidates"]
+        route_status = "needs_review"
+    else:
+        routes = []
+        route_status = "not_evaluated"
 
     decision_data: dict[str, Any] | None = None
     if scenario.operator_decision:
@@ -200,6 +232,12 @@ def _run_job_case(scenario: object) -> object:
             "provisional": True,
             "node_id": scenario.node_id,
             "event_type": scenario.event_type,
+            "topology_version": getattr(orchestrator, "routing_graph_version", None),
+            "route_count": len(routes),
+            "route_status": route_status,
+            "safety_reason": result["needs_review_reason"],
+            "policy_version": _policy_version(),
+            "citation_present": bool(result["citations"]),
         },
     )
 

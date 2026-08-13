@@ -193,6 +193,7 @@ class TestDashboardStatic(unittest.TestCase):
         self.assertIn('id="decision-rationale" name="rationale" required', self.html)
 
     def test_dashboard_uses_five_region_workflow_order(self) -> None:
+        self.assertLess(self.html.index('id="scenario-form"'), self.html.index('class="node-rail"'))
         self.assertLess(self.html.index('id="scenario-form"'), self.html.index('id="lifecycle-title"'))
         self.assertLess(self.html.index('id="lifecycle-title"'), self.html.index('id="result-conclusion"'))
         self.assertLess(self.html.index('id="result-conclusion"'), self.html.index('id="evidence-panel"'))

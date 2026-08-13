@@ -22,7 +22,10 @@ actuator tổng quát.
   \item Truy xuất Qdrant và chạy typed \textit{SimulationQuery}.
   \item Citation validator xác nhận hiệu lực và provision.
   \item Sinh candidate và chạy CSL tối đa ba vòng.
-  \item Chỉ khi mọi policy pass mới trả \texttt{succeeded}.
+  \item Nếu có incident và CSL pass, sinh tối đa ba route tránh node incident,
+  chạy prediction riêng cho từng route và áp dụng route safety gate.
+  \item Chỉ khi mọi policy và route evidence cần thiết pass mới trả
+  \texttt{succeeded}.
 \end{enumerate}
 
 \begin{table}[H]
@@ -38,6 +41,7 @@ OOD hoặc uncertainty cao & \texttt{needs\_review} \\
 Thiếu căn cứ còn hiệu lực & \texttt{needs\_review} hoặc \texttt{failed} \\
 Vượt 180 giây & \texttt{expired} \\
 Tool lỗi không phục hồi & \texttt{failed} \\
+Không có route pass/thiếu route evidence & \texttt{needs\_review} + \texttt{route\_candidates}; không bịa recommendation \\
 \bottomrule
 \end{tabular}
 \end{table}
