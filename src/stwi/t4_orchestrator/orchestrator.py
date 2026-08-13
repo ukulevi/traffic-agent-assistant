@@ -239,6 +239,7 @@ class WhatIfOrchestrator:
             horizons_minutes=req.horizons_minutes,
             candidate_action=candidate_action,
             scenario_time=req.scenario_time,
+            incident=req.incident,
         )
 
         max_ood = self._surrogate.max_ood_score(state.scenario_results)
@@ -314,6 +315,7 @@ class WhatIfOrchestrator:
             horizons_minutes=state.request.horizons_minutes,
             candidate_action=state.request.candidate_action.model_dump(),
             scenario_time=state.request.scenario_time,
+            incident=state.request.incident,
             has_citations=len(state.citations) > 0,
             initial_results=state.scenario_results,
         )

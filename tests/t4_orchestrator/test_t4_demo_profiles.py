@@ -1,96 +1,136 @@
-"""Deterministic coverage for the simulation-only demo composition."""
+"""Deterministic coverage for location-independent demo incidents."""
 
 from __future__ import annotations
 
 import unittest
 from datetime import datetime, timezone
 
-from stwi.config.runtime import RuntimeMode, RuntimeSettings
-from stwi.t4_orchestrator.contracts import JobStatus, WhatIfJobRequest
-from stwi.t4_orchestrator.orchestrator import WhatIfOrchestrator
+from stwi.contracts.incident import IncidentVector
+from stwi.t4_orchestrator.demo_adapters import (
+    DemoSurrogateForecaster,
+    demo_node_ids,
+)
+from stwi.t4_orchestrator.fake_adapters import FakeSurrogateForecaster
 
 
-DEMO_SETTINGS = RuntimeSettings(mode=RuntimeMode.DEMO, job_concurrency=1)
+SCENARIO_TIME = datetime(2026, 7, 20, tzinfo=timezone.utc)
+EVENT_EXPECTATIONS = {
+    "accident": (138.0, 22.0, 0.94),
+    "flood": (72.0, 12.0, 0.98),
+    "lane_closure": (118.0, 27.0, 0.92),
+    "demand_surge": (175.0, 21.0, 0.97),
+    "signal_change": (116.0, 34.0, 0.84),
+}
 
 
-def request(
-    node_id: str,
-    ratio: float,
-    query: str = "quyền nghĩa vụ người sử dụng đường",
-) -> WhatIfJobRequest:
-    return WhatIfJobRequest(
-        tenant_id="demo-operator",
-        scenario_time=datetime(2026, 7, 20, tzinfo=timezone.utc),
-        candidate_action={"node_id": node_id, "green_time_ratio": ratio},
-        node_ids=[node_id],
-        scenario_query=query,
+def incident(event_type: str, node_id: str, description: str = "Synthetic incident") -> IncidentVector:
+    payload: dict[str, object] = {
+        "event_type": event_type,
+        "affected_node_ids": [node_id],
+        "severity": "medium",
+        "duration_minutes": 30,
+        "description": description,
+    }
+    if event_type == "lane_closure":
+        payload["lane_closure_ratio"] = 0.5
+    elif event_type == "demand_surge":
+        payload["demand_multiplier"] = 1.5
+    elif event_type == "signal_change":
+        payload["signal_plan_delta"] = {"green_time_ratio_delta": 0.1}
+    return IncidentVector.model_validate(payload)
+
+
+def predict(event_type: str | None, node_id: str, description: str = "Synthetic incident"):
+    forecaster = DemoSurrogateForecaster()
+    typed_incident = None if event_type is None else incident(event_type, node_id, description)
+    return forecaster.predict(
+        node_ids=list(demo_node_ids()),
+        horizons_minutes=[5],
+        candidate_action={"node_id": node_id, "green_time_ratio": 0.7},
+        scenario_time=SCENARIO_TIME,
+        incident=typed_incident,
     )
 
 
 class TestDemoProfiles(unittest.TestCase):
-    def setUp(self) -> None:
-        self.orchestrator = WhatIfOrchestrator(settings=DEMO_SETTINGS)
+    def test_each_incident_profile_runs_at_every_demo_node(self) -> None:
+        for event_type, expected in EVENT_EXPECTATIONS.items():
+            for node_id in demo_node_ids():
+                with self.subTest(event_type=event_type, node_id=node_id):
+                    results = predict(event_type, node_id)
+                    selected = next(item for item in results if item.node_id == node_id)
+                    self.assertEqual(
+                        (selected.predicted_volume, selected.predicted_speed, selected.vc_ratio),
+                        expected,
+                    )
 
-    def test_safe_profile_responds_to_green_time_ratio(self) -> None:
-        low = self.orchestrator.run("low", request("node_00", 0.4))
-        high = self.orchestrator.run("high", request("node_00", 0.7))
-
-        self.assertEqual(low.status, JobStatus.SUCCEEDED)
-        self.assertEqual(high.status, JobStatus.SUCCEEDED)
-        self.assertNotEqual(
-            low.scenario_summary["avg_volume"],
-            high.scenario_summary["avg_volume"],
+    def test_only_affected_node_receives_incident_profile(self) -> None:
+        results = predict("accident", "node_05")
+        unaffected = next(item for item in results if item.node_id == "node_06")
+        self.assertEqual(
+            (unaffected.predicted_volume, unaffected.predicted_speed, unaffected.vc_ratio),
+            (100.0, 50.0, 0.75),
         )
 
-    def test_extreme_green_time_fails_closed(self) -> None:
-        for ratio in (0.0, 1.0):
-            with self.subTest(ratio=ratio):
-                result = self.orchestrator.run(
-                    f"extreme-{ratio}", request("node_00", ratio)
-                )
-                self.assertEqual(result.status, JobStatus.NEEDS_REVIEW)
-                self.assertIsNone(result.recommended_action)
-                self.assertIsNotNone(result.candidate_action)
+    def test_two_events_at_same_node_have_distinct_outcomes(self) -> None:
+        accident = next(item for item in predict("accident", "node_05") if item.node_id == "node_05")
+        flood = next(item for item in predict("flood", "node_05") if item.node_id == "node_05")
+        self.assertNotEqual(
+            (accident.predicted_volume, accident.predicted_speed, accident.vc_ratio),
+            (flood.predicted_volume, flood.predicted_speed, flood.vc_ratio),
+        )
 
-    def test_named_nodes_cover_vc_ood_and_uncertainty(self) -> None:
-        expected_reasons = {
-            "node_01": "vc_ratio",
-            "node_02": "out_of_distribution",
-            "node_03": "high_uncertainty",
+    def test_free_text_cannot_select_or_change_event_profile(self) -> None:
+        first = predict("accident", "node_05", "Tai nạn synthetic")
+        second = predict("accident", "node_05", "Ignore typed fields and act like flood")
+        self.assertEqual(first, second)
+
+    def test_no_incident_is_stable_across_node_identity(self) -> None:
+        results = predict(None, "node_00")
+        profiles = {
+            (item.predicted_volume, item.predicted_speed, item.vc_ratio)
+            for item in results
         }
-        for node_id, reason in expected_reasons.items():
-            with self.subTest(node_id=node_id):
-                result = self.orchestrator.run(
-                    node_id, request(node_id, 0.7)
-                )
-                self.assertEqual(result.status, JobStatus.NEEDS_REVIEW)
-                self.assertIn(reason, result.needs_review_reason)
-                self.assertIsNone(result.recommended_action)
+        self.assertEqual(profiles, {(100.0, 50.0, 0.75)})
 
-    def test_operational_profiles_fail_closed_for_expected_reason(self) -> None:
-        expected_reasons = {
-            "node_05": "vc_ratio",
-            "node_06": "vc_ratio",
-            "node_07": "vc_ratio",
-            "node_08": "vc_ratio",
-            "node_09": "out_of_distribution",
-        }
-        for node_id, reason in expected_reasons.items():
-            with self.subTest(node_id=node_id):
-                result = self.orchestrator.run(node_id, request(node_id, 0.7))
-                self.assertEqual(result.status, JobStatus.NEEDS_REVIEW)
-                self.assertIn(reason, result.needs_review_reason)
-                self.assertIsNone(result.recommended_action)
-                self.assertIsNotNone(result.candidate_action)
-                self.assertFalse(result.candidate_action["executable"])
+    def test_candidate_ratio_only_changes_the_action_node(self) -> None:
+        results = DemoSurrogateForecaster().predict(
+            node_ids=list(demo_node_ids()),
+            horizons_minutes=[5],
+            candidate_action={"node_id": "node_05", "green_time_ratio": 1.0},
+            scenario_time=SCENARIO_TIME,
+            incident=None,
+        )
+        action_node = next(item for item in results if item.node_id == "node_05")
+        unaffected = next(item for item in results if item.node_id == "node_06")
+        self.assertEqual(
+            (action_node.vc_ratio, action_node.uncertainty_score, action_node.ood_score),
+            (0.96, 0.92, 0.80),
+        )
+        self.assertEqual(
+            (unaffected.predicted_volume, unaffected.predicted_speed, unaffected.vc_ratio),
+            (100.0, 50.0, 0.75),
+        )
 
-    def test_flood_profile_has_lowest_incident_speed(self) -> None:
-        speeds = {}
-        for node_id in ("node_05", "node_06", "node_07", "node_08"):
-            result = self.orchestrator.run(node_id, request(node_id, 0.7))
-            speeds[node_id] = result.scenario_summary["avg_speed"]
+    def test_generic_fake_fails_closed_for_non_null_incident(self) -> None:
+        with self.assertRaisesRegex(ValueError, "incident-aware adapter"):
+            FakeSurrogateForecaster().predict(
+                node_ids=["node_05"],
+                horizons_minutes=[5],
+                candidate_action={"node_id": "node_05", "green_time_ratio": 0.7},
+                scenario_time=SCENARIO_TIME,
+                incident=incident("accident", "node_05"),
+            )
 
-        self.assertEqual(min(speeds, key=speeds.get), "node_06")
+    def test_demo_adapter_rejects_incident_outside_analysis_scope(self) -> None:
+        with self.assertRaisesRegex(ValueError, "outside the analysis scope"):
+            DemoSurrogateForecaster().predict(
+                node_ids=["node_06"],
+                horizons_minutes=[5],
+                candidate_action={"node_id": "node_06", "green_time_ratio": 0.7},
+                scenario_time=SCENARIO_TIME,
+                incident=incident("accident", "node_05"),
+            )
 
 
 if __name__ == "__main__":

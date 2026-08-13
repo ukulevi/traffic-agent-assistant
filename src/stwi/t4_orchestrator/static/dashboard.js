@@ -17,64 +17,61 @@ import {
 
 export const DEMO_PRESETS = Object.freeze({
   safe: {
-    nodeId: "node_00", ratio: 0.70, jurisdiction: "VN",
-    query: "Đánh giá quyền và nghĩa vụ người sử dụng đường tại node_00.",
+    eventType: "", ratio: 0.70, jurisdiction: "VN",
+    query: "Đánh giá trạng thái giao thông synthetic bình thường.",
     expectation: "Kỳ vọng: kết quả synthetic đạt các kiểm tra của profile mô phỏng.",
   },
   refinement: {
-    nodeId: "node_10", ratio: 0.70, jurisdiction: "VN",
-    query: "Đánh giá phương án synthetic cần điều chỉnh tỷ lệ đèn xanh tại node_10.",
+    eventType: "signal_change", severity: "medium", durationMinutes: 30,
+    signalPlanDelta: 0.10, ratio: 0.70, jurisdiction: "VN",
+    query: "Đánh giá thay đổi tín hiệu synthetic tại nút đã chọn.",
     expectation: "Kỳ vọng: vòng 1 vượt policy V/C; hệ thống thử một candidate khác, vòng 2 pass và vẫn cần operator phê duyệt.",
   },
   "unsafe-vc": {
-    nodeId: "node_01", ratio: 0.70, jurisdiction: "VN",
-    query: "Đánh giá quyền và nghĩa vụ người sử dụng đường khi nhu cầu vượt năng lực tại node_01.",
+    eventType: "accident", severity: "medium", durationMinutes: 30,
+    ratio: 0.70, jurisdiction: "VN",
+    query: "Đánh giá tai nạn synthetic tại nút đã chọn.",
     expectation: "Kỳ vọng: V/C vượt policy 0.90 và job chuyển needs_review.",
   },
-  ood: {
-    nodeId: "node_02", ratio: 0.70, jurisdiction: "VN",
-    query: "Đánh giá tình huống khác đáng kể dữ liệu kiểm tra tại node_02.",
-    expectation: "Kỳ vọng: OOD gate fail-closed và chỉ trả candidate_action.",
-  },
-  uncertainty: {
-    nodeId: "node_03", ratio: 0.70, jurisdiction: "VN",
-    query: "Đánh giá tình huống có độ bất định cao tại node_03.",
-    expectation: "Kỳ vọng: uncertainty gate fail-closed và cần operator review.",
-  },
   "missing-evidence": {
-    nodeId: "node_04", ratio: 0.70, jurisdiction: "DEMO-NONE",
+    eventType: "", ratio: 0.70, jurisdiction: "DEMO-NONE",
     query: "Tình huống synthetic không có căn cứ trong corpus được phép.",
     expectation: "Kỳ vọng: thiếu citation hợp lệ nên job dừng ở needs_review.",
   },
   extreme: {
-    nodeId: "node_00", ratio: 0.00, jurisdiction: "VN",
-    query: "Đánh giá giả định không có pha xanh tại node_00.",
+    eventType: "", ratio: 0.00, jurisdiction: "VN",
+    query: "Đánh giá giả định synthetic không có pha xanh tại nút đã chọn.",
     expectation: "Kỳ vọng: giá trị cực trị bị safety gate giữ lại để review.",
   },
   accident: {
-    nodeId: "node_05", ratio: 0.70, jurisdiction: "VN",
-    query: "Đánh giá quyền và nghĩa vụ người sử dụng đường trong tình huống tai nạn synthetic tại node_05.",
+    eventType: "accident", severity: "medium", durationMinutes: 30,
+    ratio: 0.70, jurisdiction: "VN",
+    query: "Đánh giá tai nạn synthetic tại nút đã chọn.",
     expectation: "Kỳ vọng synthetic: giảm năng lực hiệu dụng làm V/C vượt policy 0.90; job cần operator review.",
   },
   flood: {
-    nodeId: "node_06", ratio: 0.70, jurisdiction: "VN",
-    query: "Đánh giá quyền và nghĩa vụ người sử dụng đường trong tình huống ngập lụt synthetic tại node_06.",
+    eventType: "flood", severity: "medium", durationMinutes: 45,
+    ratio: 0.70, jurisdiction: "VN",
+    query: "Đánh giá ngập lụt synthetic tại nút đã chọn.",
     expectation: "Kỳ vọng synthetic: tốc độ thấp nhất nhóm incident và V/C vượt policy; hệ thống không mô phỏng mực nước.",
   },
   "lane-closure": {
-    nodeId: "node_07", ratio: 0.70, jurisdiction: "VN",
-    query: "Đánh giá quyền và nghĩa vụ người sử dụng đường khi đóng làn synthetic tại node_07.",
+    eventType: "lane_closure", severity: "medium", durationMinutes: 30,
+    laneClosureRatio: 0.50, ratio: 0.70, jurisdiction: "VN",
+    query: "Đánh giá đóng làn synthetic tại nút đã chọn.",
     expectation: "Kỳ vọng synthetic: năng lực giảm tương đương đóng một phần làn và job chuyển needs_review.",
   },
   "demand-surge": {
-    nodeId: "node_08", ratio: 0.70, jurisdiction: "VN",
-    query: "Đánh giá quyền và nghĩa vụ người sử dụng đường khi nhu cầu tăng synthetic tại node_08.",
+    eventType: "demand_surge", severity: "medium", durationMinutes: 30,
+    demandMultiplier: 1.50, ratio: 0.70, jurisdiction: "VN",
+    query: "Đánh giá nhu cầu tăng synthetic tại nút đã chọn.",
     expectation: "Kỳ vọng synthetic: lưu lượng cao và V/C vượt policy 0.90; không phải dự báo production.",
   },
-  "environmental-anomaly": {
-    nodeId: "node_09", ratio: 0.70, jurisdiction: "VN",
-    query: "Đánh giá tín hiệu môi trường synthetic bất thường cần đối chiếu tại node_09.",
-    expectation: "Kỳ vọng synthetic: tín hiệu tương quan nằm ngoài phân phối nên cần review; không kết luận nguyên nhân ô nhiễm–ùn tắc.",
+  "signal-change": {
+    eventType: "signal_change", severity: "medium", durationMinutes: 30,
+    signalPlanDelta: 0.10, ratio: 0.85, jurisdiction: "VN",
+    query: "Đánh giá thay đổi tín hiệu synthetic tại nút đã chọn.",
+    expectation: "Kỳ vọng synthetic: profile signal_change được đánh giá độc lập với nút giao.",
   },
 });
 
@@ -315,13 +312,11 @@ export function createDashboardCoordinator({
     if (!preset) return;
     activeJurisdiction = preset.jurisdiction;
     view.setScenario(preset);
-    networkMap?.setSelection(preset.nodeId);
   }
 
   function selectNode(nodeId) {
     view.setNode(nodeId);
     networkMap?.setSelection(nodeId);
-    markCustomPreset();
   }
 
   function markCustomPreset() {

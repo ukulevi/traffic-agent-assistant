@@ -33,6 +33,7 @@ from typing import Any
 
 from pydantic import ValidationError
 
+from stwi.contracts.incident import IncidentVector
 from stwi.t4_orchestrator.contracts import CandidateAction, SafetyCheckResult
 from stwi.t4_orchestrator.interfaces import (
     CandidateRefiner,
@@ -134,6 +135,7 @@ class CounterfactualSafetyLoop:
         horizons_minutes: list[int],
         candidate_action: dict[str, Any],
         scenario_time: datetime,
+        incident: IncidentVector | None,
         has_citations: bool,
         initial_results: list[ScenarioForecast] | None = None,
     ) -> SafetyLoopOutcome:
@@ -150,6 +152,7 @@ class CounterfactualSafetyLoop:
                     horizons_minutes=horizons_minutes,
                     candidate_action=current_action,
                     scenario_time=scenario_time,
+                    incident=incident,
                 )
             )
             check = self._evaluate_iteration(

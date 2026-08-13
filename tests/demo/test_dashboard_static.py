@@ -127,27 +127,26 @@ class TestDashboardStatic(unittest.TestCase):
             "safe",
             "refinement",
             "unsafe-vc",
-            "ood",
-            "uncertainty",
             "missing-evidence",
             "extreme",
+            "signal-change",
         ):
             self.assertIn(f'value="{profile}"', self.html)
         self.assertIn("const DEMO_PRESETS", self.js)
-        self.assertIn("node_00", self.js)
+        self.assertNotIn("nodeId:", self.js)
         self.assertIn("node_19", self.html)
 
     def test_dashboard_exposes_bounded_operational_presets(self) -> None:
         expected_profiles = {
-            "accident": "node_05",
-            "flood": "node_06",
-            "lane-closure": "node_07",
-            "demand-surge": "node_08",
-            "environmental-anomaly": "node_09",
+            "accident": "accident",
+            "flood": "flood",
+            "lane-closure": "lane_closure",
+            "demand-surge": "demand_surge",
+            "signal-change": "signal_change",
         }
         self.assertIn('<optgroup label="Safety cơ bản">', self.html)
         self.assertIn('<optgroup label="Tình huống vận hành">', self.html)
-        for profile, node_id in expected_profiles.items():
+        for profile, event_type in expected_profiles.items():
             self.assertIn(f'value="{profile}"', self.html)
             profile_block = re.search(
                 rf'(?:"{re.escape(profile)}"|{re.escape(profile)})\s*:\s*\{{(?P<body>.*?)\n\s*\}},',
@@ -155,13 +154,25 @@ class TestDashboardStatic(unittest.TestCase):
                 re.DOTALL,
             )
             self.assertIsNotNone(profile_block)
-            self.assertIn(node_id, profile_block.group("body"))
+            self.assertIn(f'eventType: "{event_type}"', profile_block.group("body"))
+            self.assertNotIn("nodeId", profile_block.group("body"))
             self.assertIn("synthetic", profile_block.group("body"))
 
-    def test_environmental_preset_avoids_causal_claims(self) -> None:
-        self.assertIn("tín hiệu tương quan", self.js)
-        self.assertIn("không kết luận nguyên nhân", self.js)
-        self.assertNotIn("ô nhiễm gây ùn tắc", self.js.lower())
+    def test_node_selection_does_not_turn_incident_preset_into_custom(self) -> None:
+        select_node = re.search(
+            r"function selectNode\(nodeId\) \{(?P<body>.*?)\n  \}",
+            self.js,
+            re.DOTALL,
+        )
+        self.assertIsNotNone(select_node)
+        self.assertNotIn("markCustomPreset", select_node.group("body"))
+
+    def test_typed_incident_defaults_pass_native_form_validation(self) -> None:
+        self.assertIn(
+            'id="demand-multiplier" name="demand-multiplier" type="number" '
+            'min="1.01" max="3" step="0.01" value="1.5"',
+            self.html,
+        )
 
     def test_dashboard_blocks_approval_for_non_succeeded_results(self) -> None:
         self.assertIn('state.job.status === "succeeded"', self.state_js)

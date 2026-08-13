@@ -24,20 +24,39 @@ def _request_body(
     tenant_id: str = "demo-operator",
     jurisdiction: str = "VN",
     ratio: float = 0.7,
+    event_type: str | None = None,
 ) -> dict[str, Any]:
-    return {
+    from stwi.t4_orchestrator.demo_adapters import demo_node_ids
+
+    payload: dict[str, Any] = {
         "tenant_id": tenant_id,
         "scenario_time": "2025-06-01T08:00:00+00:00",
         "candidate_action": {
             "node_id": node_id,
             "green_time_ratio": ratio,
         },
-        "node_ids": [node_id],
+        "node_ids": list(demo_node_ids()),
         "scenario_query": (
             f"Đánh giá quyền và nghĩa vụ người sử dụng đường tại {node_id}."
         ),
         "jurisdiction": jurisdiction,
     }
+    if event_type is not None:
+        incident: dict[str, Any] = {
+            "event_type": event_type,
+            "affected_node_ids": [node_id],
+            "severity": "medium",
+            "duration_minutes": 30,
+            "description": f"Synthetic {event_type} incident.",
+        }
+        if event_type == "lane_closure":
+            incident["lane_closure_ratio"] = 0.5
+        elif event_type == "demand_surge":
+            incident["demand_multiplier"] = 1.5
+        elif event_type == "signal_change":
+            incident["signal_plan_delta"] = {"green_time_ratio_delta": 0.1}
+        payload["incident"] = incident
+    return payload
 
 
 def _client_for(orchestrator: object, principal_resolver: object | None = None) -> object:
@@ -72,6 +91,11 @@ def _orchestrator_for(profile: str) -> object:
         RefinementDemoSurrogateForecaster,
     )
     from stwi.t4_orchestrator.fake_adapters import FakeBaselineForecaster
+    from stwi.t4_orchestrator.fake_adapters import (
+        FakeSurrogateForecaster,
+        high_uncertainty_scenario,
+        ood_scenario,
+    )
     from stwi.t4_orchestrator.orchestrator import WhatIfOrchestrator
 
     settings = get_runtime_settings({"STWI_RUNTIME_MODE": "demo"})
@@ -81,6 +105,12 @@ def _orchestrator_for(profile: str) -> object:
 
     if profile == "refinement":
         surrogate = RefinementDemoSurrogateForecaster()
+    elif profile == "ood":
+        surrogate = FakeSurrogateForecaster(default_scenario=ood_scenario())
+    elif profile == "high_uncertainty":
+        surrogate = FakeSurrogateForecaster(
+            default_scenario=high_uncertainty_scenario()
+        )
     elif profile == "dependency_failure":
 
         class FailingBaseline:
@@ -108,7 +138,11 @@ def _run_job_case(scenario: object) -> object:
     jurisdiction = "DEMO-NONE" if scenario.profile == "missing_citation" else "VN"
     accepted = client.post(
         "/api/v1/what-if-jobs",
-        json=_request_body(node_id=scenario.node_id, jurisdiction=jurisdiction),
+        json=_request_body(
+            node_id=scenario.node_id,
+            jurisdiction=jurisdiction,
+            event_type=scenario.event_type,
+        ),
     )
     if accepted.status_code != scenario.expected_http_status:
         raise RuntimeError("unexpected create status")
@@ -164,6 +198,8 @@ def _run_job_case(scenario: object) -> object:
             "http_202": accepted.status_code == 202,
             "safety_iterations": result["safety_iterations"],
             "provisional": True,
+            "node_id": scenario.node_id,
+            "event_type": scenario.event_type,
         },
     )
 

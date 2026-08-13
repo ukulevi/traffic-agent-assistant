@@ -7,6 +7,9 @@ from typing import Literal
 
 
 DemoKind = Literal["job", "validation", "authorization", "sse", "static"]
+INCIDENT_EVENT_TYPES = frozenset(
+    {"accident", "flood", "lane_closure", "demand_surge", "signal_change"}
+)
 
 
 @dataclass(frozen=True)
@@ -21,6 +24,7 @@ class DemoScenario:
     profile: str | None = None
     operator_decision: str | None = None
     mandatory: bool = True
+    event_type: str | None = None
 
     def __post_init__(self) -> None:
         if self.kind not in {"job", "validation", "authorization", "sse", "static"}:
@@ -37,6 +41,8 @@ class DemoScenario:
                 raise ValueError("job demo requires a canonical terminal status")
             if not self.node_id:
                 raise ValueError("job demo requires a node")
+            if self.event_type is not None and self.event_type not in INCIDENT_EVENT_TYPES:
+                raise ValueError("job demo requires a canonical event type")
 
 
 _OFFLINE_SCENARIOS = (
@@ -50,8 +56,24 @@ _OFFLINE_SCENARIOS = (
         "node_10",
         "refinement",
         "approved",
+        event_type="signal_change",
     ),
-    DemoScenario("unsafe_vc", "job", 202, "needs_review", "node_01", "unsafe_vc", "rejected"),
+    DemoScenario(
+        "unsafe_vc", "job", 202, "needs_review", "node_01", "unsafe_vc",
+        "rejected", event_type="accident",
+    ),
+    DemoScenario(
+        "flood_any_node", "job", 202, "needs_review", "node_13", "flood",
+        "rejected", event_type="flood",
+    ),
+    DemoScenario(
+        "lane_closure_any_node", "job", 202, "needs_review", "node_17",
+        "lane_closure", "rejected", event_type="lane_closure",
+    ),
+    DemoScenario(
+        "demand_surge_any_node", "job", 202, "needs_review", "node_19",
+        "demand_surge", "rejected", event_type="demand_surge",
+    ),
     DemoScenario("ood", "job", 202, "needs_review", "node_02", "ood", "rejected"),
     DemoScenario(
         "high_uncertainty",

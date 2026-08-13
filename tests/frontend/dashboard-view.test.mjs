@@ -124,6 +124,74 @@ test("readScenario reads trusted tenant and typed candidate action", () => {
   assert.deepEqual(payload.node_ids, ["node_03"]);
 });
 
+test("incident preset preserves the selected node and builds typed incident", () => {
+  const doc = new FakeDocument();
+  const view = createDashboardView(doc);
+  view.setContext({
+    tenantId: "demo-operator",
+    nodeIds: ["node_00", "node_14", "node_19"],
+    mode: "demo",
+  });
+  view.setNode("node_14");
+  doc.getElementById("scenario-query").value = "Original";
+
+  view.setScenario({
+    eventType: "lane_closure",
+    severity: "high",
+    durationMinutes: 45,
+    laneClosureRatio: 0.6,
+    ratio: 0.7,
+    query: "Synthetic lane closure",
+    expectation: "needs_review",
+  });
+  const payload = view.readScenario();
+
+  assert.equal(doc.getElementById("node-id").value, "node_14");
+  assert.deepEqual(payload.node_ids, ["node_00", "node_14", "node_19"]);
+  assert.deepEqual(payload.incident, {
+    event_type: "lane_closure",
+    affected_node_ids: ["node_14"],
+    severity: "high",
+    duration_minutes: 45,
+    description: "Synthetic lane closure",
+    lane_closure_ratio: 0.6,
+  });
+});
+
+test("normal preset emits an explicit no-incident request", () => {
+  const doc = new FakeDocument();
+  const view = createDashboardView(doc);
+  view.setContext({ tenantId: "demo-operator", nodeIds: ["node_00"], mode: "demo" });
+  view.setNode("node_00");
+  view.setScenario({
+    eventType: "",
+    ratio: 0.7,
+    query: "Normal baseline",
+    expectation: "succeeded",
+  });
+
+  assert.equal(view.readScenario().incident, null);
+});
+
+test("editing typed incident parameters marks the preset as custom", () => {
+  const doc = new FakeDocument();
+  const view = createDashboardView(doc);
+  let changes = 0;
+  view.setHandlers({ changeScenario: () => { changes += 1; } });
+
+  doc.getElementById("incident-severity").listeners.get("change")({});
+  for (const id of [
+    "incident-duration",
+    "lane-closure-ratio",
+    "demand-multiplier",
+    "signal-plan-delta",
+  ]) {
+    doc.getElementById(id).listeners.get("input")({});
+  }
+
+  assert.equal(changes, 5);
+});
+
 test("decision dialog disables choices not allowed by policy", () => {
   const doc = new FakeDocument();
   const view = createDashboardView(doc);
