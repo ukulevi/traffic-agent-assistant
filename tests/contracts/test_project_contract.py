@@ -80,6 +80,33 @@ class ProjectContractTest(unittest.TestCase):
         )
         self.assertFalse(incident["description_selects_simulation_behavior"])
 
+    def test_route_contract_is_bounded_evidence_backed_and_non_executable(self):
+        route = CONTRACT["route_contract"]
+        self.assertEqual(route["max_candidates"], 3)
+        self.assertEqual(route["graph_kind"], "directed")
+        self.assertTrue(route["simple_paths_only"])
+        self.assertTrue(route["incident_avoiding"])
+        self.assertEqual(
+            route["ranking_order"],
+            [
+                "safety_pass",
+                "max_vc_ratio",
+                "uncertainty_score",
+                "ood_score",
+                "delay_proxy_seconds",
+                "base_cost",
+                "distance_m",
+                "route_id",
+            ],
+        )
+        self.assertEqual(
+            route["required_provenance"],
+            ["model_version", "data_version", "topology_version"],
+        )
+        self.assertFalse(route["executable"])
+        self.assertTrue(route["requires_operator_approval"])
+        self.assertFalse(route["applied_by_system"])
+
 
 if __name__ == "__main__":
     unittest.main()

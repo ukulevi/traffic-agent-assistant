@@ -103,6 +103,16 @@ với thông điệp redacted và trace ID; không fallback topology demo.
 
 Status enum: \texttt{queued}, \texttt{running}, \texttt{succeeded}, \texttt{needs\_review}, \texttt{failed}, \texttt{expired}. Chỉ \texttt{succeeded} có \texttt{recommended\_action}; \texttt{needs\_review} chỉ có candidate với \texttt{executable=false}.
 
+Với incident job có routing topology hợp lệ, \texttt{recommended\_action} có thể
+chứa tối đa ba \texttt{route\_recommendations}. Mỗi phần tử gồm path có hướng,
+evaluation V/C--speed--uncertainty--OOD, model/data/topology version, rank và ba
+guardrail \texttt{executable=false},
+\texttt{requires\_operator\_approval=true},
+\texttt{applied\_by\_system=false}. Nếu không có route pass,
+\texttt{needs\_review} chỉ chứa \texttt{route\_candidates} và rejection reason;
+\texttt{failed}/\texttt{expired} không trả action hoặc route. Ranking là
+lexicographic theo machine-readable contract, không dùng weighted traffic score.
+
 \section{Error Model}
 
 {\small

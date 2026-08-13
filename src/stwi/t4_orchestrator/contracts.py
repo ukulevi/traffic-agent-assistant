@@ -12,7 +12,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -200,6 +200,103 @@ class SafetyCheckResult(BaseModel):
 
 
 # =============================================================================
+# Local diversion route evidence
+# =============================================================================
+
+class RouteCandidate(BaseModel):
+    """One deterministic, incident-avoiding path on a versioned graph."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        frozen=True,
+        str_strip_whitespace=True,
+        allow_inf_nan=False,
+    )
+
+    route_id: str = Field(..., min_length=1, max_length=160)
+    topology_version: str = Field(..., min_length=1, max_length=128)
+    boundary_entry_node: str = Field(..., min_length=1, max_length=64)
+    boundary_exit_node: str = Field(..., min_length=1, max_length=64)
+    node_sequence: tuple[str, ...] = Field(..., min_length=2, max_length=20)
+    edge_ids: tuple[str, ...] = Field(..., min_length=1, max_length=19)
+    base_cost: float = Field(..., gt=0.0)
+    distance_m: float = Field(..., gt=0.0)
+
+    @model_validator(mode="after")
+    def validate_path_shape(self) -> RouteCandidate:
+        if any(not node_id for node_id in self.node_sequence):
+            raise ValueError("route node_sequence must not contain blank identifiers")
+        if any(not edge_id for edge_id in self.edge_ids):
+            raise ValueError("route edge_ids must not contain blank identifiers")
+        if len(set(self.node_sequence)) != len(self.node_sequence):
+            raise ValueError("route node_sequence must be simple")
+        if len(self.edge_ids) != len(self.node_sequence) - 1:
+            raise ValueError("route edge_ids must match consecutive node hops")
+        if self.node_sequence[0] != self.boundary_entry_node:
+            raise ValueError("route must start at boundary_entry_node")
+        if self.node_sequence[-1] != self.boundary_exit_node:
+            raise ValueError("route must end at boundary_exit_node")
+        return self
+
+
+class RouteEvaluation(BaseModel):
+    """Evidence and safety verdict for one route candidate."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        frozen=True,
+        str_strip_whitespace=True,
+        allow_inf_nan=False,
+    )
+
+    route: RouteCandidate
+    max_vc_ratio: float = Field(..., ge=0.0)
+    avg_speed_kmh: float = Field(..., ge=0.0)
+    delay_proxy_seconds: float = Field(..., ge=0.0)
+    uncertainty_score: float = Field(..., ge=0.0)
+    ood_score: float = Field(..., ge=0.0)
+    passed: bool
+    rejection_reasons: tuple[str, ...] = Field(default_factory=tuple)
+    evidence_complete: bool
+    model_version: str = Field(..., min_length=1, max_length=128)
+    data_version: str = Field(..., min_length=1, max_length=128)
+    topology_version: str = Field(..., min_length=1, max_length=128)
+
+    @model_validator(mode="after")
+    def validate_verdict(self) -> RouteEvaluation:
+        if self.topology_version != self.route.topology_version:
+            raise ValueError("evaluation topology version must match route")
+        if any(not reason for reason in self.rejection_reasons):
+            raise ValueError("rejection reasons must be canonical non-empty strings")
+        if self.passed and (not self.evidence_complete or self.rejection_reasons):
+            raise ValueError("passing route evaluation requires complete evidence")
+        if not self.passed and not self.rejection_reasons:
+            raise ValueError("failed route evaluation requires rejection reasons")
+        return self
+
+
+class RouteRecommendation(BaseModel):
+    """Ranked decision-support route; never an executable instruction."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    route: RouteCandidate
+    evaluation: RouteEvaluation
+    rank: int = Field(..., ge=1, le=3)
+    executable: Literal[False] = False
+    requires_operator_approval: Literal[True] = True
+    applied_by_system: Literal[False] = False
+
+    @model_validator(mode="after")
+    def validate_recommendation(self) -> RouteRecommendation:
+        if self.evaluation.route != self.route:
+            raise ValueError("recommendation route must match evaluated route")
+        if not self.evaluation.passed:
+            raise ValueError("only passing route evaluations may be recommended")
+        return self
+
+
+# =============================================================================
 # Job result
 # =============================================================================
 
@@ -300,6 +397,9 @@ __all__ = [
     "OperatorDecisionRecord",
     "AuditRecord",
     "SafetyCheckResult",
+    "RouteCandidate",
+    "RouteEvaluation",
+    "RouteRecommendation",
     "JobEvent",
     "JobEnvelope",
 ]

@@ -7,6 +7,9 @@ from stwi.t4_orchestrator.contracts import (
     IncidentVector,
     JobEnvelope,
     JobStatus,
+    RouteCandidate,
+    RouteEvaluation,
+    RouteRecommendation,
     SafetyCheckResult,
     SignalPlanDelta,
     WhatIfJobRequest,
@@ -34,6 +37,9 @@ from stwi.t4_orchestrator.safety_loop import CounterfactualSafetyLoop
 __all__ = [
     # Contracts
     "JobStatus",
+    "RouteCandidate",
+    "RouteEvaluation",
+    "RouteRecommendation",
     "IncidentSeverity",
     "IncidentType",
     "IncidentVector",

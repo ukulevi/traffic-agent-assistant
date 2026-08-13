@@ -17,6 +17,9 @@ from datetime import datetime
 from stwi.t4_orchestrator.contracts import (
     AuditRecord,
     JobStatus,
+    RouteCandidate,
+    RouteEvaluation,
+    RouteRecommendation,
     WhatIfJobRequest,
     WhatIfJobResult,
 )
@@ -400,6 +403,103 @@ class TestWhatIfJobRequest(unittest.TestCase):
         restored = WhatIfJobRequest.model_validate(request.model_dump(mode="json"))
         self.assertEqual(restored.incident, request.incident)
         self.assertEqual(restored.incident.demand_multiplier, 1.5)
+
+
+class TestRouteContracts(unittest.TestCase):
+    def test_route_types_are_exposed_by_tier4_public_api(self):
+        from stwi.t4_orchestrator import (
+            RouteCandidate as PublicRouteCandidate,
+            RouteEvaluation as PublicRouteEvaluation,
+            RouteRecommendation as PublicRouteRecommendation,
+        )
+
+        self.assertIs(PublicRouteCandidate, RouteCandidate)
+        self.assertIs(PublicRouteEvaluation, RouteEvaluation)
+        self.assertIs(PublicRouteRecommendation, RouteRecommendation)
+
+    def _candidate(self, **overrides) -> RouteCandidate:
+        values = {
+            "route_id": "route-node_02-node_06-01",
+            "topology_version": "synthetic-routing-20-v1",
+            "boundary_entry_node": "node_02",
+            "boundary_exit_node": "node_06",
+            "node_sequence": ["node_02", "node_01", "node_06"],
+            "edge_ids": [
+                "edge-node_02-node_01",
+                "edge-node_01-node_06",
+            ],
+            "base_cost": 2.0,
+            "distance_m": 200.0,
+        }
+        values.update(overrides)
+        return RouteCandidate.model_validate(values)
+
+    def _evaluation(self, **overrides) -> RouteEvaluation:
+        values = {
+            "route": self._candidate(),
+            "max_vc_ratio": 0.82,
+            "avg_speed_kmh": 34.0,
+            "delay_proxy_seconds": 21.18,
+            "uncertainty_score": 0.1,
+            "ood_score": 0.05,
+            "passed": True,
+            "rejection_reasons": [],
+            "evidence_complete": True,
+            "model_version": "demo-model-v1",
+            "data_version": "synthetic-data-v1",
+            "topology_version": "synthetic-routing-20-v1",
+        }
+        values.update(overrides)
+        return RouteEvaluation.model_validate(values)
+
+    def test_route_contracts_round_trip_with_non_executable_guardrails(self):
+        recommendation = RouteRecommendation(
+            route=self._candidate(),
+            evaluation=self._evaluation(),
+            rank=1,
+        )
+        restored = RouteRecommendation.model_validate(
+            recommendation.model_dump(mode="json")
+        )
+
+        self.assertEqual(restored, recommendation)
+        self.assertFalse(restored.executable)
+        self.assertTrue(restored.requires_operator_approval)
+        self.assertFalse(restored.applied_by_system)
+
+    def test_candidate_rejects_repeated_nodes_or_mismatched_edges(self):
+        with self.assertRaises(Exception):
+            self._candidate(node_sequence=["node_02", "node_01", "node_02"])
+        with self.assertRaises(Exception):
+            self._candidate(edge_ids=["edge-node_02-node_01"])
+        with self.assertRaises(Exception):
+            self._candidate(base_cost=float("inf"))
+
+    def test_passing_evaluation_requires_evidence_and_no_rejection_reasons(self):
+        with self.assertRaises(Exception):
+            self._evaluation(evidence_complete=False)
+        with self.assertRaises(Exception):
+            self._evaluation(rejection_reasons=["high_vc_ratio"])
+        with self.assertRaises(Exception):
+            self._evaluation(max_vc_ratio=float("nan"))
+
+    def test_recommendation_requires_matching_passing_evaluation(self):
+        with self.assertRaises(Exception):
+            RouteRecommendation(
+                route=self._candidate(route_id="other-route"),
+                evaluation=self._evaluation(),
+                rank=1,
+            )
+        with self.assertRaises(Exception):
+            RouteRecommendation(
+                route=self._candidate(),
+                evaluation=self._evaluation(
+                    passed=False,
+                    evidence_complete=False,
+                    rejection_reasons=["missing_evidence"],
+                ),
+                rank=1,
+            )
 
 
 if __name__ == "__main__":

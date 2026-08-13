@@ -31,7 +31,8 @@ VALID_ENV = {
 
 
 class TrustedComponent:
-    pass
+    def predict_route(self, **kwargs):
+        return []
 
 
 class ProvisionalComponent:
@@ -177,6 +178,10 @@ class ProductionRuntimeCompositionTest(unittest.TestCase):
         self.assertFalse(runtime.dispatcher.is_provisional_dispatcher)
         self.assertFalse(runtime.store.is_provisional_store)
         self.assertFalse(runtime.orchestrator.uses_provisional_adapters)
+        self.assertEqual(
+            runtime.orchestrator.routing_graph_version,
+            "synthetic-routing-20-v1",
+        )
         self.assertIs(runtime.components.principal_resolver, runtime.principal_resolver)
         self.assertIsInstance(
             runtime.network_context_provider,

@@ -6,11 +6,13 @@ They are not calibrated forecasts and must never be wired in production.
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import datetime
 from typing import Any
 
 from stwi.contracts.incident import IncidentType, IncidentVector
 from stwi.t1_pipeline.mock_data import generate_mock_network
+from stwi.t4_orchestrator.contracts import RouteCandidate
 from stwi.t4_orchestrator.fake_adapters import (
     ScenarioForecastResult,
     SurrogateScenario,
@@ -105,6 +107,43 @@ class DemoSurrogateForecaster:
                     )
                 )
         return results
+
+    def predict_route(
+        self,
+        *,
+        node_ids: list[str],
+        horizons_minutes: list[int],
+        candidate_action: dict[str, Any],
+        scenario_time: datetime,
+        incident: IncidentVector,
+        route_candidate: RouteCandidate,
+    ) -> list[ScenarioForecastResult]:
+        """Return synthetic route-specific evidence without actuation claims."""
+
+        base_results = self.predict(
+            node_ids=node_ids,
+            horizons_minutes=horizons_minutes,
+            candidate_action=candidate_action,
+            scenario_time=scenario_time,
+            incident=incident,
+        )
+        try:
+            route_index = int(route_candidate.route_id.rsplit("-", 1)[-1])
+        except ValueError:
+            route_index = 1
+        pressure = min(max(route_index, 1), 3) * 0.015
+        route_nodes = set(route_candidate.node_sequence)
+        return [
+            replace(
+                result,
+                predicted_volume=result.predicted_volume * (1.0 + pressure),
+                predicted_speed=result.predicted_speed * (1.0 - pressure),
+                vc_ratio=min(result.vc_ratio + pressure, 1.5),
+            )
+            if result.node_id in route_nodes
+            else result
+            for result in base_results
+        ]
 
     def _scenario_for(
         self,

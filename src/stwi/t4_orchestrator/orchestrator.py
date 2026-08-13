@@ -26,11 +26,14 @@ from datetime import datetime, timezone
 from typing import Any
 
 from stwi.config.runtime import RuntimeMode, RuntimeSettings, get_runtime_settings
+from stwi.t1_pipeline.network_topology import NetworkTopology, build_synthetic_topology
 from stwi.t3_knowledge.tier3_facade import T3KnowledgeTier, T3LegalEvidence
 from stwi.t4_orchestrator.contracts import (
     AuditRecord,
     CandidateAction,
     JobStatus,
+    RouteEvaluation,
+    RouteRecommendation,
     SafetyCheckResult,
     WhatIfJobRequest,
     WhatIfJobResult,
@@ -39,6 +42,7 @@ from stwi.t4_orchestrator.interfaces import (
     BaselineForecast,
     BaselineForecaster,
     LegalEvidenceProvider,
+    RouteEvaluator,
     ScenarioForecast,
     ScenarioForecaster,
 )
@@ -48,6 +52,11 @@ from stwi.t4_orchestrator.fake_adapters import (
     SurrogateScenario,
 )
 from stwi.t4_orchestrator.safety_loop import CounterfactualSafetyLoop
+from stwi.t4_orchestrator.route_evaluation import (
+    RouteImpactEvaluator,
+    RouteSafetyGate,
+)
+from stwi.t4_orchestrator.routing import LocalDiversionGenerator, RoutingError
 from stwi.t4_orchestrator.runtime_artifacts import RuntimeArtifactSet
 
 logger = logging.getLogger(__name__)
@@ -79,6 +88,9 @@ class OrchestratorState:
     safety_checks: list[SafetyCheckResult] = field(default_factory=list)
     safety_passed: bool = False
     selected_action: CandidateAction | None = None
+    route_analysis_attempted: bool = False
+    route_evaluations: list[RouteEvaluation] = field(default_factory=list)
+    route_recommendations: list[RouteRecommendation] = field(default_factory=list)
 
     # Terminal state
     status: JobStatus = JobStatus.RUNNING
@@ -104,6 +116,11 @@ class WhatIfOrchestrator:
         settings: RuntimeSettings | None = None,
         timeout_seconds: float = 180.0,
         runtime_artifacts: RuntimeArtifactSet | None = None,
+        network_topology: NetworkTopology | None = None,
+        route_generator: LocalDiversionGenerator | None = None,
+        route_evaluator: RouteEvaluator | None = None,
+        route_safety_gate: RouteSafetyGate | None = None,
+        expected_routing_graph_version: str | None = None,
     ) -> None:
         self._settings = settings or get_runtime_settings()
         if not self._settings.allow_provisional_adapters and (
@@ -121,6 +138,18 @@ class WhatIfOrchestrator:
             raise RuntimeError(
                 "Production runtime rejects provisional adapters; inject "
                 "real baseline, surrogate, and T3 adapters."
+            )
+        if not self._settings.allow_provisional_adapters and network_topology is None:
+            raise RuntimeError(
+                "Production runtime requires a trusted routing topology."
+            )
+        if (
+            not self._settings.allow_provisional_adapters
+            and route_evaluator is None
+            and not callable(getattr(surrogate, "predict_route", None))
+        ):
+            raise RuntimeError(
+                "Production runtime requires a route-specific forecaster."
             )
         if self._settings.allow_provisional_adapters:
             self._baseline = baseline or FakeBaselineForecaster()
@@ -155,6 +184,18 @@ class WhatIfOrchestrator:
         self._ood_threshold = (
             runtime_artifacts.surrogate.ood_threshold if runtime_artifacts else 0.5
         )
+        if network_topology is None and self._settings.mode == RuntimeMode.DEMO:
+            network_topology = build_synthetic_topology()
+        self._network_topology = network_topology
+        self._route_generator = route_generator or LocalDiversionGenerator()
+        self._route_evaluator = route_evaluator or (
+            RouteImpactEvaluator(route_forecaster=self._surrogate)
+            if self._network_topology is not None
+            and callable(getattr(self._surrogate, "predict_route", None))
+            else None
+        )
+        self._route_safety_gate = route_safety_gate or RouteSafetyGate()
+        self._expected_routing_graph_version = expected_routing_graph_version
 
     @property
     def uses_provisional_adapters(self) -> bool:
@@ -163,6 +204,14 @@ class WhatIfOrchestrator:
             _is_provisional_adapter(adapter)
             for adapter in (self._baseline, self._surrogate, self._t3)
         )
+
+    @property
+    def routing_graph_version(self) -> str | None:
+        """Return the trusted routing graph version wired into this runtime."""
+
+        if self._network_topology is None:
+            return None
+        return self._network_topology.routing_graph_version
 
     def run(self, job_id: str, request: WhatIfJobRequest) -> WhatIfJobResult:
         """Execute the full what-if workflow and return the job result."""
@@ -196,7 +245,15 @@ class WhatIfOrchestrator:
 
             check_timeout()
             self._node_safety(state)
-            
+
+            check_timeout()
+            if (
+                state.status == JobStatus.SUCCEEDED
+                and state.request.incident is not None
+                and self._network_topology is not None
+            ):
+                self._node_routing(state)
+
             check_timeout()
 
         except (TimeoutError, asyncio.TimeoutError) as exc:
@@ -331,6 +388,77 @@ class WhatIfOrchestrator:
             state.status = JobStatus.NEEDS_REVIEW
             state.needs_review_reason = outcome.fail_reason
 
+    def _node_routing(self, state: OrchestratorState) -> None:
+        """Generate, evaluate and rank bounded local diversion evidence."""
+
+        topology = self._network_topology
+        incident = state.request.incident
+        if topology is None or incident is None:
+            return
+        state.route_analysis_attempted = True
+        if self._route_evaluator is None:
+            state.status = JobStatus.NEEDS_REVIEW
+            state.needs_review_reason = "route_evaluator_unavailable"
+            return
+        expected_version = (
+            self._expected_routing_graph_version
+            or topology.routing_graph_version
+        )
+
+        try:
+            candidates = self._route_generator.generate(
+                topology,
+                incident_node_id=incident.affected_node_ids[0],
+                expected_topology_version=expected_version,
+            )
+        except RoutingError as exc:
+            state.status = JobStatus.NEEDS_REVIEW
+            state.needs_review_reason = (
+                "topology_version_mismatch"
+                if "topology version mismatch" in str(exc)
+                else "route_generation_unavailable"
+            )
+            return
+
+        if not candidates:
+            state.status = JobStatus.NEEDS_REVIEW
+            state.needs_review_reason = (
+                "no_passing_route: no_valid_diversion_candidates"
+            )
+            return
+
+        evaluations = self._route_evaluator.evaluate_all(
+            topology=topology,
+            candidates=candidates,
+            incident=incident,
+            node_ids=list(state.request.node_ids),
+            horizons_minutes=list(state.request.horizons_minutes),
+            candidate_action=state.selected_action.model_dump(),
+            scenario_time=state.request.scenario_time,
+            model_version=self._model_version,
+            data_version=self._data_version,
+            expected_topology_version=expected_version,
+            vc_threshold=state.request.vc_threshold,
+            uncertainty_threshold=self._uncertainty_threshold,
+            ood_threshold=self._ood_threshold,
+            has_evidence=bool(state.citations),
+        )
+        state.route_evaluations = list(evaluations)
+        state.route_recommendations = list(
+            self._route_safety_gate.filter_and_rank(evaluations)
+        )
+        if not state.route_recommendations:
+            reasons = sorted(
+                {
+                    reason
+                    for evaluation in evaluations
+                    for reason in evaluation.rejection_reasons
+                }
+            )
+            detail = ",".join(reasons) if reasons else "no_passing_evidence"
+            state.status = JobStatus.NEEDS_REVIEW
+            state.needs_review_reason = f"no_passing_route: {detail}"
+
     # -------------------------------------------------------------------------
     # Finalize
     # -------------------------------------------------------------------------
@@ -374,6 +502,11 @@ class WhatIfOrchestrator:
                 executable=False,
                 action_kind="recommended_action",
             )
+            if state.route_recommendations:
+                recommended_action["route_recommendations"] = [
+                    item.model_dump(mode="json")
+                    for item in state.route_recommendations
+                ]
             candidate_action_field = None
         elif state.status == JobStatus.NEEDS_REVIEW:
             recommended_action = None
@@ -382,6 +515,11 @@ class WhatIfOrchestrator:
                 executable=False,
                 action_kind="candidate_action",
             )
+            if state.route_analysis_attempted:
+                candidate_action_field["route_candidates"] = [
+                    item.model_dump(mode="json")
+                    for item in state.route_evaluations
+                ]
         else:
             recommended_action = None
             candidate_action_field = None
@@ -418,6 +556,7 @@ class WhatIfOrchestrator:
             "executable": executable,
             "requires_operator_approval": True,
             "automatic_actuation": False,
+            "applied_by_system": False,
         }
 
     def _summarize_baseline(

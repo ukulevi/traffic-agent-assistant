@@ -13,6 +13,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from stwi.config.runtime import RuntimeMode, get_runtime_settings
+from stwi.t1_pipeline.network_topology import build_synthetic_topology
 from stwi.t3_knowledge.corpus_ingestion import ingest_minimal_corpus
 from stwi.t3_knowledge.tier3_facade import T3KnowledgeTier
 from stwi.t4_orchestrator.api import create_app
@@ -29,6 +30,11 @@ from stwi.t4_orchestrator.runtime_artifacts import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+class TrustedRouteSurrogate:
+    def predict_route(self, **kwargs):
+        return []
 
 
 class TestRuntimeSettings(unittest.TestCase):
@@ -109,11 +115,33 @@ class TestProductionCompositionGuard(unittest.TestCase):
             artifacts = write_runtime_artifacts(Path(directory))
             orchestrator = WhatIfOrchestrator(
                 baseline=object(),
-                surrogate=object(),
+                surrogate=TrustedRouteSurrogate(),
                 t3=object_with_legal_evidence(),
                 runtime_artifacts=artifacts,
+                network_topology=build_synthetic_topology(),
             )
             self.assertFalse(orchestrator.uses_provisional_adapters)
+
+    def test_orchestrator_requires_routing_topology_in_production(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(RuntimeError, "routing topology"):
+                WhatIfOrchestrator(
+                    baseline=object(),
+                    surrogate=TrustedRouteSurrogate(),
+                    t3=object_with_legal_evidence(),
+                    runtime_artifacts=write_runtime_artifacts(Path(directory)),
+                )
+
+    def test_orchestrator_requires_route_specific_forecaster_in_production(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(RuntimeError, "route-specific forecaster"):
+                WhatIfOrchestrator(
+                    baseline=object(),
+                    surrogate=object(),
+                    t3=object_with_legal_evidence(),
+                    runtime_artifacts=write_runtime_artifacts(Path(directory)),
+                    network_topology=build_synthetic_topology(),
+                )
 
     def test_orchestrator_requires_validated_artifacts_in_production(self):
         with self.assertRaisesRegex(RuntimeError, "validated runtime artifacts"):

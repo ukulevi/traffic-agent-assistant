@@ -219,7 +219,39 @@ tiết lộ server allowlist.
     "action_kind": "recommended_action",
     "executable": false,
     "requires_operator_approval": true,
-    "automatic_actuation": false
+    "automatic_actuation": false,
+    "applied_by_system": false,
+    "route_recommendations": [
+      {
+        "route": {
+          "route_id": "route-node_02-node_06-01",
+          "topology_version": "synthetic-routing-20-v1",
+          "boundary_entry_node": "node_02",
+          "boundary_exit_node": "node_06",
+          "node_sequence": ["node_02", "node_01", "node_06"],
+          "edge_ids": ["edge-node_02-node_01", "edge-node_01-node_06"],
+          "base_cost": 2.0,
+          "distance_m": 200.0
+        },
+        "evaluation": {
+          "max_vc_ratio": 0.82,
+          "avg_speed_kmh": 34.0,
+          "delay_proxy_seconds": 21.18,
+          "uncertainty_score": 0.10,
+          "ood_score": 0.05,
+          "passed": true,
+          "rejection_reasons": [],
+          "evidence_complete": true,
+          "model_version": "provisional_mock_v1",
+          "data_version": "synthetic_mock_phase4",
+          "topology_version": "synthetic-routing-20-v1"
+        },
+        "rank": 1,
+        "executable": false,
+        "requires_operator_approval": true,
+        "applied_by_system": false
+      }
+    ]
   },
   "candidate_action": null,
   "citations": [
@@ -303,7 +335,9 @@ tiết lộ server allowlist.
     "action_kind": "candidate_action",
     "executable": false,
     "requires_operator_approval": true,
-    "automatic_actuation": false
+    "automatic_actuation": false,
+    "applied_by_system": false,
+    "route_candidates": []
   },
   "citations": [],
   "needs_review_reason": "SAFETY_NOT_CONVERGED: Không đạt policy sau 3 vòng; max V/C còn 0.93",
@@ -368,6 +402,16 @@ tiết lộ server allowlist.
   "data_version": "synthetic_mock_phase4"
 }
 ```
+
+`route_recommendations` chỉ xuất hiện trong `recommended_action` của job
+`succeeded` khi mỗi candidate có forecast tác động riêng, đủ lưới node/horizon,
+và mọi evaluation/provenance đều hợp lệ. Production thiếu trusted topology hoặc
+route-specific forecaster phải fail closed, không được bỏ qua routing. Nếu routing đã chạy
+nhưng không có route pass, job chuyển `needs_review`; `candidate_action` chỉ
+chứa `route_candidates` cùng rejection reason, không chứa recommendation.
+Timeout route evaluator tạo `expired`; dependency failure tạo `failed`; cả hai
+không trả action. Ba lớp route contract đều cấm executable/applied-by-system và
+không thay đổi yêu cầu operator phê duyệt.
 
 ### 3.7. Error model
 

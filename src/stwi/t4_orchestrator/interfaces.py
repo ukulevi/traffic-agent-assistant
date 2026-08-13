@@ -10,11 +10,14 @@ from datetime import datetime
 from typing import Any, Protocol
 
 from stwi.contracts.incident import IncidentVector
+from stwi.t1_pipeline.network_topology import NetworkTopology
 from stwi.t4_orchestrator.contracts import (
     JobEnvelope,
     JobEvent,
     JobStatus,
     OperatorDecisionRecord,
+    RouteCandidate,
+    RouteEvaluation,
     SafetyCheckResult,
     WhatIfJobRequest,
 )
@@ -40,6 +43,8 @@ class ScenarioForecast(Protocol):
     vc_ratio: float
     uncertainty_score: float
     ood_score: float
+    model_version: str
+    data_version: str
     warning: str
 
 
@@ -78,6 +83,22 @@ class ScenarioForecaster(Protocol):
         ...
 
 
+class RouteScenarioForecaster(Protocol):
+    """Forecast candidate-specific diversion effects for one bounded route."""
+
+    def predict_route(
+        self,
+        *,
+        node_ids: list[str],
+        horizons_minutes: list[int],
+        candidate_action: dict[str, Any],
+        scenario_time: datetime,
+        incident: IncidentVector,
+        route_candidate: RouteCandidate,
+    ) -> list[ScenarioForecast]:
+        ...
+
+
 class CandidateRefiner(Protocol):
     """Propose one bounded counterfactual action after a safety failure."""
 
@@ -87,6 +108,30 @@ class CandidateRefiner(Protocol):
         check: SafetyCheckResult,
         iteration: int,
     ) -> dict[str, Any] | None:
+        ...
+
+
+class RouteEvaluator(Protocol):
+    """Evaluate route candidates against incident-aware aggregate forecasts."""
+
+    def evaluate_all(
+        self,
+        *,
+        topology: NetworkTopology,
+        candidates: tuple[RouteCandidate, ...],
+        incident: IncidentVector,
+        node_ids: list[str],
+        horizons_minutes: list[int],
+        candidate_action: dict[str, Any],
+        scenario_time: datetime,
+        model_version: str,
+        data_version: str,
+        expected_topology_version: str,
+        vc_threshold: float,
+        uncertainty_threshold: float,
+        ood_threshold: float,
+        has_evidence: bool,
+    ) -> tuple[RouteEvaluation, ...]:
         ...
 
 
@@ -153,7 +198,9 @@ __all__ = [
     "ScenarioForecast",
     "BaselineForecaster",
     "ScenarioForecaster",
+    "RouteScenarioForecaster",
     "CandidateRefiner",
+    "RouteEvaluator",
     "LegalEvidenceProvider",
     "JobStore",
     "JobDispatcher",
