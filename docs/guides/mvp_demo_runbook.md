@@ -1,229 +1,172 @@
 # Runbook demo offline SmartTraffic What-If
 
-Tài liệu này dùng để setup và trình bày toàn bộ 13 kịch bản demo offline của
-STWI. Demo sử dụng dữ liệu synthetic, chỉ hỗ trợ ra quyết định và không tự động
-điều khiển thiết bị.
+Runbook này dùng để setup và showcase toàn bộ profile demo offline của STWI. Tất
+cả node, topology, incident, forecast và route trong profile đều là dữ liệu
+synthetic, aggregate-only. Hệ thống chỉ hỗ trợ ra quyết định, không gửi lệnh đến
+đèn tín hiệu hoặc thiết bị hiện trường.
 
-## 1. Chuẩn bị môi trường
+## 1. Setup
 
-### 1.1. Yêu cầu
-
-- Windows và PowerShell.
-- Python 3.11 trở lên.
-- Chạy lệnh từ thư mục gốc của repository.
-- Trình duyệt truy cập được địa chỉ loopback `127.0.0.1`.
-
-Kiểm tra Python:
+Yêu cầu Windows, PowerShell và Python 3.11+. Từ thư mục gốc repository:
 
 ```powershell
 python --version
-```
-
-Cài project và dependency cho API/dashboard:
-
-```powershell
 pip install -e ".[orchestrator]"
-```
-
-### 1.2. Chạy kiểm tra offline
-
-```powershell
+python scripts/validation/validate_demo_simulation_scope.py
 python scripts/demo/run_mvp_smoke.py --profile offline --output C:\tmp\stwi-offline-evidence.json
 ```
 
-Kết quả mong đợi:
+Kết quả smoke bắt buộc:
 
 ```json
-{"profile":"offline","verdict":"pass","capability_count":13}
+{"profile":"offline","verdict":"pass","capability_count":17}
 ```
 
-Không bắt đầu demo nếu `verdict` khác `pass` hoặc `capability_count` khác `13`.
+Không demo nếu `verdict` khác `pass` hoặc số capability khác `17`. Evidence chỉ
+ghi loại incident/node, phiên bản topology/model/data/policy, số route, trạng
+thái route, lý do safety, có/không citation, trace và quyết định operator. Nó
+không ghi mô tả tự do, ảnh/base64, video thô, credential hoặc secret.
 
-### 1.3. Khởi động dashboard
+Khởi động dashboard trên loopback:
 
 ```powershell
 $env:STWI_RUNTIME_MODE = "demo"
 python -m uvicorn stwi.app:app --host 127.0.0.1 --port 8000
 ```
 
-Giữ cửa sổ PowerShell này đang chạy và mở:
+Mở `http://127.0.0.1:8000/demo/`. `/` trả 404 là đúng vì dashboard được mount
+tại `/demo/`; lỗi favicon 404 không ảnh hưởng demo.
 
-```text
-http://127.0.0.1:8000/demo/
-```
+## 2. Kiểm tra trước khi trình bày
 
-Đường dẫn `/` trả HTTP 404 vì dashboard được mount tại `/demo/`. Lỗi
-`/favicon.ico` 404 không ảnh hưởng đến demo.
+- Header có `Demo synthetic` và `Simulation only`.
+- Khối input **Tạo kịch bản** nằm trước topology, theo dõi job và kết quả.
+- Người trình bày chọn node và loại incident độc lập; preset không khóa incident
+  vào một node cố định.
+- Sơ đồ Leaflet tile-free hiển thị mạng lưới synthetic 4×5 gồm 20 node, không
+  phải bản đồ địa lý thực và không gọi tile server bên ngoài.
+- Route table và overlay dùng cùng route ID; recommendation là nét liền, candidate
+  cần review là nét đứt và luôn `NON-EXECUTABLE`.
+- Evidence file có `schema_version: "1.0"`, `verdict: "pass"` và 17 capability.
 
-## 2. Kiểm tra trước khi demo
+## 3. Ma trận 17 capability
 
-Xác nhận các mục sau:
+| Nhóm | Capability | Kết quả cần đối chiếu |
+|---|---|---|
+| Baseline | `normal_baseline` | `succeeded`, recommendation không executable, operator có thể approve |
+| Human review | `safe_rejection` | `succeeded`, operator reject, `applied_by_system=false` |
+| Route pass | `route_recommendation` | `succeeded`, 3 route đã đánh giá và xếp hạng, đủ model/data/topology version |
+| Incident | `accident_any_node` | `needs_review` do V/C policy |
+| Incident | `flood_any_node` | `needs_review`, tốc độ synthetic thấp |
+| Incident | `lane_closure_any_node` | `needs_review`, capacity giả định giảm |
+| Incident | `demand_surge_any_node` | `needs_review`, demand giả định tăng |
+| Route fail-closed | `route_needs_review` | `needs_review`, không bịa route khi generator không có candidate |
+| Safety | `ood` | `needs_review`, không refinement |
+| Safety | `high_uncertainty` | `needs_review`, không recommendation |
+| Legal evidence | `missing_citation` | `needs_review`, citation không đủ |
+| Dependency | `dependency_failure` | `failed`, không action |
+| Deadline | `deadline_exceeded` | `expired`, không action |
+| Validation | `invalid_scenario` | HTTP 422, không tạo job |
+| Authorization | `tenant_scope_denied` | HTTP 403, không tạo job |
+| Transport | `sse_reconnect` | resume sau event 1, chỉ một terminal event |
+| Static mode | `static_preview` | không tạo job hoặc ghi quyết định |
 
-- Header hiển thị `Demo synthetic` và `Simulation only`.
-- Form tạo kịch bản có các preset `safe`, `refinement`, `unsafe-vc`, `ood`,
-  `uncertainty` và `missing-evidence`.
-- Nút **Chạy mô phỏng** hoạt động.
-- File `C:\tmp\stwi-offline-evidence.json` tồn tại.
-- File evidence có `schema_version: "1.0"`, `verdict: "pass"` và đủ 13 phần tử
-  trong `capabilities`.
-- Không mở trực tiếp file `index.html` khi trình bày các luồng tạo job.
+Năm loại incident canonical là `accident`, `flood`, `lane_closure`,
+`demand_surge` và `signal_change`. Harness chọn năm node khác nhau để chứng minh
+incident không gắn cứng với node; trong dashboard người demo có thể chọn bất kỳ
+node hợp lệ `node_00`–`node_19` trước khi chọn incident.
 
-## 3. Ma trận 13 kịch bản
+## 4. Kịch bản showcase trực tiếp
 
-| # | Capability | Cách chạy | Kết quả mong đợi |
-|---:|---|---|---|
-| 1 | `safe_approval` | Dashboard: preset `safe`, chạy job và chọn approve | `succeeded`, có `recommended_action`, quyết định `approved` |
-| 2 | `safe_rejection` | Dashboard: tạo job `safe` mới và chọn reject | `succeeded`, quyết định `rejected` |
-| 3 | `refinement_success` | Dashboard: preset `refinement` | `succeeded` sau hai candidate khác nhau |
-| 4 | `unsafe_vc` | Dashboard: preset `unsafe-vc` | `needs_review`, chỉ có `candidate_action` |
-| 5 | `ood` | Dashboard: preset `ood` | `needs_review`, không refinement |
-| 6 | `high_uncertainty` | Dashboard: preset `uncertainty` | `needs_review`, không refinement |
-| 7 | `missing_citation` | Dashboard: preset `missing-evidence` | `needs_review`, không có recommendation |
-| 8 | `dependency_failure` | File evidence offline | `failed`, không có action |
-| 9 | `deadline_exceeded` | File evidence offline | `expired`, không có action |
-| 10 | `invalid_scenario` | File evidence offline | HTTP `422`, không tạo job |
-| 11 | `tenant_scope_denied` | File evidence offline | HTTP `403`, không tạo job |
-| 12 | `sse_reconnect` | File evidence offline | Resume từ event trước, không lặp terminal event |
-| 13 | `static_preview` | Mở trực tiếp file HTML tĩnh | Preview không cho tạo job |
+### 4.1. Baseline bình thường
 
-## 4. Hướng dẫn chạy từng kịch bản
+1. Chọn một node bất kỳ và preset `safe`.
+2. Xác nhận **Không có sự cố**, `green_time_ratio=0.70`, rồi chạy mô phỏng.
+3. Theo dõi `queued → running → succeeded` và đọc kết quả 30 phút ở dưới input.
+4. Kiểm tra đơn vị, citation provisional, model/data version, job/trace ID.
+5. Mở operator review, ghi approve hoặc reject; xác nhận
+   `automatic_actuation=false` và `applied_by_system=false`.
 
-### 4.1. `safe_approval`
+### 4.2. Incident và route recommendation
 
-1. Chọn preset `safe`.
-2. Xác nhận node là `node_00` và `green_time_ratio` là `0.70`.
-3. Bấm **Chạy mô phỏng**.
-4. Chờ lifecycle chuyển `queued` → `running` → `succeeded`.
-5. Kiểm tra kết quả có đơn vị, citation, model/data version, `job_id` và
-   `trace_id`.
-6. Kiểm tra `recommended_action` có nhãn `NON-EXECUTABLE`.
-7. Bấm **Ghi nhận quyết định**, chọn approve, nhập lý do và xác nhận.
-8. Kiểm tra quyết định là `approved` và `applied_by_system=false`.
+1. Chọn một node khác node vừa dùng, sau đó chọn preset `refinement` hoặc incident
+   `signal_change`. Incident áp dụng tại node đang chọn, không phải node cố định.
+2. Chạy mô phỏng. Với profile `refinement`, vòng đầu đánh giá ratio `0.70`, vòng
+   sau đánh giá ratio `0.85` và kết thúc `succeeded`.
+3. Trong **Hành lang điều hướng**, đối chiếu tối đa ba route ở bảng và bản đồ:
+   rank, node sequence, V/C, tốc độ, delay proxy, uncertainty, OOD và ba version.
+4. Xác nhận route tránh node incident, có nhãn recommendation, nét liền và
+   `requires_operator_approval=true`.
 
-### 4.2. `safe_rejection`
+`route_needs_review` là probe tích hợp chạy trong smoke harness: generator demo
+cố ý trả không có candidate để chứng minh fail-closed. Entrypoint dashboard mặc
+định không có nút làm hỏng generator; không được dựng route giả trên màn hình để
+minh họa nhánh này. Hãy mở evidence và đối chiếu `route_count: 0`,
+`route_status: "needs_review"` cùng `safety_reason` bắt đầu bằng
+`no_passing_route`.
 
-1. Chọn lại preset `safe` và tạo một job mới.
-2. Chờ job kết thúc ở `succeeded`.
-3. Bấm **Ghi nhận quyết định**, chọn reject và nhập lý do.
-4. Kiểm tra quyết định là `rejected` và `applied_by_system=false`.
+### 4.3. Năm incident độc lập với node
 
-Phải tạo job mới vì quyết định của một job đã ghi thì không được thay đổi.
+Với mỗi lần chạy, tự chọn một node hợp lệ trước rồi chọn một loại incident. Không
+dùng bảng ánh xạ event→node. Các giá trị là deterministic synthetic, không phải
+đo đạc hiện trường:
 
-### 4.3. `refinement_success`
-
-1. Chọn preset `refinement`.
-2. Xác nhận node là `node_10` và ratio ban đầu là `0.70`.
-3. Chạy mô phỏng và mở phần Counterfactual Safety Loop.
-4. Kiểm tra vòng 1 đánh giá ratio `0.70` và không đạt gate V/C.
-5. Kiểm tra vòng 2 đánh giá candidate mới với ratio `0.85` và đạt gate.
-6. Xác nhận trạng thái cuối là `succeeded`; action vẫn `NON-EXECUTABLE`.
-
-### 4.4. `unsafe_vc`
-
-1. Chọn preset `unsafe-vc`; node phải là `node_01`.
-2. Chạy mô phỏng.
-3. Kiểm tra trạng thái cuối là `needs_review` do V/C vượt policy `0.90`.
-4. Kiểm tra chỉ có `candidate_action`, không có `recommended_action` và không
-   thể approve.
-
-### 4.5. `ood`
-
-1. Chọn preset `ood`; node phải là `node_02`.
-2. Chạy mô phỏng.
-3. Kiểm tra trạng thái cuối là `needs_review` với lý do
-   `out_of_distribution`.
-4. Kiểm tra safety loop dừng ngay, không thử candidate khác và không có
-   `recommended_action`.
-
-### 4.6. `high_uncertainty`
-
-1. Chọn preset `uncertainty`; node phải là `node_03`.
-2. Chạy mô phỏng.
-3. Kiểm tra trạng thái cuối là `needs_review` do uncertainty cao.
-4. Kiểm tra không refinement, không recommendation và không thể approve.
-
-### 4.7. `missing_citation`
-
-1. Chọn preset `missing-evidence`; node phải là `node_04`.
-2. Chạy mô phỏng.
-3. Kiểm tra trạng thái cuối là `needs_review` do thiếu citation hợp lệ.
-4. Kiểm tra không refinement và không có `recommended_action`.
-
-### 4.8. Xem năm kịch bản boundary trong evidence
-
-Không cố ý làm hỏng dashboard để tạo lỗi dependency, timeout, validation,
-authorization hoặc SSE. Mở file:
-
-```powershell
-notepad C:\tmp\stwi-offline-evidence.json
-```
-
-Tìm lần lượt từng giá trị `name` và đối chiếu:
-
-| Capability | Trường cần kiểm tra |
+| Incident | Điều cần quan sát |
 |---|---|
-| `dependency_failure` | `status: "pass"`, `observed: "failed"`, `terminal_status: "failed"`, không có action |
-| `deadline_exceeded` | `status: "pass"`, `observed: "expired"`, `terminal_status: "expired"`, không có action |
-| `invalid_scenario` | `status: "pass"`, `expected: "422"`, `observed: "422"`, `terminal_event_count: 0` |
-| `tenant_scope_denied` | `status: "pass"`, `expected: "403"`, `observed: "403"`, `terminal_event_count: 0` |
-| `sse_reconnect` | `status: "pass"`, `observed: "terminal_event_resumed"`, `terminal_event_count: 1` |
+| `accident` | V/C vượt policy và `needs_review` |
+| `flood` | tốc độ synthetic giảm; không suy diễn mực nước |
+| `lane_closure` | dùng `lane_closure_ratio`; không suy diễn số làn thực |
+| `demand_surge` | dùng `demand_multiplier`; không phải dự báo production |
+| `signal_change` | dùng typed `green_time_ratio_delta`; có thể tạo route evidence nếu các gate pass |
 
-`status: "pass"` trong manifest nghĩa là kịch bản tạo đúng kết quả mong đợi;
-ví dụ `dependency_failure` pass khi job kết thúc đúng ở `failed` và không làm lộ
-action.
+V/C 0,9 là policy cấu hình MVP, không phải quy định pháp luật. Mô tả tự do chỉ
+phục vụ ngữ cảnh/citation và không chọn hành vi mô phỏng.
 
-### 4.9. `static_preview`
+### 4.4. Fail-closed trên dashboard
 
-1. Mở file sau trực tiếp bằng trình duyệt trong một tab riêng:
+- `unsafe-vc`: `needs_review`, chỉ `candidate_action`, không thể approve.
+- `ood`: `needs_review` với lý do OOD, không refinement.
+- `uncertainty`: `needs_review`, không recommendation.
+- `missing-evidence`: `needs_review`, không coi citation demo là xác nhận pháp lý
+  production.
+- `extreme`: tỷ lệ xanh cực trị bị safety gate giữ lại.
 
-   ```text
-   src/stwi/t4_orchestrator/static/index.html
-   ```
+### 4.5. Boundary và transport trong evidence
 
-2. Kiểm tra giao diện hiển thị `Static preview`.
-3. Kiểm tra không thể tạo job hoặc gửi quyết định.
-4. Đóng tab preview và quay lại `http://127.0.0.1:8000/demo/`.
+Mở `C:\tmp\stwi-offline-evidence.json` và đối chiếu:
 
-Trong evidence, capability này phải có:
+- `dependency_failure`: observed `failed`, không action.
+- `deadline_exceeded`: observed `expired`, không action.
+- `invalid_scenario`: expected/observed `422`, không tạo job.
+- `tenant_scope_denied`: expected/observed `403`, không tạo job.
+- `sse_reconnect`: `terminal_event_count: 1` sau resume.
+- `static_preview`: `non_mutating_static_preview`, `network_contacted: false`.
 
-```json
-{
-  "name": "static_preview",
-  "status": "pass",
-  "observed": "non_mutating_static_preview"
-}
-```
+`status: "pass"` của capability nghĩa là hệ thống tạo đúng nhánh mong đợi, kể cả
+khi job kết thúc ở `failed`, `expired` hoặc `needs_review`.
 
-## 5. Trình tự demo đề xuất
+## 5. Trình tự showcase 8–10 phút
 
-Chạy theo thứ tự sau để câu chuyện trình bày liền mạch:
+1. Giới thiệu phạm vi synthetic, aggregate-only và decision-support.
+2. Chỉ khối input nằm trên; chọn node và incident độc lập.
+3. Chạy baseline `safe`, đọc lifecycle, output, citation và trace.
+4. Ghi một quyết định audit-only.
+5. Chạy `signal_change/refinement`, đọc route trên bảng và bản đồ.
+6. Chạy một incident fail-closed tại node khác.
+7. Mở evidence để chỉ route `needs_review`, dependency, expiry, validation,
+   authorization và SSE reconnect.
+8. Kết luận: mọi action/route đều không executable và cần con người quyết định.
 
-1. Giới thiệu dashboard `Demo synthetic` và nguyên tắc không tự động điều khiển.
-2. Chạy `safe_approval` để trình bày lifecycle, kết quả, citation và quyết định.
-3. Chạy `safe_rejection` để chứng minh operator có thể bác bỏ recommendation.
-4. Chạy `refinement_success` để trình bày hai candidate khác nhau.
-5. Chạy `unsafe_vc`, `ood`, `high_uncertainty` và `missing_citation` để trình
-   bày các nhánh `needs_review`.
-6. Mở evidence và trình bày `dependency_failure`, `deadline_exceeded`,
-   `invalid_scenario`, `tenant_scope_denied` và `sse_reconnect`.
-7. Mở `static_preview`, xác nhận form không mutating rồi quay lại dashboard.
-8. Kết luận rằng đủ 13 kịch bản đã được trình bày và mọi action đều cần quyết
-   định của con người.
+## 6. Xử lý lỗi và kết thúc
 
-## 6. Xử lý lỗi khi demo
-
-| Hiện tượng | Cách xử lý |
+| Hiện tượng | Xử lý |
 |---|---|
-| Mở `/` thấy `404 Not Found` | Dùng đúng `http://127.0.0.1:8000/demo/`. |
-| `/favicon.ico` trả 404 | Bỏ qua; lỗi này không ảnh hưởng dashboard. |
-| `Connection refused` | Kiểm tra cửa sổ Uvicorn còn chạy và đang dùng cổng `8000`. |
-| Thiếu `fastapi` hoặc `uvicorn` | Chạy lại `pip install -e ".[orchestrator]"`. |
-| Dashboard hiển thị `Static preview` | Đóng file HTML trực tiếp và mở lại URL `/demo/`. |
-| Job kết thúc `needs_review` | Đối chiếu preset; đây là kết quả đúng của các kịch bản fail-closed. |
-| Smoke test không pass đủ 13 capability | Không tiếp tục demo; đọc capability có `status: "fail"` trong evidence. |
+| `/` trả 404 | Mở đúng `/demo/`. |
+| `Connection refused` | Kiểm tra Uvicorn và cổng 8000. |
+| Dashboard hiện `Static preview` | Mở qua HTTP thay vì mở `index.html` trực tiếp. |
+| Job `needs_review` | Đọc safety reason; không đổi thành `succeeded`. |
+| Route trống | Đọc `route_status`/reason; không thêm route minh họa thủ công. |
+| Smoke không đủ 17 capability | Dừng demo và đọc capability `status: "fail"`. |
 
-## 7. Kết thúc
-
-1. Đóng tab `static_preview` nếu còn mở.
-2. Giữ lại `C:\tmp\stwi-offline-evidence.json` nếu cần đối chiếu sau demo.
-3. Nhấn `Ctrl+C` tại cửa sổ Uvicorn để dừng server.
+Kết thúc bằng `Ctrl+C`. Chỉ giữ evidence nếu cần audit; không phát hành file có
+credential, endpoint riêng, mô tả nhạy cảm, ảnh hoặc video thô.

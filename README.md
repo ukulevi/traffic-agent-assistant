@@ -112,7 +112,7 @@ or base64 visualization outputs.
 
 ## Comprehensive Hybrid Demo
 
-See [docs/guides/mvp_demo_runbook.md](./docs/guides/mvp_demo_runbook.md) for the 7-minute and 15-minute presenter scripts, the 13-capability matrix, recovery steps, and the aggregate-only evidence boundary.
+See [docs/guides/mvp_demo_runbook.md](./docs/guides/mvp_demo_runbook.md) for the 8-10 minute showcase sequence, the 17-capability matrix, recovery steps, and the aggregate-only evidence boundary.
 
 The approved solo-project demo is simulation-first: versioned synthetic
 five-minute time series feed the baseline model and offline Eclipse SUMO runs

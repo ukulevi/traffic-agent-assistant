@@ -55,10 +55,11 @@ a:focus-visible,
 .simulation-badge { border-color: #aed4df; color: #075a79; background: #e7f5f8; }
 
 .command-layout { display: grid; grid-template-columns: 220px minmax(560px, 1fr); gap: 16px; width: min(1500px, calc(100% - 32px)); margin: 16px auto; align-items: start; }
+.scenario-panel, .workspace { grid-column: 2; }
 .workspace { display: grid; gap: 16px; }
 .evidence-rail { display: grid; gap: 16px; }
 .node-rail, .evidence-rail { position: sticky; top: 16px; }
-.node-rail { padding: 16px; border: 1px solid #315663; border-radius: var(--stwi-radius); color: #e4eff2; background: var(--stwi-shell); }
+.node-rail { grid-column: 1; grid-row: 1 / span 2; padding: 16px; border: 1px solid #315663; border-radius: var(--stwi-radius); color: #e4eff2; background: var(--stwi-shell); }
 .rail-heading { display: grid; gap: 3px; margin-bottom: 14px; }
 .rail-heading span, .section-kicker { margin-bottom: 4px; color: #0b749a; font-size: 10px; font-weight: 800; letter-spacing: .12em; }
 .rail-heading span { color: #7db4c5; }
@@ -182,6 +183,7 @@ fieldset input { width: auto; }
 
 @media (max-width: 1023px) {
   .command-layout { grid-template-columns: 1fr; }
+  .scenario-panel, .node-rail, .workspace { grid-column: auto; grid-row: auto; }
   .node-rail { position: static; }
   .node-list { grid-template-columns: repeat(4, minmax(0, 1fr)); max-height: none; }
   .network-layout { grid-template-columns: 1fr; }

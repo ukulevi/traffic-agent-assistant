@@ -32,6 +32,8 @@ Kiểm tra các vùng chính trước khi chạy, theo thứ tự DOM và visual
 - **Input** — Khối **Tạo kịch bản What-If** chứa preset, node và `green_time_ratio`.
 - **Job lifecycle** — Khối **Theo dõi job** hiển thị `queued`/`running`/terminal status, sự kiện và `trace_id`.
 - **Result** — Khối **Kết quả 30 phút** hiển thị các số liệu có đơn vị trước khi chuyển sang evidence.
+- **Route evidence** — Bảng và sơ đồ Leaflet tile-free dùng chung route ID, chỉ
+  hiển thị route đã được validate cho đúng terminal status.
 - **Safety/evidence** — Evidence rail hiển thị safety gate, uncertainty/OOD, citation, model/data version, `job_id` và `trace_id`.
 - **Operator review** — Decision gate chỉ ghi audit. Bản ghi luôn phải cho thấy `applied_by_system=false`.
 
@@ -81,12 +83,19 @@ Kiểm tra các vùng chính trước khi chạy, theo thứ tự DOM và visual
 
 **Điểm kiểm tra:** đây là audit trail bất biến, không phải nút điều khiển hiện trường.
 
-## 4. Test case `refinement` — hai candidate khác nhau
+## 4. Test case `refinement` — hai candidate và route evidence
 
-Chọn preset `refinement` tại `node_10`, giữ `green_time_ratio=0.70` và chạy.
+Chọn một node hợp lệ bất kỳ, sau đó chọn preset `refinement`, giữ
+`green_time_ratio=0.70` và chạy. Preset chỉ chọn `signal_change`; incident luôn
+áp dụng tại node đang được operator chọn.
 Counterfactual Safety Loop phải hiển thị hai vòng: vòng đầu V/C vượt policy
 `0.90`; vòng sau đánh giá candidate mới với ratio `0.85` và pass. Kết quả cuối
 là `succeeded`, nhưng action vẫn `NON-EXECUTABLE` và cần operator phê duyệt.
+
+Trong **Hành lang điều hướng**, đối chiếu route ID trên bảng và bản đồ. Mỗi route
+phải có rank, node sequence, max V/C, tốc độ, delay proxy, uncertainty, OOD và
+model/data/topology version. Nét liền biểu thị recommendation đã qua gate; route
+vẫn có `requires_operator_approval=true` và `applied_by_system=false`.
 
 Refinement chỉ áp dụng cho failure V/C cô lập. OOD, uncertainty cao, thiếu
 citation, invalid input hoặc dependency failure phải dừng ngay thay vì thử đổi
@@ -134,19 +143,30 @@ Với `extreme`, chọn preset và xác nhận tỷ lệ xanh bằng `0.00`. UI 
 
 ![Biểu mẫu nhóm preset tình huống giao thông](../assets/demo_walkthrough/11-incident-presets.png)
 
-Các preset dưới đây kiểm tra khả năng trình bày nghiệp vụ, không chứng minh quan hệ nhân quả hoặc độ chính xác ngoài thực địa:
+Các preset dưới đây kiểm tra khả năng trình bày nghiệp vụ, không chứng minh quan
+hệ nhân quả hoặc độ chính xác ngoài thực địa. Trước mỗi lần chạy, operator chọn
+một node bất kỳ trong registry; preset không thay đổi node và không tồn tại ánh
+xạ cố định giữa loại incident với node.
 
-| Preset | Node | Kết quả demo mong đợi | Số liệu tham chiếu deterministic |
-|---|---|---|---|
-| `accident` | `node_05` | `needs_review`, V/C vượt policy | volume `139.66`, speed `21.65 km/h`, V/C `0.95` |
-| `flood` | `node_06` | `needs_review`, tốc độ thấp | volume `72.86`, speed `11.81 km/h`, V/C `0.99` |
-| `lane-closure` | `node_07` | `needs_review`, năng lực hiệu dụng giảm | volume `119.42`, speed `26.57 km/h`, V/C `0.93` |
-| `demand-surge` | `node_08` | `needs_review`, lưu lượng cao | volume `177.10`, speed `20.66 km/h`, V/C `0.98` |
-| `environmental-anomaly` | `node_09` | `needs_review`, OOD | volume `106.26`, speed `35.42 km/h`, V/C `0.79` |
+| Preset | Kết quả demo mong đợi |
+|---|---|
+| `accident` | `needs_review`, V/C synthetic vượt policy |
+| `flood` | `needs_review`, tốc độ synthetic thấp; không mô phỏng mực nước |
+| `lane-closure` | `needs_review`, capacity giả định giảm theo tỷ lệ đóng làn |
+| `demand-surge` | `needs_review`, lưu lượng synthetic tăng |
+| `signal-change` | typed incident được đánh giá tại node đang chọn; route chỉ xuất hiện khi đủ evidence |
 
-Thao tác cho mỗi hàng: chọn preset, kiểm tra node/tỷ lệ tự điền, bấm **Chạy mô phỏng**, chờ `needs_review`, rồi xác nhận chỉ có `candidate_action · NON-EXECUTABLE`.
+Thao tác cho mỗi hàng: chọn node, chọn preset, bấm **Chạy mô phỏng**, chờ terminal
+status và đối chiếu action đúng semantics. Không đọc các giá trị deterministic
+như số đo thực địa.
 
-Không diễn giải các preset này như dữ liệu tai nạn thật, phép đo mực nước, kết luận ô nhiễm gây ùn tắc hoặc khả năng điều khiển hiện trường.
+Không diễn giải các preset này như dữ liệu tai nạn thật, phép đo mực nước hoặc
+khả năng điều khiển hiện trường.
+
+Nhánh `route_needs_review` được kiểm tra bởi smoke harness với generator demo cố
+ý không trả candidate. Dashboard mặc định không có control phá dependency này;
+không dựng route giả. Hãy dùng evidence để chỉ `route_count=0`,
+`route_status=needs_review` và lý do `no_passing_route`.
 
 ## 7. Bàn phím, thứ tự focus và sao chép trace ID
 

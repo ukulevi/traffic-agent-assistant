@@ -3,7 +3,7 @@
   "project": "SmartTraffic What-If",
   "short_name": "STWI",
   "board_name": "STWI MVP Readiness Symphony",
-  "last_reviewed_at": "2026-08-10",
+  "last_reviewed_at": "2026-08-13",
   "source_of_truth": [
     "project_contract.json",
     "docs/00_STWI_Summary_and_Guidelines.md",
@@ -1294,7 +1294,7 @@
       "title": "Implement bounded Counterfactual Safety Loop refinement",
       "lane": "Orchestrator/API/Release",
       "owner_agent": "OrchestratorReleaseAgent",
-      "status": "Human Review",
+      "status": "Done",
       "priority": "P1",
       "evidence": [
         "src/stwi/t4_orchestrator/safety_loop.py",
@@ -1370,6 +1370,206 @@
         "XeLaTeX was unavailable and bundled Tectonic did not finish; PDF build and visual inspection remain open."
       ],
       "next_action": "Human-review the dashboard in a browser with loopback access and build/render the report with XeLaTeX; retain RTSP, GPU, SLA and deployment as separate gates."
+    },
+    {
+      "id": "STWI-SYM-046",
+      "title": "Reorder operator workflow and align accessibility order",
+      "linear_identifier": "TRA-62",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-62/stwi-sym-046-reorder-operator-workflow-and-align-accessibility-order",
+      "lane": "Orchestrator/API/Release",
+      "owner_agent": "OrchestratorReleaseAgent",
+      "status": "Done",
+      "priority": "P2",
+      "dependencies": [],
+      "evidence": [
+        "docs/superpowers/specs/2026-08-10-stwi-incident-routing-map-design.md",
+        "docs/superpowers/plans/2026-08-10-stwi-incident-routing-map.md",
+        "src/stwi/t4_orchestrator/static/index.html"
+      ],
+      "acceptance_criteria": [
+        "Input, lifecycle, result, evidence and operator review follow one canonical DOM, visual and tab order.",
+        "Desktop and mobile expose input as the first meaningful workspace region.",
+        "Focus progression, decision policy and non-executable semantics remain unchanged."
+      ],
+      "next_action": "Merged on main; continue with the independent topology ticket STWI-SYM-049 / TRA-61.",
+      "checks": [
+        "Hermes Rework 2 returned Human Review with 9 allowed files and no scope violation on 2026-08-10.",
+        "Independent Python dashboard tests pass: 20/20.",
+        "Independent frontend tests pass: 20/20; dashboard-view.js syntax passes.",
+        "validate_docs.py and project contract tests pass; git diff --check passes.",
+        "Browser QA passes at 1280x720 and 390x844 with canonical vertical workspace order, no horizontal overflow, and no console warning/error.",
+        "Linear readback: TRA-62 is Done on 2026-08-10.",
+        "PR #44 passed fast-guards and build-pdf, then admin squash-merged as da76e141e5ec6c87768b97902d56f0d3e631b535 on 2026-08-10; superseded draft PR #43 was closed."
+      ]
+    },
+    {
+      "id": "STWI-SYM-047",
+      "title": "Add typed IncidentVector and contract validation",
+      "linear_identifier": "TRA-59",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-59/stwi-sym-047-add-typed-incidentvector-and-contract-validation",
+      "lane": "Orchestrator/API/Release",
+      "owner_agent": "OrchestratorReleaseAgent / LeadCoordinator",
+      "status": "Done",
+      "priority": "P1",
+      "dependencies": [],
+      "evidence": [
+        "project_contract.json",
+        "docs/superpowers/specs/2026-08-10-stwi-incident-routing-map-design.md",
+        "docs/superpowers/plans/2026-08-10-stwi-incident-routing-map.md"
+      ],
+      "acceptance_criteria": [
+        "IncidentVector is optional, typed, event-specific and scoped to exactly one allowlisted node for the MVP.",
+        "Free-text descriptions cannot select simulation behavior.",
+        "Existing API, status, tensor, action and fail-closed invariants remain unchanged.",
+        "Contract-risk changes receive Human Review before merge."
+      ],
+      "next_action": "Merged through PR #47; retain the typed contract as the foundation for incident and routing work.",
+      "checks": ["Linear readback: TRA-59 is Done on 2026-08-13.", "PR #47 is attached to TRA-59 and merged on main."]
+    },
+    {
+      "id": "STWI-SYM-048",
+      "title": "Decouple demo incident profiles from node identity",
+      "linear_identifier": "TRA-60",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-60/stwi-sym-048-decouple-demo-incident-profiles-from-node-identity",
+      "lane": "ML/Simulation",
+      "owner_agent": "MLSimulationAgent",
+      "status": "Done",
+      "priority": "P2",
+      "dependencies": ["STWI-SYM-047"],
+      "evidence": [
+        "src/stwi/t4_orchestrator/demo_adapters.py",
+        "src/stwi/t4_orchestrator/static/dashboard.js",
+        "docs/superpowers/plans/2026-08-10-stwi-incident-routing-map.md"
+      ],
+      "acceptance_criteria": [
+        "Every canonical incident can run at every allowlisted demo node.",
+        "Incident profile selection uses typed event fields, not node ID or free text.",
+        "The same immutable incident survives every safety refinement call."
+      ],
+      "next_action": "Merged through PR #48; use the event/node cross-product as the canonical synthetic demo behavior.",
+      "checks": ["Linear readback: TRA-60 is Done on 2026-08-13.", "PR #48 is attached to TRA-60 and merged on main."]
+    },
+    {
+      "id": "STWI-SYM-049",
+      "title": "Define versioned synthetic 4x5 topology and routing graph",
+      "linear_identifier": "TRA-61",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-61/stwi-sym-049-define-versioned-synthetic-45-topology-and-routing-graph",
+      "lane": "Data/Vision",
+      "owner_agent": "DataVisionAgent / MLSimulationAgent",
+      "status": "Done",
+      "priority": "P1",
+      "dependencies": [],
+      "evidence": [
+        "src/stwi/t1_pipeline/mock_data.py",
+        "docs/superpowers/specs/2026-08-10-stwi-incident-routing-map-design.md",
+        "docs/superpowers/plans/2026-08-10-stwi-incident-routing-map.md"
+      ],
+      "acceptance_criteria": [
+        "The synthetic grid has 20 stable nodes, unique coordinates and validated directed edges.",
+        "Routing graph and GCN adjacency remain separate versioned artifacts.",
+        "Authorized network context fails closed and makes no real-geography claim."
+      ],
+      "next_action": "Merged through PR #45; retain the versioned synthetic topology as the authorized routing/map source.",
+      "checks": [
+        "Linear readback: TRA-61 moved to In Progress with hermes-approved on 2026-08-10.",
+        "User approved ticket-specific external transfer of nine bounded source/test/docs files; no secrets, raw video, private data, model weights, .env files, logs or project_contract.json are included.",
+        "Linear readback: TRA-61 is Done on 2026-08-13; PR #45 is attached and merged on main."
+      ]
+    },
+    {
+      "id": "STWI-SYM-050",
+      "title": "Add pinned offline-safe Leaflet network view",
+      "linear_identifier": "TRA-66",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-66/stwi-sym-050-add-pinned-offline-safe-leaflet-network-view",
+      "lane": "Orchestrator/API/Release",
+      "owner_agent": "OrchestratorReleaseAgent",
+      "status": "Done",
+      "priority": "P2",
+      "dependencies": ["STWI-SYM-046", "STWI-SYM-049"],
+      "evidence": [
+        "src/stwi/t4_orchestrator/static",
+        "docs/superpowers/specs/2026-08-10-stwi-incident-routing-map-design.md",
+        "docs/superpowers/plans/2026-08-10-stwi-incident-routing-map.md"
+      ],
+      "acceptance_criteria": [
+        "Leaflet 1.9.4 is vendored with its license and loads without external tiles, fonts or analytics.",
+        "L.CRS.Simple renders the visibly synthetic topology and stays synchronized with node selection.",
+        "An accessible table remains usable when the map is unavailable."
+      ],
+      "next_action": "Merged through PR #46; keep the Leaflet network view local, tile-free and synthetic-only.",
+      "checks": ["Linear readback: TRA-66 is Done on 2026-08-13.", "PR #46 is attached to TRA-66 and merged on main."]
+    },
+    {
+      "id": "STWI-SYM-051",
+      "title": "Generate and evaluate bounded local diversion candidates",
+      "linear_identifier": "TRA-65",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-65/stwi-sym-051-generate-and-evaluate-bounded-local-diversion-candidates",
+      "lane": "ML/Simulation",
+      "owner_agent": "MLSimulationAgent / OrchestratorReleaseAgent",
+      "status": "Done",
+      "priority": "P1",
+      "dependencies": ["STWI-SYM-047", "STWI-SYM-048", "STWI-SYM-049"],
+      "evidence": [
+        "docs/superpowers/specs/2026-08-10-stwi-incident-routing-map-design.md",
+        "docs/superpowers/plans/2026-08-10-stwi-incident-routing-map.md",
+        "src/stwi/t4_orchestrator/safety_loop.py"
+      ],
+      "acceptance_criteria": [
+        "At most three deterministic directed simple paths avoid the incident node and use valid graph edges.",
+        "Every recommendation has typed evaluation evidence and matching model, data and topology versions.",
+        "Invalid, uncertain, OOD, unsafe or unevaluated paths fail closed and never become executable actions.",
+        "Safety behavior receives Human Review before merge."
+      ],
+      "next_action": "Merged through PR #49; retain candidate-specific evidence and fail-closed route evaluation.",
+      "checks": ["Linear readback: TRA-65 is Done on 2026-08-13.", "PR #49 is attached to TRA-65 and merged on main."]
+    },
+    {
+      "id": "STWI-SYM-052",
+      "title": "Integrate route evidence into dashboard and operator review",
+      "linear_identifier": "TRA-63",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-63/stwi-sym-052-integrate-route-evidence-into-dashboard-and-operator",
+      "lane": "Orchestrator/API/Release",
+      "owner_agent": "OrchestratorReleaseAgent",
+      "status": "Done",
+      "priority": "P2",
+      "dependencies": ["STWI-SYM-050", "STWI-SYM-051"],
+      "evidence": [
+        "src/stwi/t4_orchestrator/static/dashboard-state.js",
+        "src/stwi/t4_orchestrator/static/dashboard-view.js",
+        "docs/superpowers/plans/2026-08-10-stwi-incident-routing-map.md"
+      ],
+      "acceptance_criteria": [
+        "Map and fallback table render one validated route view-model with matching IDs and metrics.",
+        "Needs-review routes remain candidates and cannot be approved.",
+        "Failed and expired jobs expose no action or route overlay.",
+        "Responsive, keyboard, non-color and focus behavior pass frontend and browser checks."
+      ],
+      "next_action": "Merged through PR #50; use the shared validated route view-model for map, table and operator review.",
+      "checks": ["Linear readback: TRA-63 is Done on 2026-08-13.", "PR #50 is attached to TRA-63 and merged on main."]
+    },
+    {
+      "id": "STWI-SYM-053",
+      "title": "Complete integrated QA and synchronize release artifacts",
+      "linear_identifier": "TRA-64",
+      "linear_url": "https://linear.app/traffic-agent-assistant/issue/TRA-64/stwi-sym-053-complete-integrated-qa-and-synchronize-release-artifacts",
+      "lane": "Orchestrator/API/Release",
+      "owner_agent": "ReleaseQaAgent / LeadCoordinator",
+      "status": "Done",
+      "priority": "P2",
+      "dependencies": ["STWI-SYM-052"],
+      "evidence": [
+        "scripts/demo/run_mvp_smoke.py",
+        "docs/guides/mvp_demo_runbook.md",
+        "docs/superpowers/plans/2026-08-10-stwi-incident-routing-map.md"
+      ],
+      "acceptance_criteria": [
+        "Comprehensive smoke covers baseline, five independent incidents, route success, needs-review and failure branches.",
+        "Runbook, report, slides and Symphony state describe the same synthetic workflow without production overclaim.",
+        "Full Python, frontend, docs, PDF and visual release QA evidence is recorded.",
+        "No local companion state, build output, secret or private evidence is staged."
+      ],
+      "next_action": "Maintain the synthetic-only demo boundary; production service, latency and field-accuracy gates remain separate evidence work.",
+      "checks": ["Linear readback: TRA-64 is Done and all seven prerequisite tickets are Done on 2026-08-13.", "Offline smoke passes all 17 capabilities; full Python 476 tests pass with 11 intentional skips and frontend 81 tests pass.", "PR #51 fast-guards and build-pdf pass at head 237564a; the 85-page CI PDF and affected pages were visually inspected with no remaining overlap or malformed command.", "Browser QA covers the input-first responsive dashboard, fail-closed runtime and four synchronized slides without console errors or horizontal overflow."]
     }
   ]
 }

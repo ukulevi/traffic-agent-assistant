@@ -5,7 +5,7 @@
 \textbf{Method} & \textbf{Path} & \textbf{Mô tả} \\
 \midrule
 POST & \texttt{/api/v1/what-if-jobs} & Tạo job; trả HTTP 202 \\
-GET & \texttt{/api/v1/what-if-jobs/\{job\_id\}} & Lấy snapshot trạng thái/kết quả \\
+GET & \texttt{/api/v1/what-if-jobs/}\newline\texttt{\{job\_id\}} & Lấy snapshot trạng thái/kết quả \\
 GET & \texttt{/api/v1/what-if-jobs/}\newline\texttt{\{job\_id\}/events} & SSE progress stream \\
 GET & \texttt{/api/v1/ui-context} & Bootstrap dashboard production từ identity và node scope phía server; không cache \\
 GET & \texttt{/api/v1/network-context} & Topology synthetic đã lọc theo trusted node scope; không cache, fail closed \\

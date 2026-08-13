@@ -46,10 +46,12 @@ class DemoScenario:
 
 
 _OFFLINE_SCENARIOS = (
-    DemoScenario("safe_approval", "job", 202, "succeeded", "node_00", "safe", "approved"),
+    DemoScenario(
+        "normal_baseline", "job", 202, "succeeded", "node_00", "safe", "approved"
+    ),
     DemoScenario("safe_rejection", "job", 202, "succeeded", "node_00", "safe", "rejected"),
     DemoScenario(
-        "refinement_success",
+        "route_recommendation",
         "job",
         202,
         "succeeded",
@@ -59,7 +61,7 @@ _OFFLINE_SCENARIOS = (
         event_type="signal_change",
     ),
     DemoScenario(
-        "unsafe_vc", "job", 202, "needs_review", "node_01", "unsafe_vc",
+        "accident_any_node", "job", 202, "needs_review", "node_01", "unsafe_vc",
         "rejected", event_type="accident",
     ),
     DemoScenario(
@@ -73,6 +75,16 @@ _OFFLINE_SCENARIOS = (
     DemoScenario(
         "demand_surge_any_node", "job", 202, "needs_review", "node_19",
         "demand_surge", "rejected", event_type="demand_surge",
+    ),
+    DemoScenario(
+        "route_needs_review",
+        "job",
+        202,
+        "needs_review",
+        "node_07",
+        "route_no_candidates",
+        "rejected",
+        event_type="signal_change",
     ),
     DemoScenario("ood", "job", 202, "needs_review", "node_02", "ood", "rejected"),
     DemoScenario(

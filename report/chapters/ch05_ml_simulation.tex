@@ -12,7 +12,7 @@ Tầng 2 là lõi AI của hệ thống STWI, chịu trách nhiệm hai chức n
 
 \subsection{Xây dựng Ma trận Kề}
 
-Mạng chức năng MVP 20 node được biểu diễn bằng đồ thị $\mathcal{G} = (\mathcal{V}, \mathcal{E}, \mathbf{W})$. Ma trận trọng số $\mathbf{W}$ được xây dựng từ dữ liệu bản đồ thực (OpenStreetMap):
+Mạng chức năng MVP 20 node được biểu diễn bằng đồ thị $\mathcal{G} = (\mathcal{V}, \mathcal{E}, \mathbf{W})$. Trong bản demo hiện hành, node, cạnh, tọa độ và khoảng cách đều được sinh bởi topology synthetic có version; hệ thống không tuyên bố độ chính xác địa lý thực. Ma trận trọng số $\mathbf{W}$ được xây dựng từ khoảng cách cạnh synthetic:
 
 \begin{equation}
   W_{ij} = \begin{cases}
@@ -22,7 +22,7 @@ Mạng chức năng MVP 20 node được biểu diễn bằng đồ thị $\math
   \label{eq:weight_matrix}
 \end{equation}
 
-với $d_{ij}$ là khoảng cách đường phố (km) giữa nút $i$ và $j$, $\sigma = 1{,}5$ km (bán kính ảnh hưởng trực tiếp), $d_{\max} = 3$ km.
+với $d_{ij}$ là khoảng cách synthetic có version giữa nút $i$ và $j$; tham số scale và bound phải đi cùng topology version. Khi thay bằng mạng thực, adjacency và khoảng cách phải được kiểm định riêng trước khi sử dụng.
 
 \subsection{Kiến trúc Mô hình GCN–LSTM}
 
@@ -177,6 +177,13 @@ Scenario space bao gồm loại sự cố, node bị ảnh hưởng, tỷ lệ �
 \end{table}
 
 Dataset được chia theo time/scenario family; các biến thể của cùng một scenario không được rơi vào nhiều split.
+
+Loại incident và node là hai input độc lập. Năm loại canonical gồm
+\texttt{accident}, \texttt{flood}, \texttt{lane\_closure},
+\texttt{demand\_surge} và \texttt{signal\_change}; không có ánh xạ cố định
+event--node. Với route candidate, surrogate demo chạy prediction riêng theo
+candidate trên cùng \textit{IncidentVector}; evaluator chỉ xếp hạng tối đa ba
+route khi đủ lưới node/horizon và đủ model/data/topology provenance.
 
 \subsection{Kiến trúc và calibration}
 

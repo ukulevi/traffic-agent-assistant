@@ -25,15 +25,6 @@
       </header>
 
       <main id="app-main" class="command-layout">
-        <aside class="node-rail" aria-label="Chọn một trong 20 node đăng ký">
-          <div class="rail-heading"><span>NETWORK</span><strong>Node registry</strong></div>
-          <label for="node-search">Tìm node</label>
-          <input id="node-search" type="search" autocomplete="off" placeholder="node_00">
-          <div id="node-list" class="node-list" role="group" aria-label="Danh sách node"></div>
-          <p class="rail-note">Production dùng allowlist runtime. Demo dùng mạng synthetic <code>mock-network-20-v1</code>.</p>
-        </aside>
-
-        <div class="workspace">
         <section id="scenario-form" class="panel scenario-panel" aria-labelledby="scenario-title">
             <div class="panel-heading"><div><p class="section-kicker">WHAT-IF INPUT</p><h2 id="scenario-title">Tạo kịch bản</h2></div><span class="simulation-badge">Simulation only</span></div>
             <form>
@@ -100,6 +91,15 @@
             </form>
           </section>
 
+        <aside class="node-rail" aria-label="Chọn một trong 20 node đăng ký">
+          <div class="rail-heading"><span>NETWORK</span><strong>Node registry</strong></div>
+          <label for="node-search">Tìm node</label>
+          <input id="node-search" type="search" autocomplete="off" placeholder="node_00">
+          <div id="node-list" class="node-list" role="group" aria-label="Danh sách node"></div>
+          <p class="rail-note">Production dùng allowlist runtime. Demo dùng mạng synthetic <code>mock-network-20-v1</code>.</p>
+        </aside>
+
+        <div class="workspace">
           <section id="network-analysis" class="panel network-panel" aria-labelledby="network-title">
             <div class="panel-heading">
               <div><p class="section-kicker">SYNTHETIC NETWORK</p><h2 id="network-title">Mạng 20 nút</h2></div>

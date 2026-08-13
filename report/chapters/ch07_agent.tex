@@ -7,7 +7,7 @@ Tầng 4 là workflow hỗ trợ quyết định, không phải actuator. LangGr
 Counterfactual Safety Loop (CSL) lấy cảm hứng từ CF-VLA nhưng STWI không phải mô hình Vision--Language--Action end-to-end. Hệ thống áp dụng ý tưởng tự phản biện lên dữ liệu, mô phỏng và căn cứ pháp lý.
 
 Mỗi vòng CSL đánh giá một candidate có kiểu và khác candidate trước. Refiner
-MVP chỉ tăng 	exttt{green\_time\_ratio} khi failure duy nhất là V/C, trong khi
+MVP chỉ tăng \texttt{green\_time\_ratio} khi failure duy nhất là V/C, trong khi
 citation, uncertainty và OOD đều hợp lệ; surrogate sau đó chạy lại với candidate
 mới. OOD, uncertainty cao, thiếu citation, input không hợp lệ hoặc lỗi dependency
 dừng ngay. Vòng lặp tối đa ba candidate, fail closed và không phải optimizer hay
@@ -22,7 +22,10 @@ actuator tổng quát.
   \item Truy xuất Qdrant và chạy typed \textit{SimulationQuery}.
   \item Citation validator xác nhận hiệu lực và provision.
   \item Sinh candidate và chạy CSL tối đa ba vòng.
-  \item Chỉ khi mọi policy pass mới trả \texttt{succeeded}.
+  \item Nếu có incident và CSL pass, sinh tối đa ba route tránh node incident,
+  chạy prediction riêng cho từng route và áp dụng route safety gate.
+  \item Chỉ khi mọi policy và route evidence cần thiết pass mới trả
+  \texttt{succeeded}.
 \end{enumerate}
 
 \begin{table}[H]
@@ -38,6 +41,7 @@ OOD hoặc uncertainty cao & \texttt{needs\_review} \\
 Thiếu căn cứ còn hiệu lực & \texttt{needs\_review} hoặc \texttt{failed} \\
 Vượt 180 giây & \texttt{expired} \\
 Tool lỗi không phục hồi & \texttt{failed} \\
+Không có route pass/thiếu route evidence & \texttt{needs\_review} + \texttt{route\_candidates}; không bịa recommendation \\
 \bottomrule
 \end{tabular}
 \end{table}
