@@ -5,7 +5,7 @@ Last reviewed: 2026-08-13
 ## Readiness Handoff Summary
 
 - Evidence base: project_contract.json
-- Todo: 0 | In Progress: 0 | Human Review: 5 | Rework: 0 | Done: 47
+- Todo: 0 | In Progress: 0 | Human Review: 4 | Rework: 0 | Done: 48
 - Requires human review for: contract changes, dashboard scope changes, legal/SOP source approval, vision promotion threshold changes, production credentials or external services
 - Report command: python scripts/project_management/symphony_report.py
 - Daily agent update: enabled
@@ -18,10 +18,10 @@ Last reviewed: 2026-08-13
 | Backlog | 2 |
 | Todo | 0 |
 | In Progress | 0 |
-| Human Review | 5 |
+| Human Review | 4 |
 | Rework | 0 |
 | Merging | 0 |
-| Done | 47 |
+| Done | 48 |
 | Canceled | 1 |
 | Duplicate | 1 |
 
@@ -61,10 +61,6 @@ Last reviewed: 2026-08-13
   Evidence: project_contract.json, data/derived/private/phase2_surrogate/v3/benchmark_report.json, docs/guides/surrogate_benchmark_evidence.md
   Acceptance: Benchmark machine profile matches 8 CPU, 32 GB RAM, 12-16 GB GPU VRAM.; Surrogate P99 is below 500 ms.; Raw benchmark result is retained as private artifact.; E2E P95 target is recorded as required future evidence; no claim is made without measurement.
   Next: Keep TRA-6 in Human Review until the benchmark runs on the 8 CPU / 32 GB RAM / NVIDIA GPU 12-16 GB contract profile; this workstation's 4 GB GPU cannot satisfy the gate.
-- `STWI-SYM-012` [P1] Resolve dirty working tree into reviewable change groups (Orchestrator/API/Release, LeadCoordinator)
-  Evidence: git status --short, python scripts/project_management/worktree_intake.py, docs/guides/repository_structure.md, src/stwi/tooling, tests/vision
-  Acceptance: Unrelated generated manifests are kept separate from source changes.; Refactor files are reviewed as one coherent change set.; A read-only intake report groups dirty worktree changes before staging.; No user changes are reverted.
-  Next: Review diff grouping before any staging or commit.
 - `STWI-SYM-014` / TRA-37 [P1] Validate recorded-camera or RTSP calibration and aggregate extraction path (Data/Vision, DataVisionAgent)
   Evidence: scripts/data_prep/capture_rtsp_frames.py, src/stwi/t1_pipeline, tests/t1_pipeline
   Acceptance: Calibration ROI/homography evidence is recorded for approved demo input.; ByteTrack or equivalent track quality is measured.; Five-minute aggregate output preserves the project data contract.
@@ -129,6 +125,11 @@ Last reviewed: 2026-08-13
   Acceptance: Docs validator, contract tests, JS checks, slide static check, and git diff check pass.; Skipped tests and unverified service paths are listed.; No cache/build artifact is staged.
   Next: Keep QA evidence attached to Linear and rerun release QA after the remaining staged batch changes.
   Checks: python scripts/validation/validate_docs.py -> pass; python -m unittest tests.contracts.test_project_contract -> pass, 4 tests; node --check slides/js/presentation.js -> pass; node --check slides/js/presentation-tools.js -> pass; git diff --check -> pass
+- `STWI-SYM-012` [P1] Resolve dirty working tree into reviewable change groups (Orchestrator/API/Release, LeadCoordinator)
+  Evidence: git status --short, python scripts/project_management/worktree_intake.py, docs/guides/repository_structure.md, src/stwi/tooling, tests/vision
+  Acceptance: Unrelated generated manifests are kept separate from source changes.; Refactor files are reviewed as one coherent change set.; A read-only intake report groups dirty worktree changes before staging.; No user changes are reverted.
+  Next: Keep the root workspace changes unstaged; handle tracker snapshots, authored documents and local-only tool output as separate future decisions.
+  Checks: Read-only intake on 2026-08-13 found 12 changes on root branch codex/simulation-demo-release; no file was staged, stashed, deleted or rewritten.; Project-management group: four modified Symphony tracker/dispatch files; treat as one stale tracker snapshot and never mix it with current main automatically.; Authored-docs group: five untracked files split into progress assessment, incident-routing plan/spec and showcase-video plan/spec review units.; Local-only group: .codex/, .superpowers/ and tmp/ remain excluded from source commits pending explicit per-path review.; The dirty root contains no runtime/source-code change; user-owned changes remain intact.
 - `STWI-SYM-013` / TRA-5 [P1] Complete vision artifact metadata for latency, thresholds, ROI policy, and license/source (Data/Vision, DataVisionAgent)
   Evidence: src/stwi/tooling/vision_training/promotion.py, docs/guides/model_registry_evidence.md, docs/guides/vision_local_training_runbook.md, docs/01_System_Architecture_Data_Pipeline.md
   Acceptance: Official or candidate artifact records latency and threshold evidence.; ROI policy and source/license review are present.; Privacy review remains aggregate-only and does not publish raw images/video.; Promotion validator requires calibration, benchmark, and legal/privacy metadata.

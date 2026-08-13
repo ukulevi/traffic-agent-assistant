@@ -330,7 +330,7 @@
       "title": "Resolve dirty working tree into reviewable change groups",
       "lane": "Orchestrator/API/Release",
       "owner_agent": "LeadCoordinator",
-        "status": "Human Review",
+      "status": "Done",
       "priority": "P1",
       "evidence": [
         "git status --short",
@@ -345,7 +345,14 @@
         "A read-only intake report groups dirty worktree changes before staging.",
         "No user changes are reverted."
       ],
-      "next_action": "Review diff grouping before any staging or commit."
+      "next_action": "Keep the root workspace changes unstaged; handle tracker snapshots, authored documents and local-only tool output as separate future decisions.",
+      "checks": [
+        "Read-only intake on 2026-08-13 found 12 changes on root branch codex/simulation-demo-release; no file was staged, stashed, deleted or rewritten.",
+        "Project-management group: four modified Symphony tracker/dispatch files; treat as one stale tracker snapshot and never mix it with current main automatically.",
+        "Authored-docs group: five untracked files split into progress assessment, incident-routing plan/spec and showcase-video plan/spec review units.",
+        "Local-only group: .codex/, .superpowers/ and tmp/ remain excluded from source commits pending explicit per-path review.",
+        "The dirty root contains no runtime/source-code change; user-owned changes remain intact."
+      ]
     },
     {
       "id": "STWI-SYM-013",
