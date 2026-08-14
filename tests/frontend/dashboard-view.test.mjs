@@ -96,6 +96,30 @@ test("render treats citation markup as text and exposes result metrics", () => {
   assert.equal(doc.getElementById("safety-checks").children.length, 4);
 });
 
+test("long citation evidence is collapsed accessibly and resets for a new job", () => {
+  const doc = new FakeDocument();
+  const view = createDashboardView(doc);
+  const state = succeededState();
+  state.job.result.citations = Array.from({ length: 5 }, (_item, index) => ({
+    title: `Citation ${index + 1}`,
+    provision: "Điều 1",
+  }));
+  view.render(state, { canApprove: true, canReject: true, canRequestChanges: true });
+
+  assert.equal(doc.getElementById("citations").children.length, 3);
+  assert.equal(doc.getElementById("citation-summary").textContent, "Đang hiển thị 3/5 citation");
+  assert.equal(doc.getElementById("toggle-citations").hidden, false);
+  assert.equal(doc.getElementById("toggle-citations").textContent, "Xem tất cả (5)");
+  doc.getElementById("toggle-citations").listeners.get("click")();
+  assert.equal(doc.getElementById("citations").children.length, 5);
+  assert.equal(doc.getElementById("toggle-citations").textContent, "Thu gọn");
+
+  state.job.id = "job-2";
+  view.render(state, { canApprove: true, canReject: true, canRequestChanges: true });
+  assert.equal(doc.getElementById("citations").children.length, 3);
+  assert.equal(doc.getElementById("toggle-citations").getAttribute?.("aria-expanded") ?? doc.getElementById("toggle-citations")["aria-expanded"], "false");
+});
+
 test("render derives result and safety presentation from the authoritative job status", () => {
   const expectations = {
     idle: ["Chưa có kết quả mô phỏng", "Chờ kết quả", "safety-idle"],
