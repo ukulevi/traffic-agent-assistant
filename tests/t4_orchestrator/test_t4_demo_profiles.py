@@ -6,11 +6,16 @@ import unittest
 from datetime import datetime, timezone
 
 from stwi.contracts.incident import IncidentVector
+from stwi.config.runtime import RuntimeMode, RuntimeSettings
 from stwi.t4_orchestrator.demo_adapters import (
     DemoSurrogateForecaster,
+    RefinementDemoSurrogateForecaster,
     demo_node_ids,
 )
 from stwi.t4_orchestrator.fake_adapters import FakeSurrogateForecaster
+from stwi.t4_orchestrator.contracts import WhatIfJobRequest
+from stwi.t4_orchestrator.orchestrator import WhatIfOrchestrator
+from stwi.t4_orchestrator.safety_loop import CounterfactualSafetyLoop
 
 
 SCENARIO_TIME = datetime(2026, 7, 20, tzinfo=timezone.utc)
@@ -131,6 +136,41 @@ class TestDemoProfiles(unittest.TestCase):
                 scenario_time=SCENARIO_TIME,
                 incident=incident("accident", "node_05"),
             )
+
+    def test_demo_runtime_uses_refinement_profile_for_signal_change(self) -> None:
+        orchestrator = WhatIfOrchestrator(
+            settings=RuntimeSettings(mode=RuntimeMode.DEMO, job_concurrency=1)
+        )
+
+        self.assertIsInstance(orchestrator._surrogate, RefinementDemoSurrogateForecaster)
+        request = WhatIfJobRequest(
+            tenant_id="demo-operator",
+            scenario_time=SCENARIO_TIME,
+            incident=incident("signal_change", "node_05"),
+            candidate_action={"node_id": "node_05", "green_time_ratio": 0.70},
+            node_ids=list(demo_node_ids()),
+            scenario_query="Luật 35/2024/QH15",
+        )
+        initial_results = orchestrator._surrogate.predict(
+            node_ids=request.node_ids,
+            horizons_minutes=[5],
+            candidate_action=request.candidate_action.model_dump(),
+            scenario_time=request.scenario_time,
+            incident=request.incident,
+        )
+        outcome = CounterfactualSafetyLoop(surrogate=orchestrator._surrogate).run(
+            node_ids=request.node_ids,
+            horizons_minutes=[5],
+            candidate_action=request.candidate_action.model_dump(),
+            scenario_time=request.scenario_time,
+            incident=request.incident,
+            has_citations=True,
+            initial_results=initial_results,
+        )
+
+        self.assertEqual(outcome.iterations_run, 2)
+        self.assertEqual(outcome.selected_action["green_time_ratio"], 0.85)
+        self.assertTrue(outcome.passed)
 
 
 if __name__ == "__main__":

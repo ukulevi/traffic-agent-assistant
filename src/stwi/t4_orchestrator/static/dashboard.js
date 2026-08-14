@@ -165,6 +165,9 @@ export function createDashboardCoordinator({
       pollingController?.abort();
       closeStream?.();
       storage?.removeItem(ACTIVE_JOB_KEY);
+      if (state.transport.phase !== "protocol_error") {
+        dispatch({ type: "transport/phase", phase: "online" });
+      }
       view.focusResult();
     }
   }
@@ -213,6 +216,7 @@ export function createDashboardCoordinator({
       },
       onTransport: (phase) => {
         if (!currentOperation(jobId, epoch)) return;
+        if (TERMINAL_STATUSES.has(state.job.status)) return;
         if (phase === "protocol_error") {
           dispatch({ type: "transport/protocol_error", code: "SSE_PAYLOAD_INVALID" });
           return;

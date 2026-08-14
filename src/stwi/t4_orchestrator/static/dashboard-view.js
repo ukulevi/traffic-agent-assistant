@@ -25,6 +25,16 @@ const RUNTIME_LABELS = Object.freeze({
   static_preview: "UI preview · chưa có API",
 });
 
+const RESULT_PRESENTATION = Object.freeze({
+  idle: { title: "Chưa có kết quả mô phỏng", safety: "Chờ kết quả", icon: "○" },
+  queued: { title: "Kịch bản đang chờ xử lý", safety: "Đang chờ safety checks", icon: "◌" },
+  running: { title: "Đang chạy mô phỏng", safety: "Đang đánh giá safety", icon: "◌" },
+  succeeded: { title: "Kết quả mô phỏng đã sẵn sàng", safety: "Đã qua safety gate", icon: "✓" },
+  needs_review: { title: "Kết quả cần operator xem xét", safety: "Cần xem xét", icon: "!" },
+  failed: { title: "Mô phỏng thất bại", safety: "Không có đề xuất khả dụng", icon: "×" },
+  expired: { title: "Kết quả đã hết hạn", safety: "Cần chạy lại", icon: "↻" },
+});
+
 function text(node, value, fallback = "—") {
   node.textContent = value === null || value === undefined || value === ""
     ? fallback
@@ -61,6 +71,7 @@ export function createDashboardView(doc = document) {
   let returnFocus = null;
   let handlers = {};
   let authorizedNodeIds = [];
+  let trustedCapacityVersion = null;
 
   function renderCitations(citations = []) {
     const list = byId("citations");
@@ -189,11 +200,16 @@ export function createDashboardView(doc = document) {
     const metrics = metricsFrom(result);
     const traceId = result?.trace_id || result?.audit_record?.trace_id;
     const action = resultAction(result, status);
+    const presentation = RESULT_PRESENTATION[status] || RESULT_PRESENTATION.idle;
 
     text(byId("runtime-label"), RUNTIME_LABELS[state.context.mode] || state.context.mode);
     text(byId("connection-state"), TRANSPORT_LABELS[state.transport.phase] || state.transport.phase);
     text(byId("job-status"), STATUS_LABELS[status] || "Chưa gửi");
     byId("job-status").className = `status status-${status || "idle"}`;
+    text(byId("result-title"), presentation.title);
+    text(byId("safety-label"), presentation.safety);
+    text(byId("safety-icon"), presentation.icon);
+    byId("safety-state").className = `safety-state safety-${status || "idle"}`;
     text(byId("job-id"), state.job.id);
     text(byId("trace-id"), traceId);
     text(byId("versions"), result ? `${result.model_version || "—"} / ${result.data_version || "—"}` : null);
@@ -202,7 +218,10 @@ export function createDashboardView(doc = document) {
     text(byId("forecast-volume"), metrics.traffic_volume_5m ?? metrics.avg_volume);
     text(byId("forecast-speed"), metrics.avg_speed_kmh ?? metrics.avg_speed);
     text(byId("vc-ratio"), metrics.max_vc_ratio ?? metrics.vc_ratio);
-    text(byId("capacity-version"), metrics.capacity_version || result?.capacity_version);
+    text(
+      byId("capacity-version"),
+      metrics.capacity_version || result?.capacity_version || trustedCapacityVersion,
+    );
     text(byId("review-reason"), readableReason(result, status));
     text(byId("evidence-status"), state.job.evidence?.phase || "pending");
     text(
@@ -340,6 +359,7 @@ export function createDashboardView(doc = document) {
   }
 
   function setNetworkContext(context, status = "ready") {
+    trustedCapacityVersion = status === "ready" ? context?.capacity_version || null : null;
     const version = context?.network_version || "không khả dụng";
     text(byId("network-version"), version);
     text(
