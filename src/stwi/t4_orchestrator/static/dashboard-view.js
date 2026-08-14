@@ -72,11 +72,18 @@ export function createDashboardView(doc = document) {
   let handlers = {};
   let authorizedNodeIds = [];
   let trustedCapacityVersion = null;
+  let citationsExpanded = false;
+  let citationJobId = null;
+  let lastRenderedCitations = [];
 
   function renderCitations(citations = []) {
     const list = byId("citations");
+    const summary = byId("citation-summary");
+    const toggle = byId("toggle-citations");
+    lastRenderedCitations = citations;
+    const visibleCitations = citationsExpanded ? citations : citations.slice(0, 3);
     list.replaceChildren();
-    for (const citation of citations) {
+    for (const citation of visibleCitations) {
       const item = doc.createElement("li");
       const heading = doc.createElement("strong");
       const detail = doc.createElement("span");
@@ -92,6 +99,14 @@ export function createDashboardView(doc = document) {
       item.append(heading, detail);
       list.append(item);
     }
+    const hasHiddenCitations = citations.length > 3;
+    toggle.hidden = !hasHiddenCitations;
+    toggle.setAttribute("aria-expanded", String(citationsExpanded));
+    toggle.textContent = citationsExpanded ? "Thu gọn" : `Xem tất cả (${citations.length})`;
+    text(
+      summary,
+      citations.length ? `Đang hiển thị ${visibleCitations.length}/${citations.length} citation` : "Không có citation",
+    );
   }
 
   function renderEvents(events = []) {
@@ -201,6 +216,10 @@ export function createDashboardView(doc = document) {
     const traceId = result?.trace_id || result?.audit_record?.trace_id;
     const action = resultAction(result, status);
     const presentation = RESULT_PRESENTATION[status] || RESULT_PRESENTATION.idle;
+    if (state.job.id !== citationJobId) {
+      citationJobId = state.job.id;
+      citationsExpanded = false;
+    }
 
     text(byId("runtime-label"), RUNTIME_LABELS[state.context.mode] || state.context.mode);
     text(byId("connection-state"), TRANSPORT_LABELS[state.transport.phase] || state.transport.phase);
@@ -369,6 +388,11 @@ export function createDashboardView(doc = document) {
         : "Không tải được topology đã xác thực; bảng và bản đồ không được suy diễn từ dữ liệu production.",
     );
   }
+
+  byId("toggle-citations").addEventListener("click", () => {
+    citationsExpanded = !citationsExpanded;
+    renderCitations(lastRenderedCitations);
+  });
 
   function setRatio(ratio) {
     byId("green-time").value = String(ratio);
