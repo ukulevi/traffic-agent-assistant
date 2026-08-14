@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+from html.parser import HTMLParser
 from pathlib import Path
 
 from scripts.demo.run_mvp_smoke import run_offline_profile
@@ -9,7 +10,219 @@ from stwi.demo.evidence import CapabilityStatus, DemoEvidence
 from stwi.demo.scenarios import offline_scenarios
 
 
+class _DemoPresetParser(HTMLParser):
+    """Collect actual dashboard preset values from the canonical select control."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._inside_demo_preset = False
+        self.values: set[str] = set()
+
+    def handle_starttag(
+        self, tag: str, attrs: list[tuple[str, str | None]]
+    ) -> None:
+        attributes = dict(attrs)
+        if tag == "select" and attributes.get("id") == "demo-preset":
+            self._inside_demo_preset = True
+        elif tag == "option" and self._inside_demo_preset:
+            value = attributes.get("value")
+            if value:
+                self.values.add(value)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == "select":
+            self._inside_demo_preset = False
+
+
 class ComprehensiveOfflineDemoTest(unittest.TestCase):
+    def test_mentor_runbook_matches_catalog_matrix_and_live_dashboard_presets(self) -> None:
+        """Catch a runbook that drifts from the offline catalog or rendered controls."""
+        repository = Path(__file__).resolve().parents[2]
+        runbook = (repository / "docs/guides/mvp_demo_runbook.md").read_text(
+            encoding="utf-8"
+        )
+        canonical_index = (
+            repository / "src/stwi/t4_orchestrator/static/index.html"
+        ).read_text(encoding="utf-8")
+
+        expected_catalog = (
+            "normal_baseline",
+            "safe_rejection",
+            "route_recommendation",
+            "accident_any_node",
+            "flood_any_node",
+            "lane_closure_any_node",
+            "demand_surge_any_node",
+            "route_needs_review",
+            "ood",
+            "high_uncertainty",
+            "missing_citation",
+            "dependency_failure",
+            "deadline_exceeded",
+            "invalid_scenario",
+            "tenant_scope_denied",
+            "sse_reconnect",
+            "static_preview",
+        )
+        catalog_names = tuple(scenario.name for scenario in offline_scenarios())
+        self.assertEqual(catalog_names, expected_catalog)
+        self.assertEqual(len(catalog_names), 17)
+        self.assertEqual(len(set(catalog_names)), len(catalog_names))
+
+        matrix_rows: list[tuple[str, str]] = []
+        for line in runbook.splitlines():
+            cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+            if (
+                len(cells) == 4
+                and cells[0] in {"Dashboard-live", "Evidence/harness-only"}
+                and cells[1].startswith("`")
+                and cells[1].endswith("`")
+            ):
+                matrix_rows.append((cells[0], cells[1][1:-1]))
+
+        self.assertEqual(len(matrix_rows), 17)
+        self.assertEqual(len({name for _, name in matrix_rows}), len(matrix_rows))
+        self.assertEqual(tuple(name for _, name in matrix_rows), expected_catalog)
+        expected_classifications = {
+            "normal_baseline": "Dashboard-live",
+            "safe_rejection": "Dashboard-live",
+            "route_recommendation": "Dashboard-live",
+            "accident_any_node": "Dashboard-live",
+            "flood_any_node": "Dashboard-live",
+            "lane_closure_any_node": "Dashboard-live",
+            "demand_surge_any_node": "Dashboard-live",
+            "route_needs_review": "Evidence/harness-only",
+            "ood": "Evidence/harness-only",
+            "high_uncertainty": "Evidence/harness-only",
+            "missing_citation": "Dashboard-live",
+            "dependency_failure": "Evidence/harness-only",
+            "deadline_exceeded": "Evidence/harness-only",
+            "invalid_scenario": "Evidence/harness-only",
+            "tenant_scope_denied": "Evidence/harness-only",
+            "sse_reconnect": "Evidence/harness-only",
+            "static_preview": "Evidence/harness-only",
+        }
+        self.assertEqual(
+            tuple(matrix_rows),
+            tuple(
+                (expected_classifications[capability], capability)
+                for capability in expected_catalog
+            ),
+        )
+
+        parser = _DemoPresetParser()
+        parser.feed(canonical_index)
+        required_live_presets = {
+            "safe",
+            "refinement",
+            "unsafe-vc",
+            "missing-evidence",
+            "extreme",
+            "accident",
+            "flood",
+            "lane-closure",
+            "demand-surge",
+            "signal-change",
+        }
+        self.assertTrue(required_live_presets.issubset(parser.values))
+        for preset in required_live_presets:
+            self.assertIn(f"`{preset}`", runbook)
+
+    def test_mentor_runbook_has_five_timed_sections_with_all_presenter_cues(self) -> None:
+        """Keep every timed demo segment usable without relying on improvisation."""
+        runbook = (
+            Path(__file__).resolve().parents[2]
+            / "docs"
+            / "guides"
+            / "mvp_demo_runbook.md"
+        ).read_text(encoding="utf-8")
+        timed_section_headers = (
+            "### 0:00–1:00",
+            "### 1:00–3:00",
+            "### 3:00–6:00",
+            "### 6:00–8:00",
+            "### 8:00–10:00",
+        )
+        cue_markers = (
+            "**Thao tác:**",
+            "**Nói:**",
+            "**Chỉ trên màn hình:**",
+            "**Kết quả mong đợi:**",
+        )
+
+        starts = [runbook.index(header) for header in timed_section_headers]
+        self.assertEqual(starts, sorted(starts))
+        for index, start in enumerate(starts):
+            end = (
+                starts[index + 1]
+                if index + 1 < len(starts)
+                else runbook.index("## 4. Ma trận 17 capability", start)
+            )
+            section = runbook[start:end]
+            for cue in cue_markers:
+                self.assertIn(cue, section, msg=f"{timed_section_headers[index]} lacks {cue}")
+
+    def test_evidence_instructions_distinguish_cli_summary_from_json_artifact(self) -> None:
+        """Prevent a misleading field lookup or divergent evidence filename."""
+        repository = Path(__file__).resolve().parents[2]
+        runbook = (repository / "docs/guides/mvp_demo_runbook.md").read_text(
+            encoding="utf-8"
+        )
+        walkthrough = (
+            repository / "docs/guides/mvp_dashboard_demo_walkthrough.md"
+        ).read_text(encoding="utf-8")
+        evidence_path = r"C:\tmp\stwi-offline-evidence.json"
+
+        self.assertIn(evidence_path, runbook)
+        self.assertIn(evidence_path, walkthrough)
+        self.assertNotIn("stwi-mvp-demo-evidence.json", walkthrough)
+        self.assertIn("CLI summary", runbook)
+        self.assertIn("`capability_count: 17`", runbook)
+        self.assertIn("`capabilities`", runbook)
+        self.assertIn("17 entries", runbook)
+
+    def test_mentor_runbook_separates_live_demo_from_harness_evidence(self) -> None:
+        repository = Path(__file__).resolve().parents[2]
+        runbook = (repository / "docs/guides/mvp_demo_runbook.md").read_text(
+            encoding="utf-8"
+        )
+        walkthrough = (
+            repository / "docs/guides/mvp_dashboard_demo_walkthrough.md"
+        ).read_text(encoding="utf-8")
+
+        for marker in (
+            "Kịch bản demo chính 8–10 phút",
+            "**Thao tác:**",
+            "**Nói:**",
+            "**Chỉ trên màn hình:**",
+            "**Kết quả mong đợi:**",
+            "Dashboard-live",
+            "Evidence/harness-only",
+            "Câu hỏi mentor thường gặp",
+            "Phương án dự phòng",
+        ):
+            self.assertIn(marker, runbook)
+
+        for capability in (
+            "normal_baseline",
+            "route_recommendation",
+            "route_needs_review",
+            "ood",
+            "high_uncertainty",
+            "dependency_failure",
+            "deadline_exceeded",
+            "invalid_scenario",
+            "tenant_scope_denied",
+            "sse_reconnect",
+            "static_preview",
+        ):
+            self.assertIn(f"`{capability}`", runbook)
+
+        self.assertIn("không có preset `ood`", walkthrough)
+        self.assertIn("không có preset `uncertainty`", walkthrough)
+        self.assertNotIn("Chọn `ood` và chạy", walkthrough)
+        self.assertNotIn("Chọn `uncertainty` và chạy", walkthrough)
+
     def test_demo_acceptance_matches_verified_release_evidence(self) -> None:
         acceptance = (
             Path(__file__).resolve().parents[2]

@@ -6,10 +6,13 @@ Tài liệu này hướng dẫn sử dụng dashboard bằng các test case synt
 
 Bạn cần Python 3.11+ và PowerShell. Từ thư mục gốc repository, cài runtime và kiểm tra phạm vi demo:
 
+Nếu `python` không có trên `PATH`, hãy kích hoạt virtual environment của dự án
+hoặc thay mỗi lệnh `python` bằng `py -3.11`.
+
 ```powershell
 pip install -e ".[orchestrator]"
 python scripts/validation/validate_demo_simulation_scope.py
-python scripts/demo/run_mvp_smoke.py --profile offline --output C:\tmp\stwi-mvp-demo-evidence.json
+python scripts/demo/run_mvp_smoke.py --profile offline --output C:\tmp\stwi-offline-evidence.json
 ```
 
 Khởi động dashboard chỉ trên loopback:
@@ -103,13 +106,16 @@ action.
 
 ## 5. Test case fail-closed
 
-Chạy lần lượt từng preset. Sau mỗi lần, chờ trạng thái terminal rồi đối chiếu bảng sau:
+Phân biệt hai nhóm bằng chứng sau để chỉ thao tác với control có thật trên dashboard.
+
+### Dashboard-live
+
+Chạy lần lượt các preset `unsafe-vc`, `missing-evidence` và `extreme`. Sau mỗi lần,
+chờ trạng thái terminal rồi đối chiếu bảng sau:
 
 | Preset | Node | Trạng thái mong đợi | Quan sát bắt buộc |
 |---|---|---|---|
 | `unsafe-vc` | `node_01` | `needs_review` | V/C vượt policy `0.9`; không được approve. |
-| `ood` | `node_02` | `needs_review` | OOD fail-closed; chỉ có `candidate_action`. |
-| `uncertainty` | `node_03` | `needs_review` | Uncertainty cao; cần operator review. |
 | `missing-evidence` | `node_04` | `needs_review` | Thiếu citation hợp lệ; không có recommendation. |
 | `extreme` | `node_00` | `needs_review` | `green_time_ratio=0.00` bị safety gate giữ lại. |
 
@@ -119,17 +125,19 @@ Chạy lần lượt từng preset. Sau mỗi lần, chờ trạng thái termina
 
 Chọn `unsafe-vc` và chạy. Kết quả phải nêu V/C `0.96` vượt policy `0.90`, chuyển `needs_review` và chỉ hiển thị `candidate_action · NON-EXECUTABLE`.
 
-### Ngoài phân phối (OOD)
+### Evidence/harness-only
 
-![Preset OOD bị giữ lại để review](../assets/demo_walkthrough/08-ood-review.png)
+Dashboard không có preset `ood` và không có preset `uncertainty`. Không dựng ảnh hoặc
+control thay thế cho hai nhánh này. Mở `C:\tmp\stwi-offline-evidence.json` để đối
+chiếu các capability sau từ smoke harness:
 
-Chọn `ood` và chạy. Lý do review phải nhận diện `out_of_distribution`; không được xuất `recommended_action` hay đường phê duyệt.
+| Capability evidence | Trạng thái mong đợi | Quan sát bắt buộc |
+|---|---|---|
+| `ood` | `needs_review` | Lý do `out_of_distribution`; chỉ có `candidate_action`, không có `recommended_action` hay đường phê duyệt. |
+| `high_uncertainty` | `needs_review` | Uncertainty cao; chỉ có `candidate_action` và cần operator review. |
 
-### Độ bất định cao
-
-![Preset uncertainty bị giữ lại để review](../assets/demo_walkthrough/09-uncertainty-review.png)
-
-Chọn `uncertainty` và chạy. Dashboard phải giải thích uncertainty cao, giữ trạng thái `needs_review` và yêu cầu con người đánh giá.
+Các capability này chứng minh hành vi fail-closed trong evidence; không phải thao tác
+dashboard-live và không có preset UI tương ứng.
 
 ### Thiếu bằng chứng hợp lệ
 
