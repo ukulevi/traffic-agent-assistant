@@ -96,6 +96,43 @@ test("render treats citation markup as text and exposes result metrics", () => {
   assert.equal(doc.getElementById("safety-checks").children.length, 4);
 });
 
+test("render derives result and safety presentation from the authoritative job status", () => {
+  const expectations = {
+    idle: ["Chưa có kết quả mô phỏng", "Chờ kết quả", "safety-idle"],
+    queued: ["Kịch bản đang chờ xử lý", "Đang chờ safety checks", "safety-queued"],
+    running: ["Đang chạy mô phỏng", "Đang đánh giá safety", "safety-running"],
+    succeeded: ["Kết quả mô phỏng đã sẵn sàng", "Đã qua safety gate", "safety-succeeded"],
+    needs_review: ["Kết quả cần operator xem xét", "Cần xem xét", "safety-needs_review"],
+    failed: ["Mô phỏng thất bại", "Không có đề xuất khả dụng", "safety-failed"],
+    expired: ["Kết quả đã hết hạn", "Cần chạy lại", "safety-expired"],
+  };
+  for (const [status, [title, safety, className]] of Object.entries(expectations)) {
+    const doc = new FakeDocument();
+    const state = succeededState();
+    state.job.status = status;
+    if (state.job.result) state.job.result.status = status;
+    createDashboardView(doc).render(state, { canApprove: false, canReject: false, canRequestChanges: false });
+
+    assert.equal(doc.getElementById("result-title").textContent, title);
+    assert.equal(doc.getElementById("safety-label").textContent, safety);
+    assert.equal(doc.getElementById("safety-state").className, `safety-state ${className}`);
+  }
+});
+
+test("render falls back to trusted capacity context without changing the job schema", () => {
+  const doc = new FakeDocument();
+  const view = createDashboardView(doc);
+  const state = succeededState();
+  delete state.job.result.scenario_summary.capacity_version;
+  view.setNetworkContext({ network_version: "network-v1", capacity_version: "capacity-context-v2", nodes: [] });
+  view.render(state, { canApprove: true, canReject: true, canRequestChanges: true });
+  assert.equal(doc.getElementById("capacity-version").textContent, "capacity-context-v2");
+
+  view.setNetworkContext(null, "unavailable");
+  view.render(state, { canApprove: true, canReject: true, canRequestChanges: true });
+  assert.equal(doc.getElementById("capacity-version").textContent, "—");
+});
+
 test("route table renders the same normalized route identity and complete evidence", () => {
   const doc = new FakeDocument();
   const view = createDashboardView(doc);

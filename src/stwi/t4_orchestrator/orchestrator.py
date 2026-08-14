@@ -156,9 +156,9 @@ class WhatIfOrchestrator:
             if surrogate is not None:
                 self._surrogate = surrogate
             elif self._settings.mode == RuntimeMode.DEMO:
-                from stwi.t4_orchestrator.demo_adapters import DemoSurrogateForecaster
+                from stwi.t4_orchestrator.demo_adapters import RefinementDemoSurrogateForecaster
 
-                self._surrogate = DemoSurrogateForecaster()
+                self._surrogate = RefinementDemoSurrogateForecaster()
             else:
                 self._surrogate = FakeSurrogateForecaster(
                     node_overrides=surrogate_node_overrides

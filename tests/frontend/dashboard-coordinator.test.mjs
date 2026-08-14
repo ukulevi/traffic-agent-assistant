@@ -439,6 +439,30 @@ test("terminal envelope focuses result only once", async () => {
   assert.equal(focusResultCalls, 1);
 });
 
+test("terminal completion remains online when the closed SSE stream reports reconnecting", async () => {
+  const view = createView();
+  let streamHandlers;
+  const coordinator = createDashboardCoordinator({
+    api: {
+      createJob: async () => ({ job_id: "job-1", status: "queued", tenant_id: "demo-operator" }),
+      streamJob(_jobId, handlers) { streamHandlers = handlers; return () => {}; },
+      getJob: async () => succeededEnvelope,
+    },
+    view,
+    resolveContext: async () => demoContext,
+    storage: createStorage(),
+    cryptoImpl: { randomUUID: () => "idem-terminal-transport" },
+  });
+
+  await coordinator.bootstrap();
+  await coordinator.submitScenario({ preventDefault() {} });
+  await streamHandlers.onEvent({ job_id: "job-1", status: "succeeded" }, "7");
+  streamHandlers.onTransport("reconnecting");
+
+  assert.equal(coordinator.getState().job.status, "succeeded");
+  assert.equal(coordinator.getState().transport.phase, "online");
+});
+
 test("decision response that claims actuation fails closed", async () => {
   const { coordinator } = await createSucceededCoordinator({
     recordDecision: async () => ({
