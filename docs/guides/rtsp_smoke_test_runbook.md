@@ -1,4 +1,4 @@
-# STWI — Supervised RTSP-to-Quarantine Smoke Test Runbook
+# STWI â€” Supervised RTSP-to-Quarantine Smoke Test Runbook
 
 **Ticket:** `TRA-10` / `STWI-RTSP-002`
 **Status:** Draft
@@ -94,7 +94,7 @@ because the original payload never leaked into command output.
 ### 4.5 Offline verification after supervised capture
 
 ```bash
-python scripts/validate_vision_dataset.py data/quarantine/rtsp_frames/edge_camera_1/<session_id>
+python scripts/validation/validate_vision_dataset.py data/quarantine/rtsp_frames/edge_camera_1/<session_id>
 ```
 
 Use validation results to decide:
@@ -120,7 +120,7 @@ This runbook does **not** authorize:
 ## 6. Exact Offline Verification Commands
 
 ```bash
-python scripts/validate_vision_dataset.py data/quarantine/rtsp_frames/edge_camera_1/<session_id>
+python scripts/validation/validate_vision_dataset.py data/quarantine/rtsp_frames/edge_camera_1/<session_id>
 python scripts/data_prep/capture_rtsp_frames.py --help
 git status --short
 rg -n "rtsp://|rtsps://|data:image/[^;]+;base64," data/quarantine/rtsp_frames/edge_camera_1/<session_id>

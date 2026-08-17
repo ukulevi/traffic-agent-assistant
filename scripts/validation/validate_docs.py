@@ -11,6 +11,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 CONTRACT_PATH = ROOT / "project_contract.json"
 DOCS = ROOT / "docs"
+SCRIPT_REFERENCE_PATTERN = re.compile(
+    r"(?<![A-Za-z0-9_./-])(scripts/[A-Za-z0-9_./-]+\.py)"
+)
 
 
 def fail(errors: list[str], message: str) -> None:
@@ -56,6 +59,42 @@ def validate_markdown_links(errors: list[str]) -> None:
             clean = target.split("#", 1)[0]
             if clean and not (path.parent / clean).resolve().exists():
                 fail(errors, f"{path.relative_to(ROOT)}: broken link {target}")
+
+
+def iter_active_documentation(root: Path) -> tuple[Path, ...]:
+    """Return public/canonical Markdown files that may document runnable scripts."""
+
+    paths: list[Path] = []
+    readme = root / "README.md"
+    if readme.exists():
+        paths.append(readme)
+    docs = root / "docs"
+    if docs.exists():
+        paths.extend(docs.glob("*.md"))
+        guides = docs / "guides"
+        if guides.exists():
+            paths.extend(guides.glob("*.md"))
+        operations = docs / "ops"
+        if operations.exists():
+            paths.extend(operations.glob("*.md"))
+    infrastructure = root / "infra"
+    if infrastructure.exists():
+        paths.extend(infrastructure.rglob("*.md"))
+    return tuple(sorted(set(paths)))
+
+
+def documented_script_paths(text: str) -> tuple[str, ...]:
+    return tuple(sorted(set(SCRIPT_REFERENCE_PATTERN.findall(text))))
+
+
+def validate_documented_script_paths(errors: list[str], root: Path = ROOT) -> None:
+    for path in iter_active_documentation(root):
+        for reference in documented_script_paths(path.read_text(encoding="utf-8")):
+            if not (root / reference).is_file():
+                fail(
+                    errors,
+                    f"{path.relative_to(root).as_posix()}: missing documented script {reference}",
+                )
 
 
 def validate_json_examples(errors: list[str]) -> None:
@@ -200,6 +239,7 @@ def main() -> int:
     validate_contract(errors, contract)
     validate_doc_versions(errors, contract)
     validate_markdown_links(errors)
+    validate_documented_script_paths(errors)
     validate_json_examples(errors)
     validate_public_artifacts(errors, contract)
     validate_required_terms(errors)

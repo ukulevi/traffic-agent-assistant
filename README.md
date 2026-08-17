@@ -1,30 +1,30 @@
 # SmartTraffic What-If (STWI)
 
-STWI là MVP 13 tuần hỗ trợ người vận hành đánh giá kịch bản giao thông What-if bằng dự báo GCN–LSTM, surrogate ensemble, truy xuất pháp lý có citation và Counterfactual Safety Loop fail-closed.
+STWI lÃ  MVP 13 tuáº§n há»— trá»£ ngÆ°á»i váº­n hÃ nh Ä‘Ã¡nh giÃ¡ ká»‹ch báº£n giao thÃ´ng What-if báº±ng dá»± bÃ¡o GCNâ€“LSTM, surrogate ensemble, truy xuáº¥t phÃ¡p lÃ½ cÃ³ citation vÃ  Counterfactual Safety Loop fail-closed.
 
-## Nguồn sự thật
+## Nguá»“n sá»± tháº­t
 
-1. [`project_contract.json`](./project_contract.json): hằng số, shape, SLA, API và version máy đọc được.
-2. [`docs/00_STWI_Summary_and_Guidelines.md`](./docs/00_STWI_Summary_and_Guidelines.md): kiến trúc và quy chuẩn.
-3. STWI-DOC-01–05 trong [`docs/`](./docs/): đặc tả từng tầng và kế hoạch triển khai.
+1. [`project_contract.json`](./project_contract.json): háº±ng sá»‘, shape, SLA, API vÃ  version mÃ¡y Ä‘á»c Ä‘Æ°á»£c.
+2. [`docs/00_STWI_Summary_and_Guidelines.md`](./docs/00_STWI_Summary_and_Guidelines.md): kiáº¿n trÃºc vÃ  quy chuáº©n.
+3. STWI-DOC-01â€“05 trong [`docs/`](./docs/): Ä‘áº·c táº£ tá»«ng táº§ng vÃ  káº¿ hoáº¡ch triá»ƒn khai.
 
-`report/chapters/`, `report/main.tex` và `slides/sections/` là artifact trình bày được đồng bộ từ nguồn trên. Tài liệu trong `docs/archive/` chỉ dùng tham khảo lịch sử.
+`report/chapters/`, `report/main.tex` vÃ  `slides/sections/` lÃ  artifact trÃ¬nh bÃ y Ä‘Æ°á»£c Ä‘á»“ng bá»™ tá»« nguá»“n trÃªn. TÃ i liá»‡u trong `docs/archive/` chá»‰ dÃ¹ng tham kháº£o lá»‹ch sá»­.
 
-## Phạm vi MVP
+## Pháº¡m vi MVP
 
-- Mạng chức năng 20 node, tối đa 20 luồng camera ghi sẵn/RTSP.
-- Kiểm thử tải bằng 1.000 producer aggregate tổng hợp.
-- Không lưu video thô và không tự điều khiển thiết bị hiện trường.
-- Surrogate P99 < 500 ms; E2E P95 ≤ 30 giây; hard deadline/P99 ≤ 180 giây.
+- Máº¡ng chá»©c nÄƒng 20 node, tá»‘i Ä‘a 20 luá»“ng camera ghi sáºµn/RTSP.
+- Kiá»ƒm thá»­ táº£i báº±ng 1.000 producer aggregate tá»•ng há»£p.
+- KhÃ´ng lÆ°u video thÃ´ vÃ  khÃ´ng tá»± Ä‘iá»u khiá»ƒn thiáº¿t bá»‹ hiá»‡n trÆ°á»ng.
+- Surrogate P99 < 500 ms; E2E P95 â‰¤ 30 giÃ¢y; hard deadline/P99 â‰¤ 180 giÃ¢y.
 
-## Kiểm tra
+## Kiá»ƒm tra
 
 ```powershell
 python scripts/validation/validate_docs.py
 python -m unittest tests.contracts.test_project_contract
 ```
 
-PDF được build từ `report/main.tex`; slides GitHub Pages được nạp từ `slides/sections/` qua `slides/js/presentation.js`.
+PDF Ä‘Æ°á»£c build tá»« `report/main.tex`; slides GitHub Pages Ä‘Æ°á»£c náº¡p tá»« `slides/sections/` qua `slides/js/presentation.js`.
 
 ## Repository structure
 
@@ -53,20 +53,20 @@ source/license/privacy notes, then validate:
 
 ```powershell
 pip install -e .[vision]
-python scripts/prepare_roboflow_yolo_dataset.py data/derived/private/vision_training/roboflow_v001 --dataset-version roboflow_v001 --privacy-status needs_review --reviewer pending
-python scripts/validate_vision_dataset.py data/derived/private/vision_training/roboflow_v001 --allow-pending-review
-python scripts/build_stwi_vehicle_yolo_dataset.py data/derived/private/vision_training/roboflow_v001 data/derived/private/vision_training/roboflow_v001_stwi_vehicles_short
-python scripts/validate_vision_dataset.py data/derived/private/vision_training/roboflow_v001_stwi_vehicles_short
-python scripts/augment_vehicle_dataset_with_motorcycle.py --base data/derived/private/vision_training/roboflow_v001_stwi_vehicles_short --output data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_ann --annotated-source motorcycle.yolov8
-python scripts/evaluate_vision_roi_ap.py --source data/derived/private/vision_training/roboflow_v001_stwi_vehicles_short --model yolo11s.pt --model-family yolo --output data/derived/private/vision_diagnostics/pretrained_yolo11s_val_conf005 --split val --conf 0.05 --iou-threshold 0.5 --imgsz 640 --device 0
-python scripts/train_vision_model.py --dataset data/derived/private/vision_training/roboflow_v001_stwi_vehicles_short --model yolo11s.pt --epochs 6 --imgsz 416 --batch 16 --device 0 --name stwi_yolo11s_roboflow_v001_vehicles_fallback --model-version stwi_yolo11s_roboflow_v001_vehicles_fallback
+python scripts/data_prep/prepare_roboflow_yolo_dataset.py data/derived/private/vision_training/roboflow_v001 --dataset-version roboflow_v001 --privacy-status needs_review --reviewer pending
+python scripts/validation/validate_vision_dataset.py data/derived/private/vision_training/roboflow_v001 --allow-pending-review
+python scripts/data_prep/build_stwi_vehicle_yolo_dataset.py data/derived/private/vision_training/roboflow_v001 data/derived/private/vision_training/roboflow_v001_stwi_vehicles_short
+python scripts/validation/validate_vision_dataset.py data/derived/private/vision_training/roboflow_v001_stwi_vehicles_short
+python scripts/data_prep/augment_vehicle_dataset_with_motorcycle.py --base data/derived/private/vision_training/roboflow_v001_stwi_vehicles_short --output data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_ann --annotated-source motorcycle.yolov8
+python scripts/validation/evaluate_vision_roi_ap.py --source data/derived/private/vision_training/roboflow_v001_stwi_vehicles_short --model yolo11s.pt --model-family yolo --output data/derived/private/vision_diagnostics/pretrained_yolo11s_val_conf005 --split val --conf 0.05 --iou-threshold 0.5 --imgsz 640 --device 0
+python scripts/training/train_vision_model.py --dataset data/derived/private/vision_training/roboflow_v001_stwi_vehicles_short --model yolo11s.pt --epochs 6 --imgsz 416 --batch 16 --device 0 --name stwi_yolo11s_roboflow_v001_vehicles_fallback --model-version stwi_yolo11s_roboflow_v001_vehicles_fallback
 ```
 
 Only promote a detector after validation/test metrics, latency, source license,
 class mapping, thresholds, and privacy review are recorded. The official MVP
 loader reads
 `data/derived/private/vision_models/official/model_artifact.json`, which is
-created by `scripts/promote_vision_model.py` only after the gate passes.
+created by `scripts/training/promote_vision_model.py` only after the gate passes.
 Detector output remains evidence for five-minute aggregates such as
 `traffic_volume_5m`, `avg_speed_kmh`, and `heavy_vehicle_ratio`; it never creates
 traffic-control actions.
@@ -132,4 +132,4 @@ readiness declaration.
 
 ## AI agent
 
-Quy tắc làm việc bền vững nằm trong [AGENTS.md](./AGENTS.md). Các workflow Codex project-local nằm trong [.agents/skills](./.agents/skills): triển khai, review và release QA.
+Quy táº¯c lÃ m viá»‡c bá»n vá»¯ng náº±m trong [AGENTS.md](./AGENTS.md). CÃ¡c workflow Codex project-local náº±m trong [.agents/skills](./.agents/skills): triá»ƒn khai, review vÃ  release QA.

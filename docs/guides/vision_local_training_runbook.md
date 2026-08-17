@@ -64,8 +64,8 @@ Reference URLs:
 Use the existing AP evaluator for Ultralytics-compatible candidates:
 
 ```powershell
-python scripts/evaluate_vision_roi_ap.py --source data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor_labelfix --model yolo11s.pt --model-family yolo --output data/derived/private/vision_diagnostics/pretrained_yolo11s_val_conf005 --split val --conf 0.05 --iou-threshold 0.5 --imgsz 640 --device 0
-python scripts/evaluate_vision_roi_ap.py --source data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor_labelfix --model yolov8s-worldv2.pt --model-family yolo_world --prompt-class car --prompt-class motorcycle --prompt-class bus --prompt-class truck --output data/derived/private/vision_diagnostics/pretrained_yoloworld_s_val_conf005 --split val --conf 0.05 --iou-threshold 0.5 --imgsz 640 --device 0
+python scripts/validation/evaluate_vision_roi_ap.py --source data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor_labelfix --model yolo11s.pt --model-family yolo --output data/derived/private/vision_diagnostics/pretrained_yolo11s_val_conf005 --split val --conf 0.05 --iou-threshold 0.5 --imgsz 640 --device 0
+python scripts/validation/evaluate_vision_roi_ap.py --source data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor_labelfix --model yolov8s-worldv2.pt --model-family yolo_world --prompt-class car --prompt-class motorcycle --prompt-class bus --prompt-class truck --output data/derived/private/vision_diagnostics/pretrained_yoloworld_s_val_conf005 --split val --conf 0.05 --iou-threshold 0.5 --imgsz 640 --device 0
 ```
 
 If a pretrained candidate clears or approaches the gate, run the same evaluator
@@ -80,7 +80,7 @@ The first pretrained-only evaluation used the reviewed label-fix validation
 split
 `roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor_labelfix`,
 `imgsz=640`, `conf=0.05`, IoU 0.5, and name-based mapping to STWI classes. These
-results are diagnostic AP50 values from `scripts/evaluate_vision_roi_ap.py`, not
+results are diagnostic AP50 values from `scripts/validation/evaluate_vision_roi_ap.py`, not
 Ultralytics training-run gate artifacts.
 
 | Candidate | Scope | mAP50_roi | bus | car | motorcycle | truck | Seconds/image | Decision |
@@ -120,16 +120,16 @@ The evaluator supports class aliases so external class names can be compared
 against the STWI class contract without modifying source labels:
 
 ```powershell
-python scripts/evaluate_vision_roi_ap.py --source data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor_labelfix --model data/derived/private/vision_external_models/<candidate>/weights.pt --model-family yolo --output data/derived/private/vision_diagnostics/<candidate>_val_sample200_conf005 --split val --conf 0.05 --iou-threshold 0.5 --imgsz 640 --device 0 --max-images 200 --class-alias motor:motorcycle
+python scripts/validation/evaluate_vision_roi_ap.py --source data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor_labelfix --model data/derived/private/vision_external_models/<candidate>/weights.pt --model-family yolo --output data/derived/private/vision_diagnostics/<candidate>_val_sample200_conf005 --split val --conf 0.05 --iou-threshold 0.5 --imgsz 640 --device 0 --max-images 200 --class-alias motor:motorcycle
 ```
 
 Fetch each external weight with checksum verification, then register it before
 benchmarking so license, class map, and promotion gate evidence are tracked:
 
 ```powershell
-python scripts/fetch_external_vision_model.py --url https://huggingface.co/gayatrigovindasetty/vehicle-detection-yolov8/resolve/main/best.pt --output data/derived/private/vision_external_models/gayatrigovindasetty_vehicle_detection_yolov8/best.pt --expected-sha256 482f0782bc283651ff8365612c01097b4ab4ff3974d103ab03fd3b4b166456ac
-python scripts/register_external_vision_model.py --model-id gayatrigovindasetty/vehicle-detection-yolov8 --source-url https://huggingface.co/gayatrigovindasetty/vehicle-detection-yolov8 --source-license mit --weights data/derived/private/vision_external_models/gayatrigovindasetty_vehicle_detection_yolov8/best.pt --model-family yolo --source-class Auto --source-class Bus --source-class Car --source-class LCV --source-class Motorcycle --source-class Multiaxle --source-class Tractor --source-class Truck --class-map Bus:bus --class-map Car:car --class-map Motorcycle:motorcycle --class-map Truck:truck --reviewer operator-reviewer --notes "HF model card reports MIT and mAP@0.5 > 85 on source dataset; requires local STWI validation before promotion."
-python scripts/register_external_vision_model.py --model-id dronefreak/visdrone-yolov8m --source-url https://huggingface.co/dronefreak/visdrone-yolov8m --source-license apache-2.0 --weights data/derived/private/vision_external_models/dronefreak_visdrone_yolov8m/best.pt --model-family yolo --source-class pedestrian --source-class people --source-class bicycle --source-class car --source-class van --source-class truck --source-class tricycle --source-class awning-tricycle --source-class bus --source-class motor --class-map car:car --class-map truck:truck --class-map bus:bus --class-map motor:motorcycle --class-alias motor:motorcycle --reviewer operator-reviewer --notes "VisDrone Apache-2.0 candidate; aerial-domain ablation only unless local STWI validation beats the current candidate."
+python scripts/infra/fetch_external_vision_model.py --url https://huggingface.co/gayatrigovindasetty/vehicle-detection-yolov8/resolve/main/best.pt --output data/derived/private/vision_external_models/gayatrigovindasetty_vehicle_detection_yolov8/best.pt --expected-sha256 482f0782bc283651ff8365612c01097b4ab4ff3974d103ab03fd3b4b166456ac
+python scripts/infra/register_external_vision_model.py --model-id gayatrigovindasetty/vehicle-detection-yolov8 --source-url https://huggingface.co/gayatrigovindasetty/vehicle-detection-yolov8 --source-license mit --weights data/derived/private/vision_external_models/gayatrigovindasetty_vehicle_detection_yolov8/best.pt --model-family yolo --source-class Auto --source-class Bus --source-class Car --source-class LCV --source-class Motorcycle --source-class Multiaxle --source-class Tractor --source-class Truck --class-map Bus:bus --class-map Car:car --class-map Motorcycle:motorcycle --class-map Truck:truck --reviewer operator-reviewer --notes "HF model card reports MIT and mAP@0.5 > 85 on source dataset; requires local STWI validation before promotion."
+python scripts/infra/register_external_vision_model.py --model-id dronefreak/visdrone-yolov8m --source-url https://huggingface.co/dronefreak/visdrone-yolov8m --source-license apache-2.0 --weights data/derived/private/vision_external_models/dronefreak_visdrone_yolov8m/best.pt --model-family yolo --source-class pedestrian --source-class people --source-class bicycle --source-class car --source-class van --source-class truck --source-class tricycle --source-class awning-tricycle --source-class bus --source-class motor --class-map car:car --class-map truck:truck --class-map bus:bus --class-map motor:motorcycle --class-alias motor:motorcycle --reviewer operator-reviewer --notes "VisDrone Apache-2.0 candidate; aerial-domain ablation only unless local STWI validation beats the current candidate."
 ```
 
 Then benchmark the registered manifest. Start with a 200-image validation sample
@@ -151,7 +151,7 @@ python scripts/benchmark_external_vision_model.py --manifest data/derived/privat
 `benchmark_external_vision_model.py` writes
 `external_benchmark_summary.json` with the external model metadata, local AP50,
 latency, and verdict. It does not promote a model. Promotion still requires
-the existing `scripts/promote_vision_model.py` path after metrics, source
+the existing `scripts/training/promote_vision_model.py` path after metrics, source
 license, class map, privacy review, thresholds, and human approval are complete.
 
 The first verified external-weight samples did not clear the local gate:
@@ -197,7 +197,7 @@ If Roboflow downloaded `data.yaml`, keep it in place and generate the STWI
 manifest plus Ultralytics `dataset.yaml` with the prepare script:
 
 ```powershell
-python scripts/prepare_roboflow_yolo_dataset.py data/derived/private/vision_training/roboflow_v001 --dataset-version roboflow_v001 --privacy-status needs_review --reviewer pending --notes "Roboflow export prepared for local training; privacy review required before official promotion."
+python scripts/data_prep/prepare_roboflow_yolo_dataset.py data/derived/private/vision_training/roboflow_v001 --dataset-version roboflow_v001 --privacy-status needs_review --reviewer pending --notes "Roboflow export prepared for local training; privacy review required before official promotion."
 ```
 
 Keep downloaded zip files or untouched exports under:
@@ -241,22 +241,22 @@ pip install -e .[vision]
 Run dataset validation. During initial inspection, pending review is allowed:
 
 ```powershell
-python scripts/validate_vision_dataset.py data/derived/private/vision_training/roboflow_v001 --allow-pending-review
+python scripts/validation/validate_vision_dataset.py data/derived/private/vision_training/roboflow_v001 --allow-pending-review
 ```
 
 Before promoting weights, privacy review must be finalized and validation must
 run without `--allow-pending-review`:
 
 ```powershell
-python scripts/validate_vision_dataset.py data/derived/private/vision_training/roboflow_v001
+python scripts/validation/validate_vision_dataset.py data/derived/private/vision_training/roboflow_v001
 ```
 
 Build the MVP vehicle-only dataset so metrics and promotion gates focus on
 `bus`, `car`, `motorcycle`, and `truck`:
 
 ```powershell
-python scripts/build_stwi_vehicle_yolo_dataset.py data/derived/private/vision_training/roboflow_v001 data/derived/private/vision_training/roboflow_v001_stwi_vehicles_short
-python scripts/validate_vision_dataset.py data/derived/private/vision_training/roboflow_v001_stwi_vehicles_short
+python scripts/data_prep/build_stwi_vehicle_yolo_dataset.py data/derived/private/vision_training/roboflow_v001 data/derived/private/vision_training/roboflow_v001_stwi_vehicles_short
+python scripts/validation/validate_vision_dataset.py data/derived/private/vision_training/roboflow_v001_stwi_vehicles_short
 ```
 
 If extra motorcycle-focused YOLO exports are available, add only sources whose
@@ -265,8 +265,8 @@ be merged directly into the vehicle detector; use pseudo-labeling only as an
 experiment and compare per-class metrics before accepting the result.
 
 ```powershell
-python scripts/augment_vehicle_dataset_with_motorcycle.py --base data/derived/private/vision_training/roboflow_v001_stwi_vehicles_short --output data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_ann --annotated-source motorcycle.yolov8
-python scripts/validate_vision_dataset.py data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_ann
+python scripts/data_prep/augment_vehicle_dataset_with_motorcycle.py --base data/derived/private/vision_training/roboflow_v001_stwi_vehicles_short --output data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_ann --annotated-source motorcycle.yolov8
+python scripts/validation/validate_vision_dataset.py data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_ann
 ```
 
 Helmet-source datasets can still be useful for motorcycle/rider context and
@@ -276,7 +276,7 @@ high-confidence relabel candidate pack with preview images, review it, then add
 only accepted labels as a motorcycle supplement:
 
 ```powershell
-python scripts/relabel_helmet_dataset_for_motorcycle.py --source "MOTORCYCLE.yolov8 (1)" --output data/derived/private/vision_training/helmet_motorcycle_relabel_v001 --model data/derived/private/vision_runs/stwi_yolov8n_vehicles_motoann_finetune_cuda416_b32_e6/weights/best.pt --min-conf 0.55 --max-images 80 --device 0 --reviewer pending
+python scripts/data_prep/relabel_helmet_dataset_for_motorcycle.py --source "MOTORCYCLE.yolov8 (1)" --output data/derived/private/vision_training/helmet_motorcycle_relabel_v001 --model data/derived/private/vision_runs/stwi_yolov8n_vehicles_motoann_finetune_cuda416_b32_e6/weights/best.pt --min-conf 0.55 --max-images 80 --device 0 --reviewer pending
 ```
 
 The generated `review/review_queue.csv` and preview images are the review
@@ -291,7 +291,7 @@ After review, set accepted rows in `review/review_queue.csv` to
 supplement:
 
 ```powershell
-python scripts/finalize_motorcycle_relabel_review.py --relabel-root data/derived/private/vision_training/helmet_motorcycle_relabel_v001 --output data/derived/private/vision_training/helmet_motorcycle_relabel_v001_reviewed --reviewer operator-reviewer --notes "Accepted high-confidence motorcycle relabel candidates after visual spot review."
+python scripts/infra/finalize_motorcycle_relabel_review.py --relabel-root data/derived/private/vision_training/helmet_motorcycle_relabel_v001 --output data/derived/private/vision_training/helmet_motorcycle_relabel_v001_reviewed --reviewer operator-reviewer --notes "Accepted high-confidence motorcycle relabel candidates after visual spot review."
 ```
 
 Use the reviewed supplement as an `--annotated-source` only after this step.
@@ -303,9 +303,9 @@ and test splits for comparable metrics. For quick motorcycle improvement, start
 with a motorcycle-focused subset instead of adding every vehicle image:
 
 ```powershell
-python scripts/prepare_roboflow_yolo_dataset.py vietnam.yolov8 --dataset-version vietnam_yolov8_v001 --privacy-status needs_review --reviewer pending --notes "Vietnam YOLO export prepared for STWI local training; visual/privacy review required before official promotion."
-python scripts/augment_vehicle_dataset_with_yolo_sources.py --base data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_ann --output data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_vietnam_motoonly --yolo-source vietnam.yolov8 --require-class motorcycle --max-records-per-source 320 --privacy-status needs_review --reviewer pending --notes "Vietnam YOLO motorcycle-focused supplement added train-only; visual/privacy review required before official promotion."
-python scripts/validate_vision_dataset.py data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_vietnam_motoonly --allow-pending-review
+python scripts/data_prep/prepare_roboflow_yolo_dataset.py vietnam.yolov8 --dataset-version vietnam_yolov8_v001 --privacy-status needs_review --reviewer pending --notes "Vietnam YOLO export prepared for STWI local training; visual/privacy review required before official promotion."
+python scripts/data_prep/augment_vehicle_dataset_with_yolo_sources.py --base data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_ann --output data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_vietnam_motoonly --yolo-source vietnam.yolov8 --require-class motorcycle --max-records-per-source 320 --privacy-status needs_review --reviewer pending --notes "Vietnam YOLO motorcycle-focused supplement added train-only; visual/privacy review required before official promotion."
+python scripts/validation/validate_vision_dataset.py data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_vietnam_motoonly --allow-pending-review
 ```
 
 The first Vietnam experiment
@@ -320,7 +320,7 @@ plus `review_queue.csv`. Add only visually accepted rows into a future reviewed
 supplement; do not promote a model trained from pending-review Vietnam rows.
 
 ```powershell
-python scripts/build_vision_error_review_pack.py --source vietnam.yolov8 --output data/derived/private/vision_reviews/vietnam_motorcycle_error_review_v001 --model data/derived/private/vision_runs/stwi_yolov8n_vehicles_motoann_finetune_cuda416_b32_e6/weights/best.pt --target-class motorcycle --split train --split val --split test --max-images 80 --conf 0.25 --iou-threshold 0.5 --imgsz 416 --device 0 --reviewer pending --notes "Vietnam YOLO motorcycle hard-case review before any official retrain."
+python scripts/data_prep/build_vision_error_review_pack.py --source vietnam.yolov8 --output data/derived/private/vision_reviews/vietnam_motorcycle_error_review_v001 --model data/derived/private/vision_runs/stwi_yolov8n_vehicles_motoann_finetune_cuda416_b32_e6/weights/best.pt --target-class motorcycle --split train --split val --split test --max-images 80 --conf 0.25 --iou-threshold 0.5 --imgsz 416 --device 0 --reviewer pending --notes "Vietnam YOLO motorcycle hard-case review before any official retrain."
 ```
 
 The first review pack scanned 206 Vietnam images and selected 80 motorcycle
@@ -341,8 +341,8 @@ both were skipped. `yolor motorcycle.yolov8` was unique against the current
 base dataset and added 1,819 train-only images with 2,869 motorcycle boxes:
 
 ```powershell
-python scripts/augment_vehicle_dataset_with_yolo_sources.py --base data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_ann --output data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_yolor_moto_aug --yolo-source "yolor motorcycle.yolov8" --source-split train --require-class motorcycle --privacy-status needs_review --reviewer pending --notes "YOLOR motorcycle YOLO source added train-only after exact-hash dedupe; duplicate only/notonly motorcycle exports skipped."
-python scripts/validate_vision_dataset.py data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_yolor_moto_aug --allow-pending-review
+python scripts/data_prep/augment_vehicle_dataset_with_yolo_sources.py --base data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_ann --output data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_yolor_moto_aug --yolo-source "yolor motorcycle.yolov8" --source-split train --require-class motorcycle --privacy-status needs_review --reviewer pending --notes "YOLOR motorcycle YOLO source added train-only after exact-hash dedupe; duplicate only/notonly motorcycle exports skipped."
+python scripts/validation/validate_vision_dataset.py data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_yolor_moto_aug --allow-pending-review
 ```
 
 The dataset `roboflow_v001_stwi_vehicles_motoann_yolor_moto_aug` preserves the
@@ -358,7 +358,7 @@ false-negative review pack scanned 464 train images and selected 160
 motorcycle hard-case previews:
 
 ```powershell
-python scripts/build_vision_error_review_pack.py --source "yolor motorcycle.yolov8" --output data/derived/private/vision_reviews/yolor_motorcycle_error_review_v001 --model data/derived/private/vision_runs/stwi_yolov8n_vehicles_motoann_finetune_cuda416_b32_e6/weights/best.pt --target-class motorcycle --split train --max-images 160 --conf 0.25 --iou-threshold 0.5 --imgsz 416 --device 0 --reviewer pending --notes "YOLOR motorcycle hard-case false-negative review before filtered retrain."
+python scripts/data_prep/build_vision_error_review_pack.py --source "yolor motorcycle.yolov8" --output data/derived/private/vision_reviews/yolor_motorcycle_error_review_v001 --model data/derived/private/vision_runs/stwi_yolov8n_vehicles_motoann_finetune_cuda416_b32_e6/weights/best.pt --target-class motorcycle --split train --max-images 160 --conf 0.25 --iou-threshold 0.5 --imgsz 416 --device 0 --reviewer pending --notes "YOLOR motorcycle hard-case false-negative review before filtered retrain."
 ```
 
 The combined experiment
@@ -374,8 +374,8 @@ adds many small vehicle boxes. `person` is ignored and `motorbike` is remapped
 to STWI `motorcycle`:
 
 ```powershell
-python scripts/augment_vehicle_dataset_with_yolo_sources.py --base data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_ann --output data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_aug --yolo-source "Mean of transportation.yolov8" --privacy-status needs_review --reviewer pending --notes "Mean of transportation YOLO source added train-only; person ignored; visual/privacy review required before official promotion."
-python scripts/validate_vision_dataset.py data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_aug --allow-pending-review
+python scripts/data_prep/augment_vehicle_dataset_with_yolo_sources.py --base data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_ann --output data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_aug --yolo-source "Mean of transportation.yolov8" --privacy-status needs_review --reviewer pending --notes "Mean of transportation YOLO source added train-only; person ignored; visual/privacy review required before official promotion."
+python scripts/validation/validate_vision_dataset.py data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_aug --allow-pending-review
 ```
 
 The first mean-transportation-only fine-tune
@@ -413,7 +413,7 @@ The best current pending-review candidate is the YOLOv8s capacity run trained
 from the previous YOLOv8s checkpoint on the mean-transportation supplement:
 
 ```powershell
-python scripts/train_vision_model.py --dataset data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_aug --model data/derived/private/vision_runs/stwi_yolov8s_motoann_cuda416_b16_e10/weights/best.pt --epochs 6 --imgsz 416 --batch 16 --device 0 --workers 0 --amp --output data/derived/private/vision_runs --name stwi_yolov8s_motoann_mean_transport_cuda416_b16_e6 --model-version stwi_yolov8s_motoann_mean_transport_cuda416_b16_e6 --allow-pending-review --optimizer AdamW --lr0 0.00018 --lrf 0.08 --cos-lr --mosaic 0.25 --close-mosaic 2
+python scripts/training/train_vision_model.py --dataset data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_aug --model data/derived/private/vision_runs/stwi_yolov8s_motoann_cuda416_b16_e10/weights/best.pt --epochs 6 --imgsz 416 --batch 16 --device 0 --workers 0 --amp --output data/derived/private/vision_runs --name stwi_yolov8s_motoann_mean_transport_cuda416_b16_e6 --model-version stwi_yolov8s_motoann_mean_transport_cuda416_b16_e6 --allow-pending-review --optimizer AdamW --lr0 0.00018 --lrf 0.08 --cos-lr --mosaic 0.25 --close-mosaic 2
 ```
 
 It reached `mAP50` 0.6902 and `mAP50-95` 0.4453, with per-class AP50 about
@@ -430,7 +430,7 @@ dataset folder. The batch copies only preview images and keeps pointers back to
 the original `review_queue.csv` rows:
 
 ```powershell
-python scripts/prepare_vision_review_batch.py --output data/derived/private/vision_reviews/mvp_round1_motorcycle_review_batch --pack data/derived/private/vision_reviews/base_val_motorcycle_error_review_v001 --pack data/derived/private/vision_reviews/vietnam_motorcycle_error_review_v001 --pack data/derived/private/vision_reviews/yolor_motorcycle_error_review_v001 --status pending --limit-per-pack 80 --title "STWI MVP round 1 motorcycle review"
+python scripts/data_prep/prepare_vision_review_batch.py --output data/derived/private/vision_reviews/mvp_round1_motorcycle_review_batch --pack data/derived/private/vision_reviews/base_val_motorcycle_error_review_v001 --pack data/derived/private/vision_reviews/vietnam_motorcycle_error_review_v001 --pack data/derived/private/vision_reviews/yolor_motorcycle_error_review_v001 --status pending --limit-per-pack 80 --title "STWI MVP round 1 motorcycle review"
 ```
 
 Open `data/derived/private/vision_reviews/mvp_round1_motorcycle_review_batch/index.html`
@@ -446,11 +446,11 @@ Use only these statuses:
 After reviewing the batch CSV, apply the decisions back to the source packs:
 
 ```powershell
-python scripts/apply_vision_review_batch.py --batch data/derived/private/vision_reviews/mvp_round1_motorcycle_review_batch/review_batch.csv
+python scripts/training/apply_vision_review_batch.py --batch data/derived/private/vision_reviews/mvp_round1_motorcycle_review_batch/review_batch.csv
 ```
 
 Then materialize accepted rows from each source review pack with
-`scripts/augment_vehicle_dataset_with_review_pack.py`. Keep validation/test
+`scripts/data_prep/augment_vehicle_dataset_with_review_pack.py`. Keep validation/test
 preserved and add accepted review rows to train only.
 
 The first round-1 review produced 47 `accepted`, 147 `needs_fix`, and 5
@@ -479,7 +479,7 @@ For train-split `needs_fix` rows, generate a computer-vision assisted label-fix
 candidate pack instead of editing the original source labels directly:
 
 ```powershell
-python scripts/build_vision_label_fix_candidates.py --batch data/derived/private/vision_reviews/mvp_round1_motorcycle_label_fix_queue/review_batch.csv --output data/derived/private/vision_training/mvp_round1_motorcycle_label_fix_candidates --model data/derived/private/vision_runs/stwi_yolov8s_motoann_mean_transport_cuda416_b16_e6/weights/best.pt --imgsz 416 --conf 0.35 --device 0 --reviewer codex-cv-pass --notes "Computer-vision assisted label-fix candidates for train split needs_fix rows; valid split intentionally excluded."
+python scripts/data_prep/build_vision_label_fix_candidates.py --batch data/derived/private/vision_reviews/mvp_round1_motorcycle_label_fix_queue/review_batch.csv --output data/derived/private/vision_training/mvp_round1_motorcycle_label_fix_candidates --model data/derived/private/vision_runs/stwi_yolov8s_motoann_mean_transport_cuda416_b16_e6/weights/best.pt --imgsz 416 --conf 0.35 --device 0 --reviewer codex-cv-pass --notes "Computer-vision assisted label-fix candidates for train split needs_fix rows; valid split intentionally excluded."
 ```
 
 The generated candidate pack covers 124 train images only, adds 178 candidate
@@ -499,7 +499,7 @@ After operator review, all 124 label-fix candidate rows were accepted and
 materialized as a train-only supplement:
 
 ```powershell
-python scripts/finalize_vision_label_fix_candidates.py --base data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor --candidate data/derived/private/vision_training/mvp_round1_motorcycle_label_fix_candidates --output data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor_labelfix --mark-all-accepted --include-status accepted --privacy-status needs_review --reviewer operator-reviewer --notes "User accepted all round-1 computer-vision assisted label-fix candidates; train-only supplement, valid split unchanged."
+python scripts/infra/finalize_vision_label_fix_candidates.py --base data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor --candidate data/derived/private/vision_training/mvp_round1_motorcycle_label_fix_candidates --output data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor_labelfix --mark-all-accepted --include-status accepted --privacy-status needs_review --reviewer operator-reviewer --notes "User accepted all round-1 computer-vision assisted label-fix candidates; train-only supplement, valid split unchanged."
 ```
 
 The resulting dataset preserves validation/test and has 10,491 train, 2,668
@@ -510,14 +510,14 @@ A YOLOv8s fine-tune from the previous best run was attempted on this label-fix
 dataset:
 
 ```powershell
-python scripts/train_vision_model.py --dataset data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor_labelfix --model data/derived/private/vision_runs/stwi_yolov8s_motoann_mean_transport_cuda416_b16_e6/weights/best.pt --epochs 6 --imgsz 416 --batch 16 --device 0 --workers 0 --amp --output data/derived/private/vision_runs --name stwi_yolov8s_motoann_mean_transport_round1_labelfix_cuda416_b16_e6 --model-version stwi_yolov8s_motoann_mean_transport_round1_labelfix_cuda416_b16_e6 --allow-pending-review --optimizer AdamW --lr0 0.00012 --lrf 0.08 --cos-lr --mosaic 0.15 --close-mosaic 2
+python scripts/training/train_vision_model.py --dataset data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor_labelfix --model data/derived/private/vision_runs/stwi_yolov8s_motoann_mean_transport_cuda416_b16_e6/weights/best.pt --epochs 6 --imgsz 416 --batch 16 --device 0 --workers 0 --amp --output data/derived/private/vision_runs --name stwi_yolov8s_motoann_mean_transport_round1_labelfix_cuda416_b16_e6 --model-version stwi_yolov8s_motoann_mean_transport_round1_labelfix_cuda416_b16_e6 --allow-pending-review --optimizer AdamW --lr0 0.00012 --lrf 0.08 --cos-lr --mosaic 0.15 --close-mosaic 2
 ```
 
 The first attempt timed out after 4 completed epochs. Resume from the saved
 checkpoint with:
 
 ```powershell
-python scripts/train_vision_model.py --dataset data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor_labelfix --model data/derived/private/vision_runs/stwi_yolov8s_motoann_mean_transport_round1_labelfix_cuda416_b16_e6/weights/last.pt --epochs 6 --imgsz 416 --batch 16 --device 0 --workers 0 --amp --resume --output data/derived/private/vision_runs --name stwi_yolov8s_motoann_mean_transport_round1_labelfix_cuda416_b16_e6 --model-version stwi_yolov8s_motoann_mean_transport_round1_labelfix_cuda416_b16_e6 --allow-pending-review --optimizer AdamW --lr0 0.00012 --lrf 0.08 --cos-lr --mosaic 0.15 --close-mosaic 2
+python scripts/training/train_vision_model.py --dataset data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor_labelfix --model data/derived/private/vision_runs/stwi_yolov8s_motoann_mean_transport_round1_labelfix_cuda416_b16_e6/weights/last.pt --epochs 6 --imgsz 416 --batch 16 --device 0 --workers 0 --amp --resume --output data/derived/private/vision_runs --name stwi_yolov8s_motoann_mean_transport_round1_labelfix_cuda416_b16_e6 --model-version stwi_yolov8s_motoann_mean_transport_round1_labelfix_cuda416_b16_e6 --allow-pending-review --optimizer AdamW --lr0 0.00012 --lrf 0.08 --cos-lr --mosaic 0.15 --close-mosaic 2
 ```
 
 The resumed run completed and wrote `stwi_model_artifact.json`, but the artifact
@@ -530,7 +530,7 @@ The next optimization attempt added train-only object-centric crops for the weak
 AP50 classes while preserving validation/test:
 
 ```powershell
-python scripts/augment_vehicle_dataset_with_object_crops.py --base data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor_labelfix --output data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor_labelfix_objcrop --class-spec motorcycle:0.040:2200 --class-spec bus:0.020:800 --class-spec car:0.003:1200 --context-scale 5.0 --min-crop-size 160 --min-visibility 0.35 --reviewer codex-object-crop-pass --notes "Train-only object-centric crops for weak AP50 classes; validation/test preserved for honest MVP gate comparison."
+python scripts/data_prep/augment_vehicle_dataset_with_object_crops.py --base data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor_labelfix --output data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor_labelfix_objcrop --class-spec motorcycle:0.040:2200 --class-spec bus:0.020:800 --class-spec car:0.003:1200 --context-scale 5.0 --min-crop-size 160 --min-visibility 0.35 --reviewer codex-object-crop-pass --notes "Train-only object-centric crops for weak AP50 classes; validation/test preserved for honest MVP gate comparison."
 ```
 
 This created 4,200 train crops and raised train counts to 14,691 images with
@@ -560,7 +560,7 @@ As a clean ablation, the human-accepted round-1 Vietnam/YOLOR dataset was also
 fine-tuned without the label-fix or object-crop supplements:
 
 ```powershell
-python scripts/train_vision_model.py --dataset data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor --model data/derived/private/vision_runs/stwi_yolov8s_motoann_mean_transport_cuda416_b16_e6/weights/best.pt --epochs 8 --imgsz 416 --batch 16 --device 0 --workers 0 --amp --output data/derived/private/vision_runs --name stwi_yolov8s_reviewed_round1_vietnam_yolor_cuda416_b16_e8 --model-version stwi_yolov8s_reviewed_round1_vietnam_yolor_cuda416_b16_e8 --allow-pending-review --optimizer AdamW --lr0 0.00008 --lrf 0.05 --cos-lr --mosaic 0.20 --close-mosaic 3
+python scripts/training/train_vision_model.py --dataset data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor --model data/derived/private/vision_runs/stwi_yolov8s_motoann_mean_transport_cuda416_b16_e6/weights/best.pt --epochs 8 --imgsz 416 --batch 16 --device 0 --workers 0 --amp --output data/derived/private/vision_runs --name stwi_yolov8s_reviewed_round1_vietnam_yolor_cuda416_b16_e8 --model-version stwi_yolov8s_reviewed_round1_vietnam_yolor_cuda416_b16_e8 --allow-pending-review --optimizer AdamW --lr0 0.00008 --lrf 0.05 --cos-lr --mosaic 0.20 --close-mosaic 3
 ```
 
 This run reached `mAP50` 0.6900 and `mAP50-95` 0.4507. A per-class validation
@@ -574,7 +574,7 @@ label-fix dataset at `imgsz=640`, lower LR, and lighter augmentation. The run
 timed out once, then was resumed from `weights/last.pt`:
 
 ```powershell
-python scripts/train_vision_model.py --dataset data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor_labelfix --model data/derived/private/vision_runs/stwi_yolov8s_labelfix_tiny640_cuda640_b8_e4/weights/last.pt --epochs 4 --imgsz 640 --batch 8 --device 0 --workers 0 --amp --resume --output data/derived/private/vision_runs --name stwi_yolov8s_labelfix_tiny640_cuda640_b8_e4 --model-version stwi_yolov8s_labelfix_tiny640_cuda640_b8_e4 --allow-pending-review --optimizer AdamW --lr0 0.00006 --lrf 0.08 --cos-lr --mosaic 0.08 --close-mosaic 2 --scale 0.20 --translate 0.06 --erasing 0.10
+python scripts/training/train_vision_model.py --dataset data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor_labelfix --model data/derived/private/vision_runs/stwi_yolov8s_labelfix_tiny640_cuda640_b8_e4/weights/last.pt --epochs 4 --imgsz 640 --batch 8 --device 0 --workers 0 --amp --resume --output data/derived/private/vision_runs --name stwi_yolov8s_labelfix_tiny640_cuda640_b8_e4 --model-version stwi_yolov8s_labelfix_tiny640_cuda640_b8_e4 --allow-pending-review --optimizer AdamW --lr0 0.00006 --lrf 0.08 --cos-lr --mosaic 0.08 --close-mosaic 2 --scale 0.20 --translate 0.06 --erasing 0.10
 ```
 
 The completed artifact reached `mAP50` 0.6893 and `mAP50-95` 0.4432, so it did
@@ -587,7 +587,7 @@ computes TP/FN/FP at a fixed confidence and records wrong-class matches as both
 target FN and predicted-class FP:
 
 ```powershell
-python scripts/analyze_vision_validation_errors.py --source data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor_labelfix --model data/derived/private/vision_runs/stwi_yolov8s_motoann_mean_transport_cuda416_b16_e6/weights/best.pt --output data/derived/private/vision_diagnostics/best_yolov8s_labelfix_val_conf025 --split val --conf 0.25 --iou-threshold 0.5 --imgsz 416 --device 0
+python scripts/validation/analyze_vision_validation_errors.py --source data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor_labelfix --model data/derived/private/vision_runs/stwi_yolov8s_motoann_mean_transport_cuda416_b16_e6/weights/best.pt --output data/derived/private/vision_diagnostics/best_yolov8s_labelfix_val_conf025 --split val --conf 0.25 --iou-threshold 0.5 --imgsz 416 --device 0
 ```
 
 The first analysis scanned 2,668 validation images. At confidence 0.25, the
@@ -604,7 +604,7 @@ sample of 300 validation images looked promising at `conf=0.40`, but the full
 validation run did not hold up:
 
 ```powershell
-python scripts/analyze_vision_sliced_validation.py --source data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor_labelfix --model data/derived/private/vision_runs/stwi_yolov8s_motoann_mean_transport_cuda416_b16_e6/weights/best.pt --output data/derived/private/vision_diagnostics/best_yolov8s_labelfix_val_sliced640_conf040_full --split val --conf 0.40 --iou-threshold 0.5 --imgsz 416 --device 0 --tile-size 640 --overlap 0.25 --nms-iou 0.50
+python scripts/validation/analyze_vision_sliced_validation.py --source data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor_labelfix --model data/derived/private/vision_runs/stwi_yolov8s_motoann_mean_transport_cuda416_b16_e6/weights/best.pt --output data/derived/private/vision_diagnostics/best_yolov8s_labelfix_val_sliced640_conf040_full --split val --conf 0.40 --iou-threshold 0.5 --imgsz 416 --device 0 --tile-size 640 --overlap 0.25 --nms-iou 0.50
 ```
 
 Compared with full-frame inference at the same confidence, slicing slightly
@@ -617,8 +617,8 @@ best model and duplicating 1,800 high-scoring train records with weights biased
 toward `motorcycle` and `bus`:
 
 ```powershell
-python scripts/analyze_vision_validation_errors.py --source data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor_labelfix --model data/derived/private/vision_runs/stwi_yolov8s_motoann_mean_transport_cuda416_b16_e6/weights/best.pt --output data/derived/private/vision_diagnostics/best_yolov8s_labelfix_train_conf025 --split train --conf 0.25 --iou-threshold 0.5 --imgsz 416 --device 0
-python scripts/rebalance_vehicle_training_dataset_from_errors.py --source data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor_labelfix --error-csv data/derived/private/vision_diagnostics/best_yolov8s_labelfix_train_conf025/image_errors.csv --output data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_labelfix_hardcase_replay_v1 --repeat 1 --max-records 1800 --min-score 1.0 --class-weight motorcycle:5.0 --class-weight bus:3.0 --class-weight car:0.45 --class-weight truck:0.35
+python scripts/validation/analyze_vision_validation_errors.py --source data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor_labelfix --model data/derived/private/vision_runs/stwi_yolov8s_motoann_mean_transport_cuda416_b16_e6/weights/best.pt --output data/derived/private/vision_diagnostics/best_yolov8s_labelfix_train_conf025 --split train --conf 0.25 --iou-threshold 0.5 --imgsz 416 --device 0
+python scripts/training/rebalance_vehicle_training_dataset_from_errors.py --source data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_reviewed_round1_vietnam_yolor_labelfix --error-csv data/derived/private/vision_diagnostics/best_yolov8s_labelfix_train_conf025/image_errors.csv --output data/derived/private/vision_training/roboflow_v001_stwi_vehicles_motoann_mean_transport_labelfix_hardcase_replay_v1 --repeat 1 --max-records 1800 --min-score 1.0 --class-weight motorcycle:5.0 --class-weight bus:3.0 --class-weight car:0.45 --class-weight truck:0.35
 ```
 
 The resulting dataset has 12,291 train images and preserves the same 2,668
@@ -645,8 +645,8 @@ When the active training path stabilizes, clean unused vision artifacts with an
 explicit manifest instead of deleting ad hoc folders:
 
 ```powershell
-python scripts/cleanup_vision_data_artifacts.py --mode dry-run --manifest data/manifests/vision_data_cleanup_dry_run.json
-python scripts/cleanup_vision_data_artifacts.py --mode quarantine --manifest data/manifests/vision_data_cleanup_manifest.json
+python scripts/infra/cleanup_vision_data_artifacts.py --mode dry-run --manifest data/manifests/vision_data_cleanup_dry_run.json
+python scripts/infra/cleanup_vision_data_artifacts.py --mode quarantine --manifest data/manifests/vision_data_cleanup_manifest.json
 ```
 
 The cleanup script keeps the raw/base datasets, the mean-transportation
@@ -661,7 +661,7 @@ Create a base-validation review pack when the gate metric stalls. This audits
 the exact preserved validation split instead of adding more unreviewed data:
 
 ```powershell
-python scripts/build_vision_error_review_pack.py --source data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_ann --output data/derived/private/vision_reviews/base_val_motorcycle_error_review_v001 --model data/derived/private/vision_runs/stwi_yolov8n_vehicles_motoann_finetune_cuda416_b32_e6/weights/best.pt --target-class motorcycle --split val --max-images 120 --conf 0.25 --iou-threshold 0.5 --imgsz 416 --device 0 --reviewer pending --notes "Base validation motorcycle false-negative review for mAP50 gate improvement."
+python scripts/data_prep/build_vision_error_review_pack.py --source data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_ann --output data/derived/private/vision_reviews/base_val_motorcycle_error_review_v001 --model data/derived/private/vision_runs/stwi_yolov8n_vehicles_motoann_finetune_cuda416_b32_e6/weights/best.pt --target-class motorcycle --split val --max-images 120 --conf 0.25 --iou-threshold 0.5 --imgsz 416 --device 0 --reviewer pending --notes "Base validation motorcycle false-negative review for mAP50 gate improvement."
 ```
 
 The first base-validation review scanned all 2,668 validation images and
@@ -676,8 +676,8 @@ without leaking validation data, build a privacy-reviewed train-only boost from
 small motorcycle boxes:
 
 ```powershell
-python scripts/rebalance_vehicle_training_dataset.py --source data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_ann --output data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_ann_smallmoto_area006_r2 --boost-class motorcycle --repeat 2 --max-box-area 0.006
-python scripts/validate_vision_dataset.py data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_ann_smallmoto_area006_r2
+python scripts/training/rebalance_vehicle_training_dataset.py --source data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_ann --output data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_ann_smallmoto_area006_r2 --boost-class motorcycle --repeat 2 --max-box-area 0.006
+python scripts/validation/validate_vision_dataset.py data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_ann_smallmoto_area006_r2
 ```
 
 This selected 174 train images, added 348 duplicate train records, and raised
@@ -692,7 +692,7 @@ false-positive/negative review rather than simply increasing duplication.
 False-positive review can be generated with the same review tool:
 
 ```powershell
-python scripts/build_vision_error_review_pack.py --source data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_ann --output data/derived/private/vision_reviews/base_val_motorcycle_false_positive_review_candidate_v001 --model data/derived/private/vision_runs/stwi_yolov8n_vehicles_motoann_finetune_cuda416_b32_e6/weights/best.pt --target-class motorcycle --review-mode false_positive --split val --max-images 200 --conf 0.25 --iou-threshold 0.5 --imgsz 416 --device 0 --reviewer pending --notes "Base validation motorcycle false-positive review for current best candidate."
+python scripts/data_prep/build_vision_error_review_pack.py --source data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_ann --output data/derived/private/vision_reviews/base_val_motorcycle_false_positive_review_candidate_v001 --model data/derived/private/vision_runs/stwi_yolov8n_vehicles_motoann_finetune_cuda416_b32_e6/weights/best.pt --target-class motorcycle --review-mode false_positive --split val --max-images 200 --conf 0.25 --iou-threshold 0.5 --imgsz 416 --device 0 --reviewer pending --notes "Base validation motorcycle false-positive review for current best candidate."
 ```
 
 The current candidate produced only 2 motorcycle false-positive preview images
@@ -712,14 +712,14 @@ small-motorcycle duplication alone unless the reviewed data changes.
 Train local YOLOv8:
 
 ```powershell
-python scripts/train_vision_model.py --dataset data/derived/private/vision_training/roboflow_v001_stwi_vehicles_short --model yolov8n.pt --epochs 50 --imgsz 416 --batch 32 --device 0 --name stwi_yolov8n_roboflow_v001_vehicles_cuda416_b32_e50 --model-version stwi_yolov8n_roboflow_v001_vehicles_cuda416_b32_e50
+python scripts/training/train_vision_model.py --dataset data/derived/private/vision_training/roboflow_v001_stwi_vehicles_short --model yolov8n.pt --epochs 50 --imgsz 416 --batch 32 --device 0 --name stwi_yolov8n_roboflow_v001_vehicles_cuda416_b32_e50 --model-version stwi_yolov8n_roboflow_v001_vehicles_cuda416_b32_e50
 ```
 
 For a quick motorcycle-focused fine-tune, start from the best vehicle-only
 candidate instead of retraining from scratch:
 
 ```powershell
-python scripts/train_vision_model.py --dataset data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_ann --model data/derived/private/vision_runs/stwi_yolov8n_roboflow_v001_vehicles_cuda416_b32_e50/weights/best.pt --epochs 6 --imgsz 416 --batch 32 --device 0 --name stwi_yolov8n_vehicles_motoann_finetune_cuda416_b32_e6 --model-version stwi_yolov8n_vehicles_motoann_finetune_cuda416_b32_e6
+python scripts/training/train_vision_model.py --dataset data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_ann --model data/derived/private/vision_runs/stwi_yolov8n_roboflow_v001_vehicles_cuda416_b32_e50/weights/best.pt --epochs 6 --imgsz 416 --batch 32 --device 0 --name stwi_yolov8n_vehicles_motoann_finetune_cuda416_b32_e6 --model-version stwi_yolov8n_vehicles_motoann_finetune_cuda416_b32_e6
 ```
 
 For controlled fine-tuning experiments, set the optimizer explicitly instead of
@@ -727,7 +727,7 @@ leaving Ultralytics on `optimizer=auto`, because auto mode can override LR
 choices:
 
 ```powershell
-python scripts/train_vision_model.py --dataset data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_ann --model data/derived/private/vision_runs/stwi_yolov8n_vehicles_motoann_finetune_cuda416_b32_e6/weights/best.pt --epochs 4 --imgsz 416 --batch 32 --device 0 --optimizer AdamW --lr0 0.0005 --lrf 0.05 --cos-lr --mosaic 0.2 --close-mosaic 1 --name stwi_yolov8n_motoann_adamw_lowmosaic_cuda416_b32_e4 --model-version stwi_yolov8n_motoann_adamw_lowmosaic_cuda416_b32_e4
+python scripts/training/train_vision_model.py --dataset data/derived/private/vision_training/roboflow_v001_stwi_vehicles_moto_ann --model data/derived/private/vision_runs/stwi_yolov8n_vehicles_motoann_finetune_cuda416_b32_e6/weights/best.pt --epochs 4 --imgsz 416 --batch 32 --device 0 --optimizer AdamW --lr0 0.0005 --lrf 0.05 --cos-lr --mosaic 0.2 --close-mosaic 1 --name stwi_yolov8n_motoann_adamw_lowmosaic_cuda416_b32_e4 --model-version stwi_yolov8n_motoann_adamw_lowmosaic_cuda416_b32_e4
 ```
 
 The first AdamW/low-mosaic run reached `mAP50` 0.6508, also below the current
@@ -784,7 +784,7 @@ After the gate is satisfied, promote a candidate into the official private model
 slot:
 
 ```powershell
-python scripts/promote_vision_model.py --artifact data/derived/private/vision_runs/stwi_yolov8n_roboflow_v001/stwi_model_artifact.json --approver operator-reviewer --notes "Privacy review and validation accepted for MVP detector."
+python scripts/training/promote_vision_model.py --artifact data/derived/private/vision_runs/stwi_yolov8n_roboflow_v001/stwi_model_artifact.json --approver operator-reviewer --notes "Privacy review and validation accepted for MVP detector."
 ```
 
 The runtime loader reads only:
@@ -796,7 +796,7 @@ data/derived/private/vision_models/official/model_artifact.json
 For the project-native evidence schema that promotion and audit should record
 before and after promotion, see:
 
-- `docs/guides/model_registry_evidence.md` — vision detector evidence fields,
+- `docs/guides/model_registry_evidence.md` â€” vision detector evidence fields,
   including model/version provenance, dataset/split evidence, metrics,
   calibration, benchmark profile, promotion decision, reviewer, and privacy
   status
