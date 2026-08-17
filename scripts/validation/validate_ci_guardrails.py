@@ -15,12 +15,37 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 FORBIDDEN_TRACKED_PATTERNS = [
-    re.compile(r"(^|/)\.env($|[./])"),
-    re.compile(r"(^|/)\.env\.[^/]*$"),  # .env.local, .env.symphony.local, etc.
+    re.compile(r"(^|/)\.env(?:$|\.local$|\.[^/]*\.local$)"),
     re.compile(r"(^|/)data/(external|quarantine|derived/private)(/|$)"),
     re.compile(r"(^|/)render_tmp(/|$)"),
     re.compile(r".*\.(mp4|mov|avi|mkv|webm|pt|pth|onnx|engine|safetensors|log|jsonl)$", re.I),
+    re.compile(r"(^|/)tmp(/|$)"),
+    re.compile(r"(^|/)output(/|$)"),
+    re.compile(r"(^|/)docs/guides/TTNT_HD_BM_HuongDan_BieuMau_ShareSV\+CB(/|$)"),
+    re.compile(r"(^|/)report/internship_main\.tex$"),
+    re.compile(r"(^|/)report/chapters/ch(?:00_thong_tin_thuc_tap|12_xac_nhan_doanh_nghiep)\.tex$"),
+    re.compile(r"(^|/)report/figures/M2_Logo_BK\.png$"),
+    re.compile(r"(^|/)(scripts|tests)/report(/|$)"),
+    re.compile(r"(^|/)docs/superpowers/(plans/2026-08-17-internship-report-cbhd-review\.md|specs/2026-08-17-internship-report-cbhd-review-design\.md)$"),
 ]
+
+SENSITIVE_TEXT_PATTERNS = (
+    ("private-key", re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----")),
+    ("github-token", re.compile(r"\bgh[pousr]_[A-Za-z0-9_]{20,}\b")),
+    ("aws-access-key", re.compile(r"\b(?:AKIA|ASIA)[A-Z0-9]{16}\b")),
+    ("google-api-key", re.compile(r"\bAIza[0-9A-Za-z_-]{30,}\b")),
+    ("slack-token", re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{10,}\b")),
+    ("openai-key", re.compile(r"\bsk-(?:proj-)?[A-Za-z0-9_-]{20,}\b")),
+)
+
+TEXT_SUFFIXES = frozenset(
+    {
+        ".cfg", ".css", ".csv", ".html", ".ini", ".js", ".json", ".md",
+        ".mjs", ".ps1", ".py", ".sh", ".tex", ".toml", ".ts", ".txt",
+        ".yaml", ".yml",
+    }
+)
+MAX_TEXT_BYTES = 2 * 1024 * 1024
 
 REQUIRED_CODEXIGNORE_PATTERNS = [
     ".git/",
@@ -55,13 +80,78 @@ def git_ls_files(root: Path) -> list[str]:
     return [line.strip().replace("\\", "/") for line in result.stdout.splitlines() if line.strip()]
 
 
+def git_staged_files(root: Path) -> list[str]:
+    result = subprocess.run(
+        ["git", "diff", "--cached", "--name-only", "--diff-filter=ACMR"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    return [line.strip().replace("\\", "/") for line in result.stdout.splitlines() if line.strip()]
+
+
+def candidate_repository_files(root: Path) -> list[str]:
+    """Return the sorted union of tracked and staged candidate paths."""
+
+    return sorted(set(git_ls_files(root)) | set(git_staged_files(root)))
+
+
+def is_forbidden_repository_path(path: str) -> bool:
+    return any(pattern.fullmatch(path) or pattern.match(path) for pattern in FORBIDDEN_TRACKED_PATTERNS)
+
+
+def validate_forbidden_files(paths: list[str]) -> list[str]:
+    return [
+        f"Forbidden repository artifact: {path}"
+        for path in paths
+        if is_forbidden_repository_path(path)
+    ]
+
+
 def validate_tracked_files(root: Path) -> list[str]:
+    return [
+        f"Forbidden tracked artifact: {path}"
+        for path in git_ls_files(root)
+        if is_forbidden_repository_path(path)
+    ]
+
+
+def validate_sensitive_content(root: Path, paths: list[str]) -> list[str]:
+    """Report high-confidence secret markers without exposing matched values."""
+
     errors: list[str] = []
-    for path in git_ls_files(root):
-        for pattern in FORBIDDEN_TRACKED_PATTERNS:
-            if pattern.fullmatch(path) or pattern.match(path):
-                errors.append(f"Forbidden tracked artifact: {path}")
-                break
+    for path in paths:
+        candidate = root / path
+        if candidate.suffix.lower() not in TEXT_SUFFIXES or not candidate.is_file():
+            continue
+        try:
+            with candidate.open("r", encoding="utf-8") as stream:
+                text = stream.read(MAX_TEXT_BYTES + 1)
+        except (OSError, UnicodeDecodeError):
+            continue
+        for name, pattern in SENSITIVE_TEXT_PATTERNS:
+            if pattern.search(text):
+                errors.append(f"Sensitive content ({name}): {path}")
+    return errors
+
+
+def validate_public_workflows(root: Path) -> list[str]:
+    errors: list[str] = []
+    workflows = root / ".github" / "workflows"
+    if not workflows.exists():
+        return errors
+    for path in sorted(workflows.glob("*.y*ml")):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        if "internship_main.tex" in text:
+            errors.append(
+                "Public workflow references private internship artifact: "
+                + path.relative_to(root).as_posix()
+            )
     return errors
 
 
@@ -97,7 +187,10 @@ def validate_workflow(root: Path) -> list[str]:
 
 def validate(root: Path) -> list[str]:
     errors: list[str] = []
-    errors.extend(validate_tracked_files(root))
+    candidates = candidate_repository_files(root)
+    errors.extend(validate_forbidden_files(candidates))
+    errors.extend(validate_sensitive_content(root, candidates))
+    errors.extend(validate_public_workflows(root))
     errors.extend(validate_codexignore(root))
     errors.extend(validate_workflow(root))
     return errors

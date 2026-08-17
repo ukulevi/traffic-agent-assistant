@@ -65,6 +65,7 @@ jobs:
 
       - name: Validate canonical contract and documentation
         run: |
+          python scripts/validation/validate_ci_guardrails.py
           python scripts/validation/validate_docs.py
           python -m unittest tests.contracts.test_project_contract
 
