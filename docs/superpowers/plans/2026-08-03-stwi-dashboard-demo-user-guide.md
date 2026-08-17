@@ -297,7 +297,7 @@ Add a short paragraph after the runbook introduction:
 
 ```markdown
 Để thao tác theo từng test case kèm ảnh chụp dashboard, xem
-[Hướng dẫn sử dụng và demo STWI Operator Dashboard](./mvp_dashboard_demo_walkthrough.md).
+[Hướng dẫn sử dụng và demo STWI Operator Dashboard](../../guides/mvp_dashboard_demo_walkthrough.md).
 ```
 
 - [ ] **Step 2: Verify every image path**
