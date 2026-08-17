@@ -12,7 +12,7 @@ commit the key to the repository.
 
 ```powershell
 $env:ROBOFLOW_API_KEY = "<your-scoped-api-key>"
-python scripts/roboflow_mcp_server.py --check
+python scripts/infra/roboflow_mcp_server.py --check
 ```
 
 If `python` is not on PATH, use an absolute Python executable path in both the
@@ -29,7 +29,7 @@ Codex or another agent:
     "stwi-roboflow": {
       "command": "python",
       "args": [
-        "C:/Users/PC/Downloads/DADN/traffic-agent-assistant/scripts/roboflow_mcp_server.py"
+        "C:/Users/PC/Downloads/DADN/traffic-agent-assistant/scripts/infra/roboflow_mcp_server.py"
       ],
       "cwd": "C:/Users/PC/Downloads/DADN/traffic-agent-assistant",
       "env": {
@@ -76,13 +76,13 @@ must contain the Roboflow YOLO layout `train/images`, `train/labels`,
 Before using any dataset for STWI training, record its source, license, classes,
 download timestamp, checksum, class map, split counts, and privacy review
 outcome in the manifest. The manifest must include image/label records with
-hashes so `scripts/validate_vision_dataset.py` can verify split integrity before
+hashes so `scripts/validation/validate_vision_dataset.py` can verify split integrity before
 training. Run validation before training:
 
 ```powershell
-python scripts/prepare_roboflow_yolo_dataset.py data/derived/private/vision_training/roboflow_v001 --dataset-version roboflow_v001 --privacy-status needs_review --reviewer pending
-python scripts/validate_vision_dataset.py data/derived/private/vision_training/roboflow_v001 --allow-pending-review
-python scripts/train_vision_model.py --dataset data/derived/private/vision_training/roboflow_v001 --model yolov8n.pt --epochs 50 --imgsz 640 --batch 8 --device 0 --name stwi_yolov8n_roboflow_v001 --model-version stwi_yolov8n_roboflow_v001
+python scripts/data_prep/prepare_roboflow_yolo_dataset.py data/derived/private/vision_training/roboflow_v001 --dataset-version roboflow_v001 --privacy-status needs_review --reviewer pending
+python scripts/validation/validate_vision_dataset.py data/derived/private/vision_training/roboflow_v001 --allow-pending-review
+python scripts/training/train_vision_model.py --dataset data/derived/private/vision_training/roboflow_v001 --model yolov8n.pt --epochs 50 --imgsz 640 --batch 8 --device 0 --name stwi_yolov8n_roboflow_v001 --model-version stwi_yolov8n_roboflow_v001
 ```
 
 Do not store or publish raw video. Do not treat Roboflow datasets as online

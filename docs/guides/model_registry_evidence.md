@@ -8,7 +8,7 @@ or another registry service.
 Use it when recording, reviewing, or promoting:
 
 - vision detector artifacts,
-- GCN–LSTM baseline artifacts,
+- GCNâ€“LSTM baseline artifacts,
 - surrogate ensemble artifacts.
 
 ## 1. Evidence purpose
@@ -81,7 +81,7 @@ Each `evidence.json` should contain these top-level sections.
     "framework": "ultralytics",
     "export_format": "pt",
     "runtime_path": "data/derived/private/vision_models/official/model_artifact.json",
-    "runtime_loader": "scripts/promote_vision_model.py"
+    "runtime_loader": "scripts/training/promote_vision_model.py"
   },
   "metrics": {
     "primary_metric": "mAP50",
@@ -163,7 +163,7 @@ Optional notes:
 - `source_type` can be `local_finetune`, `pretrained_fallback`, or `external_candidate`.
 - `runtime_loader` should name the promotion script or loader that reads the official artifact.
 
-### 4.2 GCN–LSTM baseline
+### 4.2 GCNâ€“LSTM baseline
 
 Required fields:
 
@@ -251,7 +251,7 @@ Follow-up issues if implementation is desired:
 4. Validate required fields before promotion with a small pre-promotion
    evidence checker.
 
-### 5.2 GCN–LSTM baseline
+### 5.2 GCNâ€“LSTM baseline
 
 Current status:
 

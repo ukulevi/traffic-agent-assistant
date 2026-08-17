@@ -80,7 +80,7 @@ flowchart LR
 
 ### 2.1.1. Local open-source detector và calibration
 
-Dataset ảnh tải từ Roboflow hoặc nguồn bổ sung được xem là dữ liệu validation/calibration offline cho detector Tầng 1 trước, và là dữ liệu fine-tune fallback chỉ khi detector pretrained không đạt gate. Runtime không phụ thuộc Roboflow. Export chuẩn là YOLO/Ultralytics với `data.yaml`, `train/images`, `train/labels`, `valid/images`, `valid/labels`, `test/images`, `test/labels`; `scripts/prepare_roboflow_yolo_dataset.py` sinh `dataset.yaml` và `dataset_manifest.json` cho STWI.
+Dataset ảnh tải từ Roboflow hoặc nguồn bổ sung được xem là dữ liệu validation/calibration offline cho detector Tầng 1 trước, và là dữ liệu fine-tune fallback chỉ khi detector pretrained không đạt gate. Runtime không phụ thuộc Roboflow. Export chuẩn là YOLO/Ultralytics với `data.yaml`, `train/images`, `train/labels`, `valid/images`, `valid/labels`, `test/images`, `test/labels`; `scripts/data_prep/prepare_roboflow_yolo_dataset.py` sinh `dataset.yaml` và `dataset_manifest.json` cho STWI.
 
 | Hướng dẫn | Giá trị |
 |---|---|
@@ -88,12 +88,12 @@ Dataset ảnh tải từ Roboflow hoặc nguồn bổ sung được xem là dữ
 | Private training dataset | `data/derived/private/vision_training/roboflow_v001` |
 | Vehicle-only dataset | `data/derived/private/vision_training/roboflow_v001_stwi_vehicles_short` |
 | Training output | `data/derived/private/vision_runs/` |
-| Script prepare | `python scripts/prepare_roboflow_yolo_dataset.py data/derived/private/vision_training/roboflow_v001 --dataset-version roboflow_v001` |
-| Script vehicle remap | `python scripts/build_stwi_vehicle_yolo_dataset.py data/derived/private/vision_training/roboflow_v001 data/derived/private/vision_training/roboflow_v001_stwi_vehicles_short` |
-| Script validate | `python scripts/validate_vision_dataset.py data/derived/private/vision_training/roboflow_v001` |
-| Script evaluate pretrained | `python scripts/evaluate_vision_roi_ap.py --source data/derived/private/vision_training/roboflow_v001 --model yolo11s.pt --model-family yolo` |
-| Script fine-tune fallback | `python scripts/train_vision_model.py --dataset data/derived/private/vision_training/roboflow_v001 --model yolo11s.pt` |
-| Script promote | `python scripts/promote_vision_model.py data/derived/private/vision_runs/<run>/stwi_model_artifact.json --approver <reviewer> --notes <decision>` |
+| Script prepare | `python scripts/data_prep/prepare_roboflow_yolo_dataset.py data/derived/private/vision_training/roboflow_v001 --dataset-version roboflow_v001` |
+| Script vehicle remap | `python scripts/data_prep/build_stwi_vehicle_yolo_dataset.py data/derived/private/vision_training/roboflow_v001 data/derived/private/vision_training/roboflow_v001_stwi_vehicles_short` |
+| Script validate | `python scripts/validation/validate_vision_dataset.py data/derived/private/vision_training/roboflow_v001` |
+| Script evaluate pretrained | `python scripts/validation/evaluate_vision_roi_ap.py --source data/derived/private/vision_training/roboflow_v001 --model yolo11s.pt --model-family yolo` |
+| Script fine-tune fallback | `python scripts/training/train_vision_model.py --dataset data/derived/private/vision_training/roboflow_v001 --model yolo11s.pt` |
+| Script promote | `python scripts/training/promote_vision_model.py data/derived/private/vision_runs/<run>/stwi_model_artifact.json --approver <reviewer> --notes <decision>` |
 
 Quy tắc bắt buộc:
 

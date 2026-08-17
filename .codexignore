@@ -69,3 +69,17 @@ data/manifests/*_delete_manifest.json
 .env.local
 .env.*.local
 .env.symphony.local
+
+# Local/private internship sources and generated workspace output
+tmp/
+output/
+.superpowers/
+docs/guides/TTNT_HD_BM_HuongDan_BieuMau_ShareSV+CB/
+report/internship_main.tex
+report/chapters/ch00_thong_tin_thuc_tap.tex
+report/chapters/ch12_xac_nhan_doanh_nghiep.tex
+report/figures/M2_Logo_BK.png
+scripts/report/
+tests/report/
+docs/superpowers/plans/2026-08-17-internship-report-cbhd-review.md
+docs/superpowers/specs/2026-08-17-internship-report-cbhd-review-design.md
