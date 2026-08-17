@@ -3,6 +3,7 @@ import { resolveDashboardContext } from "./dashboard-mode.js";
 import {
   createInitialState,
   deriveDecisionPolicy,
+  deriveNetworkImpactViewModel,
   deriveRouteViewModel,
   evaluateEvidence,
   reduceDashboardState,
@@ -104,6 +105,8 @@ export function createDashboardCoordinator({
   let pollingActive = false;
   let activeJurisdiction = "VN";
   let networkMap = null;
+  let selectedHorizonState = null;
+  let cachedTopology = null;
 
   function dispatch(event) {
     state = reduceDashboardState(state, event);
@@ -120,7 +123,15 @@ export function createDashboardCoordinator({
       status: state.job.status,
       result: state.job.result,
     });
+    const impactViewModel = deriveNetworkImpactViewModel({
+      status: state.job.status,
+      networkImpact: state.job.result?.network_impact,
+      authorizedNodeIds: state.context.nodeIds,
+      topology: cachedTopology,
+      selectedHorizon: selectedHorizonState,
+    });
     view.render(state, deriveDecisionPolicy(state), routeViewModel);
+    view.renderNetworkImpact?.(impactViewModel);
     networkMap?.setJobState(routeViewModel);
   }
 
@@ -433,10 +444,12 @@ export function createDashboardCoordinator({
         const topology = context.mode === "production"
           ? await api.getNetworkContext()
           : SYNTHETIC_NETWORK_CONTEXT;
+        cachedTopology = topology;
         networkMap?.setTopology(topology);
         networkMap?.setSelection(context.nodeIds?.[0] || topology.nodes?.[0]?.node_id);
         view.setNetworkContext?.(topology, "ready");
       } catch {
+        cachedTopology = null;
         networkMap?.setTopology(null);
         view.setNetworkContext?.(null, "unavailable");
       }
@@ -450,6 +463,10 @@ export function createDashboardCoordinator({
     submitScenario,
     selectPreset,
     selectNode,
+    selectHorizon: (horizon) => {
+      selectedHorizonState = horizon;
+      dispatch({ type: "horizon/selected", horizon });
+    },
     changeRatio: (ratio) => { view.setRatio(ratio); markCustomPreset(); },
     changeScenario: markCustomPreset,
     searchNodes: (query) => view.filterNodes(query),

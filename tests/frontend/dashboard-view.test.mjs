@@ -442,3 +442,72 @@ test("node list uses pressed semantics instead of listbox", () => {
   assert.equal(list.children[1]["aria-pressed"], "true");
   assert.equal(list.children[1]["aria-current"], "true");
 });
+
+test("renderNetworkImpact populates horizon selector and renders per-node evidence rows", () => {
+  const doc = new FakeDocument();
+  const view = createDashboardView(doc);
+  let selectedHorizonValue = null;
+  view.setHandlers({ selectHorizon: (h) => { selectedHorizonValue = h; } });
+
+  const vm = {
+    available: true,
+    status: "succeeded",
+    topologyVersion: "synthetic-grid-20-v1",
+    horizons: [5, 10, 30],
+    selectedHorizon: 10,
+    incidentNodeIds: ["node_05"],
+    rows: [
+      {
+        nodeId: "node_05",
+        horizonMinutes: 10,
+        trafficVolume5m: 120,
+        avgSpeedKmh: 24.5,
+        vcRatio: 0.92,
+        uncertaintyScore: 0.1,
+        oodScore: 0.05,
+        impactRole: "incident",
+      },
+      {
+        nodeId: "node_06",
+        horizonMinutes: 10,
+        trafficVolume5m: 85,
+        avgSpeedKmh: 34.0,
+        vcRatio: 0.68,
+        uncertaintyScore: 0.08,
+        oodScore: 0.04,
+        impactRole: "adjacent",
+      },
+    ],
+  };
+
+  view.renderNetworkImpact(vm);
+
+  const horizonSelect = doc.getElementById("impact-horizon-select");
+  assert.equal(horizonSelect.children.length, 3);
+  assert.equal(horizonSelect.value, "10");
+
+  const table = doc.getElementById("impact-table");
+  const empty = doc.getElementById("impact-empty");
+  assert.equal(table.hidden, false);
+  assert.equal(empty.hidden, true);
+
+  const rows = doc.getElementById("impact-rows").children;
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].className, "impact-row impact-row-incident");
+  assert.match(rows[0].children[2].textContent, /Nút sự cố/);
+  assert.match(rows[0].children[3].textContent, /120/);
+  assert.match(rows[0].children[5].textContent, /0.92/);
+
+  horizonSelect.listeners.get("change")({ target: { value: "30" } });
+  assert.equal(selectedHorizonValue, 30);
+});
+
+test("renderNetworkImpact hides table when evidence is unavailable or empty", () => {
+  const doc = new FakeDocument();
+  const view = createDashboardView(doc);
+
+  view.renderNetworkImpact({ available: false });
+
+  assert.equal(doc.getElementById("impact-table").hidden, true);
+  assert.equal(doc.getElementById("impact-empty").hidden, false);
+});

@@ -14,6 +14,7 @@ import unittest
 import uuid
 from datetime import datetime
 
+from stwi.t4_orchestrator import contracts as t4_contracts
 from stwi.t4_orchestrator.contracts import (
     AuditRecord,
     JobStatus,
@@ -58,6 +59,104 @@ def make_orchestrator(scenario=None, node_overrides=None) -> WhatIfOrchestrator:
         node_overrides=node_overrides or {},
     )
     return WhatIfOrchestrator(surrogate=surrogate)
+
+
+class TestNetworkImpactEvidenceContracts(unittest.TestCase):
+    """Reject incomplete or unsafe per-node scenario evidence at the boundary."""
+
+    @staticmethod
+    def _valid_evidence() -> dict:
+        return {
+            "topology_version": "synthetic-topology-20-v1",
+            "model_version": "demo-model-v1",
+            "data_version": "synthetic-data-v1",
+            "horizons_minutes": [5, 30],
+            "incident_node_ids": ["node_01"],
+            "node_impacts": [
+                {
+                    "node_id": "node_01",
+                    "horizon_minutes": 5,
+                    "traffic_volume_5m": 120.0,
+                    "avg_speed_kmh": 28.0,
+                    "vc_ratio": 0.92,
+                    "uncertainty_score": 0.10,
+                    "ood_score": 0.05,
+                    "impact_role": "incident",
+                },
+                {
+                    "node_id": "node_01",
+                    "horizon_minutes": 30,
+                    "traffic_volume_5m": 110.0,
+                    "avg_speed_kmh": 31.0,
+                    "vc_ratio": 0.84,
+                    "uncertainty_score": 0.12,
+                    "ood_score": 0.05,
+                    "impact_role": "incident",
+                },
+                {
+                    "node_id": "node_02",
+                    "horizon_minutes": 5,
+                    "traffic_volume_5m": 80.0,
+                    "avg_speed_kmh": 36.0,
+                    "vc_ratio": 0.62,
+                    "uncertainty_score": 0.08,
+                    "ood_score": 0.04,
+                    "impact_role": "adjacent",
+                },
+                {
+                    "node_id": "node_02",
+                    "horizon_minutes": 30,
+                    "traffic_volume_5m": 75.0,
+                    "avg_speed_kmh": 38.0,
+                    "vc_ratio": 0.58,
+                    "uncertainty_score": 0.09,
+                    "ood_score": 0.04,
+                    "impact_role": "adjacent",
+                },
+            ],
+        }
+
+    def _evidence_model(self):
+        self.assertTrue(
+            hasattr(t4_contracts, "NetworkImpactEvidence"),
+            "NetworkImpactEvidence must define the typed evidence boundary",
+        )
+        return t4_contracts.NetworkImpactEvidence
+
+    def test_accepts_complete_finite_node_horizon_grid(self):
+        evidence = self._evidence_model().model_validate(self._valid_evidence())
+
+        self.assertEqual(evidence.horizons_minutes, (5, 30))
+        self.assertEqual(len(evidence.node_impacts), 4)
+        self.assertEqual(evidence.node_impacts[0].impact_role, "incident")
+
+    def test_rejects_unknown_impact_role(self):
+        evidence = self._valid_evidence()
+        evidence["node_impacts"][0]["impact_role"] = "spillback"
+
+        with self.assertRaises(Exception):
+            self._evidence_model().model_validate(evidence)
+
+    def test_rejects_duplicate_node_horizon_row(self):
+        evidence = self._valid_evidence()
+        evidence["node_impacts"].append(evidence["node_impacts"][0].copy())
+
+        with self.assertRaises(Exception):
+            self._evidence_model().model_validate(evidence)
+
+    def test_rejects_missing_horizon_from_node_grid(self):
+        evidence = self._valid_evidence()
+        evidence["node_impacts"].pop()
+
+        with self.assertRaises(Exception):
+            self._evidence_model().model_validate(evidence)
+
+    def test_rejects_non_finite_metric(self):
+        evidence = self._valid_evidence()
+        evidence["node_impacts"][0]["vc_ratio"] = float("inf")
+
+        with self.assertRaises(Exception):
+            self._evidence_model().model_validate(evidence)
 
 
 class TestJobStatusContracts(unittest.TestCase):

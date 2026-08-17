@@ -167,6 +167,42 @@
             <p id="route-empty" class="empty-state" role="status" aria-live="polite">Chưa có route evidence hợp lệ cho trạng thái hiện tại.</p>
           </section>
 
+          <section id="network-impact-panel" class="panel impact-panel" aria-labelledby="impact-heading">
+            <div class="panel-heading">
+              <div><p class="section-kicker">NETWORK IMPACT · PER-NODE EVIDENCE</p><h2 id="impact-heading">Tác động mạng lưới 20 nút</h2></div>
+              <span class="simulation-badge">Non-mutating evidence</span>
+            </div>
+            <p class="impact-disclosure">Tác động dự báo theo từng nút và mốc thời gian. Nút sự cố và nút lân cận được đánh dấu rõ ràng.</p>
+            <div class="impact-controls">
+              <label for="impact-horizon-select">Mốc dự báo:
+                <select id="impact-horizon-select" aria-label="Chọn mốc thời gian dự báo tác động"></select>
+              </label>
+              <div class="impact-legend" role="note" aria-label="Chú giải vai trò tác động nút">
+                <span class="legend-item legend-incident"><span class="legend-swatch"></span>Nút sự cố</span>
+                <span class="legend-item legend-adjacent"><span class="legend-swatch"></span>Nút lân cận</span>
+                <span class="legend-item legend-network"><span class="legend-swatch"></span>Nút mạng lưới</span>
+              </div>
+            </div>
+            <div class="impact-table-wrap" role="region" aria-label="Bảng tác động mạng lưới 20 nút" tabindex="0">
+              <table id="impact-table" class="impact-table" hidden>
+                <thead>
+                  <tr>
+                    <th scope="col">Nút</th>
+                    <th scope="col">Mốc (phút)</th>
+                    <th scope="col">Vai trò</th>
+                    <th scope="col">Lưu lượng (xe/5p)</th>
+                    <th scope="col">Tốc độ (km/h)</th>
+                    <th scope="col">V/C Ratio</th>
+                    <th scope="col">Uncertainty</th>
+                    <th scope="col">OOD Score</th>
+                  </tr>
+                </thead>
+                <tbody id="impact-rows"></tbody>
+              </table>
+            </div>
+            <p id="impact-empty" class="empty-state" role="status" aria-live="polite">Chưa có dữ liệu tác động mạng lưới cho trạng thái hiện tại.</p>
+          </section>
+
           <section id="uncertainty-panel" class="panel" aria-labelledby="uncertainty-title">
             <p class="section-kicker">SAFETY GATE</p><h2 id="uncertainty-title">Uncertainty và OOD</h2>
             <div id="safety-state" class="safety-state safety-idle"><span id="safety-icon" class="state-icon" aria-hidden="true">○</span><div><strong id="safety-label">Chờ kết quả</strong><p id="review-reason">Safety checks sẽ xuất hiện sau khi job hoàn tất.</p></div></div>

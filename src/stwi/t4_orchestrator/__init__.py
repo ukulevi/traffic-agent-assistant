@@ -7,6 +7,8 @@ from stwi.t4_orchestrator.contracts import (
     IncidentVector,
     JobEnvelope,
     JobStatus,
+    NetworkImpactEvidence,
+    NetworkImpactPoint,
     RouteCandidate,
     RouteEvaluation,
     RouteRecommendation,
@@ -31,12 +33,15 @@ from stwi.t4_orchestrator.fake_adapters import (
     unsafe_vc_scenario,
 )
 from stwi.t4_orchestrator.job_store import InMemoryJobStore, get_job_store
+from stwi.t4_orchestrator.network_impact import build_network_impact, validate_network_impact
 from stwi.t4_orchestrator.orchestrator import WhatIfOrchestrator
 from stwi.t4_orchestrator.safety_loop import CounterfactualSafetyLoop
 
 __all__ = [
     # Contracts
     "JobStatus",
+    "NetworkImpactPoint",
+    "NetworkImpactEvidence",
     "RouteCandidate",
     "RouteEvaluation",
     "RouteRecommendation",
@@ -66,4 +71,6 @@ __all__ = [
     "WhatIfOrchestrator",
     "InMemoryJobStore",
     "get_job_store",
+    "build_network_impact",
+    "validate_network_impact",
 ]

@@ -104,6 +104,29 @@ Refinement chỉ áp dụng cho failure V/C cô lập. OOD, uncertainty cao, thi
 citation, invalid input hoặc dependency failure phải dừng ngay thay vì thử đổi
 action.
 
+### 4.1. Quy trình minh họa Tác động mạng lưới (Network Impact Showcase)
+
+Thực hiện 3 kịch bản liên tiếp để thuyết minh bằng chứng tác động mạng lưới 20 nút:
+
+1. **Kịch bản 1: `node_05` Refinement (Đọc to nhãn tác động):**
+   - **Thao tác:** Chọn `node_05`, preset `refinement`, `green_time_ratio=0.70`, bấm **Chạy mô phỏng**.
+   - **Đọc to nhãn presenter:**
+     - *"Nút sự cố: node_05 (vai trò incident, nhãn màu đỏ)."*
+     - *"Nút lân cận trực tiếp: node_00, node_06, node_10 (vai trò adjacent, nhãn màu cam)."*
+     - *"Mốc dự báo 5 phút đến 30 phút hiển thị đầy đủ lưu lượng, tốc độ, V/C ratio và uncertainty/OOD."*
+
+2. **Kịch bản 2: Di dời sự cố sang `node_14` (Incident Relocation):**
+   - **Thao tác:** Chọn `node_14`, preset `lane-closure`, bấm **Chạy mô phỏng**.
+   - **Đọc to nhãn presenter:**
+     - *"Nút sự cố đã di dời sang node_14 (vai trò incident)."*
+     - *"Các nút lân cận tự động cập nhật theo topology directed: node_09, node_13, node_19 (vai trò adjacent)."*
+
+3. **Kịch bản 3: Nút thứ ba `needs_review` / Missing Evidence (Fail-Closed):**
+   - **Thao tác:** Chọn `node_04`, preset `missing-evidence`, bấm **Chạy mô phỏng**.
+   - **Đọc to nhãn presenter:**
+     - *"Trạng thái terminal: needs_review do thiếu bằng chứng pháp lý."*
+     - *"Bảng tác động mạng lưới tự động chuyển về trạng thái Chưa có dữ liệu tác động mạng lưới cho trạng thái hiện tại (Fail-closed)."*
+
 ## 5. Test case fail-closed
 
 Phân biệt hai nhóm bằng chứng sau để chỉ thao tác với control có thật trên dashboard.

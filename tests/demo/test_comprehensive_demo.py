@@ -354,6 +354,20 @@ class ComprehensiveOfflineDemoTest(unittest.TestCase):
                     }.issubset(item.details)
                 )
 
+    def test_network_impact_showcase_video_contract(self) -> None:
+        """Verify network impact showcase capture script contract & artifact properties."""
+        repository = Path(__file__).resolve().parents[2]
+        script_path = repository / "scripts/demo/capture_network_impact_showcase.ps1"
+        self.assertTrue(script_path.exists(), "Capture script must exist")
+
+        script_content = script_path.read_text(encoding="utf-8")
+        self.assertIn("node_05", script_content)
+        self.assertIn("node_14", script_content)
+        self.assertIn("node_04", script_content)
+        self.assertIn("tmp/demo-network-impact-showcase.mp4", script_content)
+        self.assertIn("raw_video_input", script_content)
+        self.assertIn("finally", script_content)
+
 
 if __name__ == "__main__":
     unittest.main()

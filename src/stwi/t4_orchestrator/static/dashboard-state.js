@@ -386,3 +386,144 @@ export function reduceDashboardState(state, event) {
       return state;
   }
 }
+
+export function deriveNetworkImpactViewModel({
+  status = null,
+  networkImpact = null,
+  authorizedNodeIds = null,
+  topology = null,
+  selectedHorizon = null,
+} = {}) {
+  const normalizedStatus = JOB_STATUSES.includes(status) ? status : null;
+  const empty = Object.freeze({
+    status: normalizedStatus,
+    topologyVersion: null,
+    horizons: Object.freeze([]),
+    selectedHorizon: null,
+    incidentNodeIds: Object.freeze([]),
+    rows: Object.freeze([]),
+    available: false,
+  });
+
+  if (!["succeeded", "needs_review"].includes(normalizedStatus)) {
+    return empty;
+  }
+
+  if (!isObject(networkImpact)) {
+    return empty;
+  }
+
+  const topologyVersion = networkImpact.topology_version;
+  if (!isNonEmptyString(topologyVersion)) {
+    return empty;
+  }
+
+  if (topology && isNonEmptyString(topology.network_version) && topologyVersion !== topology.network_version) {
+    return empty;
+  }
+
+  const rawHorizons = networkImpact.horizons_minutes;
+  if (!Array.isArray(rawHorizons) || rawHorizons.length === 0) {
+    return empty;
+  }
+  const horizons = rawHorizons.map((h) => Number(h));
+  if (!horizons.every((h) => Number.isInteger(h) && h > 0)) {
+    return empty;
+  }
+  if (new Set(horizons).size !== horizons.length) {
+    return empty;
+  }
+
+  const rawIncidentNodeIds = networkImpact.incident_node_ids;
+  const incidentNodeIds = Array.isArray(rawIncidentNodeIds)
+    ? rawIncidentNodeIds.filter(isNonEmptyString)
+    : [];
+
+  const rawImpacts = networkImpact.node_impacts;
+  if (!Array.isArray(rawImpacts) || rawImpacts.length === 0) {
+    return empty;
+  }
+
+  const validRoles = new Set(["incident", "adjacent", "network"]);
+  const rowsByHorizon = new Map();
+
+  for (const point of rawImpacts) {
+    if (!isObject(point)) return empty;
+    const {
+      node_id: nodeId,
+      horizon_minutes: horizonMinutes,
+      traffic_volume_5m: trafficVolume5m,
+      avg_speed_kmh: avgSpeedKmh,
+      vc_ratio: vcRatio,
+      uncertainty_score: uncertaintyScore,
+      ood_score: oodScore,
+      impact_role: impactRole,
+    } = point;
+
+    if (!isNonEmptyString(nodeId)) return empty;
+    if (authorizedNodeIds && Array.isArray(authorizedNodeIds) && authorizedNodeIds.length > 0) {
+      if (!authorizedNodeIds.includes(nodeId)) return empty;
+    }
+    if (!horizons.includes(horizonMinutes)) return empty;
+    if (!isFiniteNonNegative(trafficVolume5m)) return empty;
+    if (!isFiniteNonNegative(avgSpeedKmh)) return empty;
+    if (!isFiniteNonNegative(vcRatio)) return empty;
+    if (!Number.isFinite(uncertaintyScore) || uncertaintyScore < 0.0 || uncertaintyScore > 1.0) return empty;
+    if (!Number.isFinite(oodScore) || oodScore < 0.0 || oodScore > 1.0) return empty;
+    if (!validRoles.has(impactRole)) return empty;
+
+    let horizonMap = rowsByHorizon.get(horizonMinutes);
+    if (!horizonMap) {
+      horizonMap = new Map();
+      rowsByHorizon.set(horizonMinutes, horizonMap);
+    }
+    if (horizonMap.has(nodeId)) return empty;
+
+    horizonMap.set(
+      nodeId,
+      Object.freeze({
+        nodeId,
+        horizonMinutes,
+        trafficVolume5m,
+        avgSpeedKmh,
+        vcRatio,
+        uncertaintyScore,
+        oodScore,
+        impactRole,
+      })
+    );
+  }
+
+  if (rowsByHorizon.size !== horizons.length) return empty;
+
+  let expectedNodeCount = 0;
+  let expectedNodesSet = null;
+  for (const horizonMap of rowsByHorizon.values()) {
+    if (expectedNodesSet === null) {
+      expectedNodeCount = horizonMap.size;
+      expectedNodesSet = new Set(horizonMap.keys());
+    } else {
+      if (horizonMap.size !== expectedNodeCount) return empty;
+      for (const k of horizonMap.keys()) {
+        if (!expectedNodesSet.has(k)) return empty;
+      }
+    }
+  }
+
+  const activeHorizon = horizons.includes(selectedHorizon)
+    ? selectedHorizon
+    : horizons[0];
+
+  const selectedMap = rowsByHorizon.get(activeHorizon);
+  const rows = selectedMap ? Array.from(selectedMap.values()) : [];
+
+  return Object.freeze({
+    status: normalizedStatus,
+    topologyVersion,
+    horizons: Object.freeze([...horizons]),
+    selectedHorizon: activeHorizon,
+    incidentNodeIds: Object.freeze([...incidentNodeIds]),
+    rows: Object.freeze(rows),
+    available: true,
+  });
+}
