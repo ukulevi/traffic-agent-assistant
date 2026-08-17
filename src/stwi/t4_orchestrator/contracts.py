@@ -297,6 +297,79 @@ class RouteRecommendation(BaseModel):
 
 
 # =============================================================================
+# Per-node network-impact evidence
+# =============================================================================
+
+class NetworkImpactPoint(BaseModel):
+    """Finite scenario-impact evidence for one node at one forecast horizon."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        frozen=True,
+        str_strip_whitespace=True,
+        allow_inf_nan=False,
+    )
+
+    node_id: str = Field(..., min_length=1, max_length=64)
+    horizon_minutes: int = Field(..., gt=0)
+    traffic_volume_5m: float = Field(..., ge=0.0)
+    avg_speed_kmh: float = Field(..., ge=0.0)
+    vc_ratio: float = Field(..., ge=0.0)
+    uncertainty_score: float = Field(..., ge=0.0, le=1.0)
+    ood_score: float = Field(..., ge=0.0, le=1.0)
+    impact_role: Literal["incident", "adjacent", "network"]
+
+
+class NetworkImpactEvidence(BaseModel):
+    """Complete node-by-horizon scenario evidence for one typed job result.
+
+    Node identifiers are only checked for syntactic validity here. Trusted
+    topology allowlist validation belongs to the network-context boundary.
+    """
+
+    model_config = ConfigDict(
+        extra="forbid",
+        frozen=True,
+        str_strip_whitespace=True,
+        allow_inf_nan=False,
+    )
+
+    topology_version: str = Field(..., min_length=1, max_length=128)
+    model_version: str = Field(..., min_length=1, max_length=128)
+    data_version: str = Field(..., min_length=1, max_length=128)
+    horizons_minutes: tuple[int, ...] = Field(..., min_length=1)
+    incident_node_ids: tuple[str, ...] = Field(default_factory=tuple)
+    node_impacts: tuple[NetworkImpactPoint, ...] = Field(..., min_length=1)
+
+    @model_validator(mode="after")
+    def validate_complete_grid(self) -> NetworkImpactEvidence:
+        if any(horizon <= 0 for horizon in self.horizons_minutes):
+            raise ValueError("network impact horizons must be positive")
+        if len(set(self.horizons_minutes)) != len(self.horizons_minutes):
+            raise ValueError("network impact horizons must be unique")
+        if any(not node_id for node_id in self.incident_node_ids):
+            raise ValueError("incident node identifiers must not be blank")
+        if len(set(self.incident_node_ids)) != len(self.incident_node_ids):
+            raise ValueError("incident node identifiers must be unique")
+
+        expected_horizons = set(self.horizons_minutes)
+        rows_by_node: dict[str, set[int]] = {}
+        seen_rows: set[tuple[str, int]] = set()
+        for point in self.node_impacts:
+            row_key = (point.node_id, point.horizon_minutes)
+            if row_key in seen_rows:
+                raise ValueError("network impact rows must be unique per node and horizon")
+            seen_rows.add(row_key)
+            if point.horizon_minutes not in expected_horizons:
+                raise ValueError("network impact row horizon must be declared")
+            rows_by_node.setdefault(point.node_id, set()).add(point.horizon_minutes)
+
+        if any(horizons != expected_horizons for horizons in rows_by_node.values()):
+            raise ValueError("network impact evidence must contain a complete node-horizon grid")
+        return self
+
+
+# =============================================================================
 # Job result
 # =============================================================================
 
@@ -331,6 +404,7 @@ class WhatIfJobResult(BaseModel):
     # Forecast summaries (aggregate only — no raw frame data)
     baseline_summary: dict[str, Any] | None = None
     scenario_summary: dict[str, Any] | None = None
+    network_impact: NetworkImpactEvidence | None = None
 
     # Safety
     safety_iterations: int = Field(0, ge=0, le=3)

@@ -52,6 +52,7 @@ from stwi.t4_orchestrator.fake_adapters import (
     SurrogateScenario,
 )
 from stwi.t4_orchestrator.safety_loop import CounterfactualSafetyLoop
+from stwi.t4_orchestrator.network_impact import build_network_impact
 from stwi.t4_orchestrator.route_evaluation import (
     RouteImpactEvaluator,
     RouteSafetyGate,
@@ -494,6 +495,21 @@ class WhatIfOrchestrator:
         baseline_summary = self._summarize_baseline(state.baseline_results)
         scenario_summary = self._summarize_scenario(state.scenario_results)
 
+        network_impact_evidence = None
+        if state.scenario_results and self._network_topology is not None:
+            try:
+                network_impact_evidence = build_network_impact(
+                    results=state.scenario_results,
+                    topology=self._network_topology,
+                    incident=req.incident,
+                    horizons_minutes=req.horizons_minutes,
+                    model_version=self._model_version,
+                    data_version=self._data_version,
+                )
+            except Exception as exc:
+                logger.warning("Could not build network impact evidence: %s", exc)
+                network_impact_evidence = None
+
         # Action field semantics per contract
         selected_action = state.selected_action or req.candidate_action
         if state.status == JobStatus.SUCCEEDED:
@@ -535,6 +551,7 @@ class WhatIfOrchestrator:
             needs_review_reason=state.needs_review_reason,
             baseline_summary=baseline_summary,
             scenario_summary=scenario_summary,
+            network_impact=network_impact_evidence,
             safety_iterations=len(state.safety_checks),
             safety_checks=state.safety_checks,
             audit_record=audit,

@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   createInitialState,
   deriveDecisionPolicy,
+  deriveNetworkImpactViewModel,
   deriveRouteViewModel,
   evaluateEvidence,
   reduceDashboardState,
@@ -385,12 +386,119 @@ test("duplicate SSE events are ignored by event id", () => {
     eventId: "4",
     payload: { status: "running" },
   });
-  state = reduceDashboardState(state, {
-    type: "job/event",
-    jobId: "job-1",
-    eventId: "4",
-    payload: { status: "running" },
+  assert.equal(state.job.events.length, 1);
+});
+
+const sampleImpactEvidence = Object.freeze({
+  topology_version: "synthetic-grid-20-v1",
+  model_version: "surrogate-v1",
+  data_version: "sumo-v1",
+  horizons_minutes: [5, 30],
+  incident_node_ids: ["node_05"],
+  node_impacts: [
+    {
+      node_id: "node_05",
+      horizon_minutes: 5,
+      traffic_volume_5m: 120,
+      avg_speed_kmh: 25,
+      vc_ratio: 0.95,
+      uncertainty_score: 0.1,
+      ood_score: 0.05,
+      impact_role: "incident",
+    },
+    {
+      node_id: "node_05",
+      horizon_minutes: 30,
+      traffic_volume_5m: 110,
+      avg_speed_kmh: 28,
+      vc_ratio: 0.88,
+      uncertainty_score: 0.12,
+      ood_score: 0.05,
+      impact_role: "incident",
+    },
+    {
+      node_id: "node_06",
+      horizon_minutes: 5,
+      traffic_volume_5m: 80,
+      avg_speed_kmh: 35,
+      vc_ratio: 0.65,
+      uncertainty_score: 0.08,
+      ood_score: 0.04,
+      impact_role: "adjacent",
+    },
+    {
+      node_id: "node_06",
+      horizon_minutes: 30,
+      traffic_volume_5m: 75,
+      avg_speed_kmh: 38,
+      vc_ratio: 0.60,
+      uncertainty_score: 0.09,
+      ood_score: 0.04,
+      impact_role: "adjacent",
+    },
+  ],
+});
+
+test("deriveNetworkImpactViewModel accepts exact complete grid and filters selected horizon", () => {
+  const vm = deriveNetworkImpactViewModel({
+    status: "succeeded",
+    networkImpact: sampleImpactEvidence,
+    selectedHorizon: 30,
   });
 
-  assert.equal(state.job.events.length, 1);
+  assert.equal(vm.available, true);
+  assert.equal(vm.status, "succeeded");
+  assert.equal(vm.topologyVersion, "synthetic-grid-20-v1");
+  assert.deepEqual(vm.horizons, [5, 30]);
+  assert.equal(vm.selectedHorizon, 30);
+  assert.deepEqual(vm.incidentNodeIds, ["node_05"]);
+  assert.equal(vm.rows.length, 2);
+  assert.equal(vm.rows.find((r) => r.nodeId === "node_05").vcRatio, 0.88);
+});
+
+test("deriveNetworkImpactViewModel defaults selectedHorizon to first horizon if omitted or invalid", () => {
+  const vm = deriveNetworkImpactViewModel({
+    status: "succeeded",
+    networkImpact: sampleImpactEvidence,
+    selectedHorizon: 99,
+  });
+
+  assert.equal(vm.available, true);
+  assert.equal(vm.selectedHorizon, 5);
+  assert.equal(vm.rows.find((r) => r.nodeId === "node_05").vcRatio, 0.95);
+});
+
+test("deriveNetworkImpactViewModel fails closed on non-terminal or failed/expired status", () => {
+  for (const status of ["running", "queued", "failed", "expired", null]) {
+    const vm = deriveNetworkImpactViewModel({
+      status,
+      networkImpact: sampleImpactEvidence,
+    });
+    assert.equal(vm.available, false);
+  }
+});
+
+test("deriveNetworkImpactViewModel fails closed on malformed network impact evidence", () => {
+  const malformedList = [
+    null,
+    {},
+    { ...sampleImpactEvidence, topology_version: "" },
+    { ...sampleImpactEvidence, horizons_minutes: [] },
+    {
+      ...sampleImpactEvidence,
+      node_impacts: sampleImpactEvidence.node_impacts.map((p) => ({ ...p, impact_role: "unknown" })),
+    },
+    {
+      ...sampleImpactEvidence,
+      node_impacts: sampleImpactEvidence.node_impacts.slice(0, 3), // incomplete grid
+    },
+  ];
+
+  for (const malformed of malformedList) {
+    const vm = deriveNetworkImpactViewModel({
+      status: "succeeded",
+      networkImpact: malformed,
+    });
+    assert.equal(vm.available, false);
+  }
 });

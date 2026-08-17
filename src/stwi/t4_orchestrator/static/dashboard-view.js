@@ -389,6 +389,86 @@ export function createDashboardView(doc = document) {
     );
   }
 
+  function renderNetworkImpact(impactViewModel = {}) {
+    const horizonSelect = byId("impact-horizon-select");
+    const table = byId("impact-table");
+    const empty = byId("impact-empty");
+    const rowsElement = byId("impact-rows");
+
+    const available = impactViewModel && impactViewModel.available === true && Array.isArray(impactViewModel.rows) && impactViewModel.rows.length > 0;
+
+    if (!available) {
+      if (horizonSelect) horizonSelect.replaceChildren();
+      if (rowsElement) rowsElement.replaceChildren();
+      if (table) table.hidden = true;
+      if (empty) empty.hidden = false;
+      return;
+    }
+
+    const horizons = Array.isArray(impactViewModel.horizons) ? impactViewModel.horizons : [];
+    horizonSelect.replaceChildren();
+    for (const h of horizons) {
+      const option = doc.createElement("option");
+      option.value = String(h);
+      option.textContent = `${h} phút`;
+      if (h === impactViewModel.selectedHorizon) {
+        option.selected = true;
+      }
+      horizonSelect.append(option);
+    }
+    horizonSelect.value = String(impactViewModel.selectedHorizon);
+
+    const roleLabels = {
+      incident: "Nút sự cố",
+      adjacent: "Nút lân cận",
+      network: "Nút mạng lưới",
+    };
+
+    rowsElement.replaceChildren();
+    for (const rowData of impactViewModel.rows) {
+      const tr = doc.createElement("tr");
+      tr.className = `impact-row impact-row-${rowData.impactRole}`;
+      tr.dataset.nodeId = rowData.nodeId;
+
+      const tdNode = doc.createElement("td");
+      tdNode.textContent = rowData.nodeId;
+
+      const tdHorizon = doc.createElement("td");
+      tdHorizon.textContent = `${rowData.horizonMinutes}p`;
+
+      const tdRole = doc.createElement("td");
+      tdRole.textContent = roleLabels[rowData.impactRole] || rowData.impactRole;
+
+      const tdVolume = doc.createElement("td");
+      tdVolume.textContent = `${rowData.trafficVolume5m}`;
+
+      const tdSpeed = doc.createElement("td");
+      tdSpeed.textContent = `${rowData.avgSpeedKmh}`;
+
+      const tdVc = doc.createElement("td");
+      tdVc.textContent = typeof rowData.vcRatio === "number" ? rowData.vcRatio.toFixed(2) : String(rowData.vcRatio);
+
+      const tdUnc = doc.createElement("td");
+      tdUnc.textContent = typeof rowData.uncertaintyScore === "number" ? rowData.uncertaintyScore.toFixed(2) : String(rowData.uncertaintyScore);
+
+      const tdOod = doc.createElement("td");
+      tdOod.textContent = typeof rowData.oodScore === "number" ? rowData.oodScore.toFixed(2) : String(rowData.oodScore);
+
+      tr.append(tdNode, tdHorizon, tdRole, tdVolume, tdSpeed, tdVc, tdUnc, tdOod);
+      rowsElement.append(tr);
+    }
+
+    table.hidden = false;
+    empty.hidden = true;
+  }
+
+  byId("impact-horizon-select")?.addEventListener("change", (event) => {
+    const val = (event.currentTarget || event.target)?.value;
+    if (val !== undefined) {
+      handlers.selectHorizon?.(Number(val));
+    }
+  });
+
   byId("toggle-citations").addEventListener("click", () => {
     citationsExpanded = !citationsExpanded;
     renderCitations(lastRenderedCitations);
@@ -496,6 +576,7 @@ export function createDashboardView(doc = document) {
 
   return {
     render,
+    renderNetworkImpact,
     readScenario,
     setContext,
     setScenario,

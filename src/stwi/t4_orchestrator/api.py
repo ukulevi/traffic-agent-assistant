@@ -165,7 +165,18 @@ def create_app(
         ) from exc
 
     _store = store or get_job_store()
-    _orchestrator = orchestrator or WhatIfOrchestrator()
+    if orchestrator is None:
+        if _settings.mode == RuntimeMode.DEMO:
+            from stwi.t4_orchestrator.demo_adapters import (
+                RefinementDemoSurrogateForecaster,
+            )
+            _orchestrator = WhatIfOrchestrator(
+                surrogate=RefinementDemoSurrogateForecaster()
+            )
+        else:
+            _orchestrator = WhatIfOrchestrator()
+    else:
+        _orchestrator = orchestrator
     _job_slots = threading.BoundedSemaphore(_settings.job_concurrency)
 
     def resolve_principal(
