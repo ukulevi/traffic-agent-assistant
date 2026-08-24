@@ -1,0 +1,57 @@
+\chapter{Tier 2: Baseline Forecasting and Neural Surrogates}
+\label{chapter:tier2}
+
+\section{Spatial-Temporal GCN--LSTM Baseline Model}
+Tier 2 is responsible for generating accurate baseline predictions of network state without incidents, as well as rapid counterfactual impact estimations when incidents occur.
+
+\subsection{Architecture of the GCN--LSTM Network}
+The baseline forecaster employs a dual-stage architecture combining Spatial Graph Convolutions and Temporal LSTMs:
+\begin{enumerate}[leftmargin=1.5cm, label=\arabic*.]
+  \item \textbf{Spatial GCN Layer:} For each timestep $t \in \{1, \dots, 12\}$, the node feature matrix $X_t \in \mathbb{R}^{N \times 16}$ is processed through a 2-hop spectral graph convolution layer using normalized adjacency $\tilde{A}$, extracting localized neighborhood embeddings $Z_t \in \mathbb{R}^{N \times 64}$.
+  \item \textbf{Temporal Recurrent Layer:} The sequence $\{Z_1, Z_2, \dots, Z_{12}\}$ is fed into a multi-layer bidirectional LSTM with hidden dimension 128 to capture short-term velocity trends and queue buildups.
+  \item \textbf{Projection Head:} A fully connected linear decoder projects the hidden states into the future 6-horizon output tensor $Y \in \mathbb{R}^{B \times 6 \times N \times 2}$.
+\end{enumerate}
+
+\subsection{Training Protocol and Validation}
+The model is trained using a masked Mean Squared Error (MSE) loss function that ignores missing values:
+\begin{equation}
+  \mathcal{L}_{\text{masked}} = \frac{\sum_{b,h,n,f} M_{b,h,n,f} \cdot (Y_{b,h,n,f} - \hat{Y}_{b,h,n,f})^2}{\sum_{b,h,n,f} M_{b,h,n,f} + \epsilon}
+\end{equation}
+Data splits are performed strictly on a chronological basis (70\% train, 15\% validation, 15\% test) to avoid future-to-past data leakage. Across test sets, the GCN--LSTM achieves $R^2 \ge 0.85$ and Mean Absolute Error (MAE) $< 4.5\text{ km/h}$ in velocity predictions.
+
+\section{Ratio-Sensitive Neural Surrogate Ensembles}
+When an operator investigates a ``What-If'' scenario (e.g., ``What if Lane 1 of node\_05 is blocked for 30 minutes and green time is increased by 15\%?''), executing online microscopic simulators introduces unacceptable delays ($> 120\text{ s}$).
+
+\subsection{Offline SUMO Simulation Generation}
+STWI utilizes an offline simulation pipeline powered by SUMO. A parameter sweep generates over 10,000 synthetic incident scenarios across four canonical incident families:
+\begin{itemize}[leftmargin=1.5cm, label=$\bullet$]
+  \item \textbf{\texttt{lane\_closure}:} Closure ratios ranging from 25\% to 75\% across intersection arms.
+  \item \textbf{\texttt{signal\_change}:} Green time ratio alterations from 0.30 to 1.00.
+  \item \textbf{\texttt{accident}:} Sudden lane blockage with variable clearance durations (10 to 60 minutes).
+  \item \textbf{\texttt{demand\_surge}:} Inflow multipliers from $1.1\times$ to $2.0\times$ simulating event egress.
+\end{itemize}
+
+\subsection{Surrogate Model Structure and Performance}
+The surrogate model is implemented as a heterogeneous ensemble consisting of 5 LightGBM regressors and 5 Deep Multi-Layer Perceptrons (MLPs). The ensemble takes the baseline forecast tensor $Y$, the incident descriptor vector $\mathbf{v}_{\text{inc}}$, and the candidate green split ratio $\Delta u$, predicting the 30-minute perturbed traffic state.
+
+\begin{table}[H]
+\centering
+\caption{Surrogate Ensemble Latency and Accuracy Benchmarks.}
+\label{tab:surrogate_perf}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\rowcolor{blue!10}
+\textbf{Model Type} & \textbf{Inference P99 (ms)} & \textbf{MAE (Volume veh/5m)} & \textbf{MAE (Speed km/h)} \\
+\hline
+Online SUMO Microscopic & 45,200 ms & Ground Truth & Ground Truth \\
+Single LightGBM & 12 ms & 8.42 & 2.65 \\
+Single Deep MLP & 28 ms & 7.89 & 2.41 \\
+\textbf{STWI Surrogate Ensemble (10-Model)} & \textbf{142 ms} & \textbf{5.12} & \textbf{1.83} \\
+\hline
+\end{tabular}
+\end{table}
+
+As shown in Table \ref{tab:surrogate_perf}, the Surrogate Ensemble reduces simulation latency by over $300\times$ (from $45.2\text{ s}$ to $142\text{ ms}$), easily satisfying the hard SLA requirement ($P99 < 500\text{ ms}$).
+
+\subsection{Calibration and Safety Gating}
+Each surrogate prediction is coupled with an uncertainty metric $\sigma_{\text{unc}}$ derived from ensemble variance and an out-of-distribution score $S_{\text{ood}}$ calculated via isolation forests. If $\sigma_{\text{unc}} > 0.70$ or $S_{\text{ood}} > 0.50$, the surrogate output is flagged as uncalibrated, prompting the Safety Loop to fail closed into \texttt{needs\_review}.

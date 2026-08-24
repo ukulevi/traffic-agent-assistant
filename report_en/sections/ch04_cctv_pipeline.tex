@@ -1,0 +1,30 @@
+\chapter{Tier 1: CCTV Pipeline and Tensor Builder}
+\label{chapter:tier1}
+
+\section{Edge Ingestion and Privacy Governance}
+Tier 1 serves as the foundational data ingestion layer for STWI. It ingests traffic observation streams from up to 20 physical intersection cameras and aggregates environmental sensor feeds across the metropolitan network.
+
+\subsection{Zero Raw-Video Retention Policy}
+To comply with municipal privacy regulations and data protection mandates, STWI enforces an absolute \textbf{Zero Raw-Video Retention} policy:
+\begin{itemize}[leftmargin=1.5cm, label=$\bullet$]
+  \item \textbf{Volatile In-Memory Processing:} Video streams (RTSP / pre-recorded MP4) are decoded frame-by-frame directly in volatile RAM buffers. No raw video frames, compressed video clips, or unblurred facial/license-plate crops are written to persistent disk storage.
+  \item \textbf{Immediate Feature Aggregation:} Object detection (YOLOv8) and multi-object tracking (ByteTrack) algorithms extract vehicle bounding boxes, classifications (cars, motorcycles, buses, trucks), and instantaneous optical flow velocities.
+  \item \textbf{Edge Extraction \& Purge:} Once object counts and harmonic average velocities are aggregated into 5-minute time bins, all underlying frame tensors are immediately deallocated from GPU memory.
+\end{itemize}
+
+\section{Tensor Builder and Spatial Alignment}
+The extracted 5-minute scalar values are transformed into structured multi-dimensional arrays by the \textbf{Tensor Builder} module.
+
+\subsection{Missing Data Handling and Mask Generation}
+Urban sensor networks frequently experience transient packet loss, power outages, or camera occlusions. Rather than blindly zero-filling missing entries (which distorts neural network gradients), the Tensor Builder generates a companion boolean missing mask:
+\begin{equation}
+  M_{b,t,n,f} = 
+  \begin{cases}
+    1 & \text{if feature } f \text{ at node } n \text{ and timestep } t \text{ is observed}, \\
+    0 & \text{if feature } f \text{ is missing / corrupted}.
+  \end{cases}
+\end{equation}
+For downstream neural layers, missing values are imputed via spatial-temporal neighborhood interpolation (mean historical pattern combined with adjacent node flow ratios) while explicitly passing the mask tensor $M$ to allow attention mechanisms to down-weight imputed indices.
+
+\subsection{Temporal Alignment and Sliding Window}
+The pipeline maintains a rolling 60-minute historical buffer (12 consecutive 5-minute bins) for all 20 canonical intersections. Every 5 minutes, a new timestep slice is appended, the oldest slice is evicted, and the synchronized tensors $(X, M, A)$ are committed to TimescaleDB for continuous availability.

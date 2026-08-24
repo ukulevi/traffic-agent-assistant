@@ -252,82 +252,76 @@
 \begin{document}
 
 % ============================================================
-% BÌA (TITLE PAGE)
+% BÌA (TITLE PAGE THEO CHUẨN M1 KHOA KH&KTMT)
 % ============================================================
 \begin{titlepage}
-\newgeometry{left=1.8cm,right=1.8cm,top=1.5cm,bottom=1.5cm}
-
+\newgeometry{top=1.8cm,bottom=1.8cm,left=2.5cm,right=2.0cm}
+\singlespacing
 \begin{tikzpicture}[remember picture,overlay]
-  \draw[bkblue,line width=2.8pt]
-    ([shift={(0.8cm,-0.8cm)}]current page.north west)
+  % Khung đôi trang bìa chuẩn M1
+  \draw[bkblue,line width=2.5pt]
+    ([shift={(1.8cm,-1.0cm)}]current page.north west)
     rectangle
-    ([shift={(-0.8cm,0.8cm)}]current page.south east);
-  \draw[bkblue,line width=0.6pt]
-    ([shift={(1.05cm,-1.05cm)}]current page.north west)
+    ([shift={(-1.2cm,1.0cm)}]current page.south east);
+  \draw[bkblue,line width=0.8pt]
+    ([shift={(1.95cm,-1.15cm)}]current page.north west)
     rectangle
-    ([shift={(-1.05cm,1.05cm)}]current page.south east);
+    ([shift={(-1.35cm,1.15cm)}]current page.south east);
 \end{tikzpicture}
 
 \centering
 
-\vspace*{0.4cm}
-{\fontsize{14}{17}\selectfont\bfseries ĐẠI HỌC QUỐC GIA THÀNH PHỐ HỒ CHÍ MINH}\\[0.2cm]
-{\fontsize{14}{17}\selectfont\bfseries TRƯỜNG ĐẠI HỌC BÁCH KHOA}\\[0.15cm]
-{\fontsize{13}{16}\selectfont\bfseries KHOA KHOA HỌC VÀ KỸ THUẬT MÁY TÍNH}
+{\fontsize{13}{16}\selectfont\bfseries ĐẠI HỌC QUỐC GIA THÀNH PHỐ HỒ CHÍ MINH}\\[0.1cm]
+{\fontsize{13}{16}\selectfont\bfseries TRƯỜNG ĐẠI HỌC BÁCH KHOA}\\[0.1cm]
+{\fontsize{12}{15}\selectfont\bfseries KHOA KHOA HỌC VÀ KỸ THUẬT MÁY TÍNH}
 
-\vspace{0.3cm}
-{\color{bkblue}\rule{0.55\textwidth}{1.8pt}}
+\vspace{0.25cm}
+\includegraphics[width=2.5cm]{figures/M2_Logo_BK.png}
+\vspace{0.25cm}
 
-\vspace{0.8cm}
+{\fontsize{14}{17}\selectfont\bfseries\color{bkblue} BÁO CÁO MÔN HỌC}\\[0.1cm]
+{\fontsize{15}{18}\selectfont\bfseries\color{bkblue} THỰC TẬP NGOÀI TRƯỜNG}\\[0.08cm]
+{\fontsize{11}{14}\selectfont\bfseries (Mã số môn học: CO3335)}\\[0.12cm]
+{\fontsize{11.5}{14.5}\selectfont\bfseries HỌC KỲ 3 -- NĂM HỌC 2025--2026 (HK253)}\\[0.05cm]
+{\fontsize{10}{13}\selectfont\itshape (Đăng ký môn học thành công)}
 
-{\fontsize{14}{17}\selectfont\bfseries ĐỒ ÁN MÔN HỌC}\\[0.15cm]
-{\fontsize{13}{16}\selectfont BÁO CÁO ĐẶC TẢ KỸ THUẬT TỔNG THỂ}
+\vspace{0.2cm}
+{\color{bkblue}\rule{0.75\textwidth}{0.8pt}}
+\vspace{0.2cm}
 
-\vspace{0.9cm}
+{\fontsize{11}{14}\selectfont\bfseries NGÀNH: KHOA HỌC MÁY TÍNH / KỸ THUẬT MÁY TÍNH}\\[0.06cm]
+{\fontsize{11}{14}\selectfont\bfseries CHƯƠNG TRÌNH ĐÀO TẠO: CHÍNH QUY (CHẤT LƯỢNG CAO / TIẾNG ANH)}
 
-{\fontsize{19}{23}\selectfont\bfseries\color{bkblue}
-SMARTTRAFFIC WHAT-IF\\[0.2cm] (STWI)}
+\vspace{0.25cm}
+{\fontsize{11}{14}\selectfont\bfseries ĐỀ TÀI:}\\[0.08cm]
+{\fontsize{15}{18}\selectfont\bfseries\color{bkblue} SMARTTRAFFIC WHAT-IF (STWI)}\\[0.08cm]
+{\fontsize{11}{14}\selectfont\bfseries HỆ THỐNG ĐIỀU PHỐI GIAO THÔNG THÔNG MINH SỬ DỤNG AI ĐA TÁC TỬ\\ VÀ COUNTERFACTUAL SAFETY LOOP}
 
-\vspace{0.5cm}
-{\color{bkblue!60}\rule{0.45\textwidth}{0.8pt}}
-\vspace{0.4cm}
-
-{\fontsize{14}{17}\selectfont\bfseries
-HỆ THỐNG ĐIỀU PHỐI GIAO THÔNG THÔNG MINH\\[0.15cm]
-SỬ DỤNG TRÍ TUỆ NHÂN TẠO ĐA TÁC TỬ\\[0.15cm]
-VÀ COUNTERFACTUAL SAFETY LOOP LẤY CẢM HỨNG TỪ CF-VLA}
-
-\vspace{1.1cm}
-
-\begin{center}
-\renewcommand{\arraystretch}{1.6}
-\fontsize{12}{15}\selectfont
-\begin{tabular}{ll}
-  \textbf{Mã tài liệu:} & STWI-DOC-SYSTEM v2.0 \\
-  \textbf{Phiên bản:}   & 2.0 (Bản chính thức) \\
-  \textbf{Ngày xuất bản:} & \today \\
-  \textbf{Trạng thái:}  & Bản đặc tả kỹ thuật hoàn chỉnh \\
-  \textbf{Phân loại:}   & Tài liệu kỹ thuật dự án \\
+\vspace{0.35cm}
+\begin{flushleft}
+\fontsize{10.5}{13.5}\selectfont
+\hspace{0.2cm}
+\begin{tabular}{p{6.4cm}l}
+  \textbf{ĐƠN VỊ/ DOANH NGHIỆP NHẬN THỰC TẬP:} & \textbf{TRUNG TÂM GIẢI PHÁP DỮ LIỆU SỐ ĐA NGÀNH} \\
+  & \textbf{-- CHI NHÁNH CÔNG TY CNTT VNPT (VNPT-IT)} \\[0.08cm]
+  \textbf{CÁN BỘ HƯỚNG DẪN CHUYÊN MÔN (DN):} & \textbf{VÕ TẤN PHÁT} (VNPT-IT) \\[0.08cm]
+  \textbf{CÁN BỘ HƯỚNG DẪN CỦA KHOA (CBHD):} & \textbf{TRẦN HUY} (MSCB: \textbf{4141}) \\[0.08cm]
+  \textbf{SINH VIÊN THỰC HIỆN (SVTH):} & \textbf{LÊ HOÀNG CHÍ VĨ} -- \textbf{MSSV: 2353336} \\[0.08cm]
+  \textbf{LỚP / PHÂN NHÓM / TỔ:} & \textbf{CC23KHM6} -- \textbf{CC30} (Tổ \textbf{A}) \\
 \end{tabular}
-\end{center}
-
-\vspace{0.8cm}
-
-\begin{center}
-\renewcommand{\arraystretch}{1.5}
-\fontsize{12}{15}\selectfont
-\begin{tabular}{ll}
-  \textbf{Nhóm thực hiện:}       & Nhóm Dự án STWI \\
-  \textbf{Giảng viên hướng dẫn:} & TS. Nguyễn Văn A \\
-  \textbf{Học kỳ:}               & Học kỳ 3 -- Năm học 2025--2026 \\
-\end{tabular}
-\end{center}
+\end{flushleft}
 
 \vfill
-{\fontsize{13}{16}\selectfont\itshape Thành phố Hồ Chí Minh -- \the\year}
-\vspace{0.4cm}
+{\fontsize{11}{14}\selectfont\bfseries TP. HỒ CHÍ MINH, THÁNG 08/2026}
+\vspace{0.1cm}
 \restoregeometry
 \end{titlepage}
+
+% ============================================================
+% THÔNG TIN DOANH NGHIỆP VÀ QUÁ TRÌNH THỰC TẬP (TIÊU CHÍ H1)
+% ============================================================
+\newpage
+\input{chapters/ch00_thong_tin_thuc_tap}
 
 % ============================================================
 % TÓM TẮT
@@ -397,6 +391,12 @@ VÀ COUNTERFACTUAL SAFETY LOOP LẤY CẢM HỨNG TỪ CF-VLA}
 % ============================================================
 \newpage
 \input{chapters/ch11_ket_luan}
+
+% ============================================================
+% XÁC NHẬN VÀ BẢO ĐẢM TÍNH BẢO MẬT (TIÊU CHÍ H1)
+% ============================================================
+\newpage
+\input{chapters/ch12_xac_nhan_doanh_nghiep}
 
 % ============================================================
 % TÀI LIỆU THAM KHẢO

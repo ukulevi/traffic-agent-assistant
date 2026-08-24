@@ -1,19 +1,48 @@
 \chapter{Kết luận và Hướng Phát triển}
 
+\section{Tổng kết Kết quả Dự án STWI}
+
 STWI được chuẩn hóa thành MVP 13 tuần có phạm vi kiểm chứng được: mạng 20 node, camera demo giới hạn, GCN--LSTM cho baseline, surrogate học từ SUMO, tri thức pháp lý có version và Counterfactual Safety Loop fail-closed.
 
 Đóng góp kỹ thuật chính không nằm ở một tên mô hình riêng lẻ mà ở hợp đồng end-to-end: tensor có node axis và missing mask, tách baseline với scenario model, uncertainty/OOD gate, typed query, structured citations, async job API và human approval.
 
-\section{Giới hạn}
+\section{Tổng kết Sản phẩm và Kiến thức Thu nhận được}
 
-\begin{itemize}
-  \item Load test 1.000 producer không chứng minh khả năng xử lý 1.000 video stream.
-  \item Surrogate chỉ đáng tin trong scenario space và calibration đã công bố.
-  \item Citation validator giảm unsupported claim nhưng không thay thế chuyên gia pháp lý.
-  \item Ngưỡng V/C 0,9 là policy MVP có thể cấu hình, không phải luật.
-  \item Hệ thống chỉ hỗ trợ quyết định và không tự actuate.
+\subsection{Sản phẩm Kỹ thuật Đạt được}
+Qua quá trình thực tập và phát triển, các sản phẩm cụ thể đã được hoàn thiện và kiểm thử đạt chuẩn bao gồm:
+\begin{itemize}[leftmargin=1.5cm, label=$\bullet$]
+  \item \textbf{Hệ thống Pipeline Dữ liệu Giao thông:} Module tiếp nhận và chuẩn hóa dữ liệu tensor $X[B,12,N,16]$ với missing mask $M[B,12,N,16]$ và ma trận kề $A[N,N]$ với chính sách bảo mật Zero Raw-Video Retention.
+  \item \textbf{Mô hình Dự báo Không gian - Thời gian GCN--LSTM:} Đạt $R^2 \ge 0.85$, MSE $\le 0.05$ và độ trễ suy luận P99 $< 500\text{ ms}$.
+  \item \textbf{Mô hình Đánh giá Sự cố Surrogate Ensemble:} Tích hợp Uncertainty Calibration và OOD Detector, phản hồi trong $< 500\text{ ms}$.
+  \item \textbf{Dịch vụ RAG Pháp lý \& Typed Simulation Query:} Cơ sở dữ liệu vector Qdrant, nhúng BGE-M3 với cơ chế Fail-Closed kiểm định hiệu lực văn bản luật.
+  \item \textbf{Bộ điều phối Multi-Agent \& Counterfactual Safety Loop:} Triển khai bằng LangGraph, Celery, Redis, quản lý tối đa 3 vòng lặp tối ưu và điều phối đa tuyến tránh nghẽn.
+  \item \textbf{Operator Dashboard Tương tác Thời gian thực:} Giao diện web hỗ trợ hiển thị lưới tác động 20 nút, bản đồ điều hướng và luồng phê duyệt của người vận hành.
+  \item \textbf{Bộ Artifact Hoàn chỉnh:} Bộ 30 kịch bản kiểm thử (Test Matrix), Bộ tài liệu API OpenAPI/REST, và Báo cáo Kỹ thuật Đặc tả Hệ thống.
 \end{itemize}
 
-\section{Hướng Phát triển}
+\subsection{Kiến thức và Kỹ năng Chuyên môn Thu nhận được}
+\begin{itemize}[leftmargin=1.5cm, label=$\bullet$]
+  \item \textbf{Kiến thức chuyên môn:} Nắm vững lý thuyết Graph Convolutional Networks (GCN), Recurrent Neural Networks (LSTM), kỹ thuật phân tích nhân quả Counterfactual Reasoning, và kiến trúc RAG nâng cao cho dữ liệu pháp lý tiếng Việt.
+  \item \textbf{Kỹ năng kỹ thuật và hệ thống:} Nâng cao năng lực thiết kế API chuẩn RESTful bất đồng bộ, cấu trúc hóa dữ liệu lớn với TimescaleDB và Qdrant, quản lý vòng đời tác vụ phân tán với Celery/Redis, và tự động hóa quy trình CI/CD.
+  \item \textbf{Kỹ năng làm việc chuyên nghiệp:} Rèn luyện kỹ năng phân tích đặc tả kỹ thuật, làm việc nhóm theo mô hình Agile/Scrum, tư duy an toàn hệ thống (Fail-Closed, Decision Support Only) và kỹ năng viết báo cáo khoa học, kỹ thuật chuẩn mực.
+\end{itemize}
 
-Sau MVP, các hướng hợp lý là pilot với dữ liệu thật, mở rộng SUMO coverage, đánh giá chuyển vùng, high availability, governance mô hình/corpus và tích hợp hiện trường chỉ sau khi có phê duyệt pháp lý--an toàn độc lập.
+\section{Cảm nhận Cá nhân về Doanh nghiệp và Kỳ Thực tập}
+
+Kỳ thực tập ngoài trường tại Doanh nghiệp là cơ hội quý báu giúp sinh viên áp dụng những nền tảng lý thuyết đã tích lũy tại Khoa Khoa học và Kỹ thuật Máy tính -- Trường Đại học Bách Khoa vào một bài toán kỹ thuật thực tế có tính liên ngành cao giữa Trí tuệ Nhân tạo, Kỹ thuật Giao thông và An toàn Hệ thống.
+
+Môi trường làm việc chuyên nghiệp, sự hỗ trợ tận tình từ Cán bộ hướng dẫn chuyên môn tại Doanh nghiệp cùng sự định hướng khoa học từ Giảng viên phụ trách đã giúp sinh viên nhanh chóng nắm bắt công nghệ mới, rèn luyện tác phong làm việc trách nhiệm, kỷ luật và tự tin giải quyết các thách thức kỹ thuật phức tạp. Chương trình thực tập đã tạo tiền đề vững chắc cho việc tiếp tục mở rộng nghiên cứu trong Đề cương luận văn và Khóa luận tốt nghiệp sắp tới.
+
+\section{Giới hạn và Hướng Phát triển}
+
+\subsection{Giới hạn Hệ thống}
+\begin{itemize}[leftmargin=1.5cm, label=--]
+  \item Load test 1.000 producer tổng hợp không chứng minh khả năng giải mã trực tiếp 1.000 luồng video thô.
+  \item Surrogate ensemble chỉ có độ tin cậy cao trong không gian kịch bản và phân phối đã được hiệu chuẩn.
+  \item Bộ thẩm định trích dẫn RAG giúp giảm thiểu thông tin sai lệch nhưng không thay thế hoàn toàn chuyên gia pháp lý.
+  \item Ngưỡng tỷ số $V/C \le 0.90$ là chính sách an toàn có thể cấu hình của MVP, không phải quy định bắt buộc của luật.
+  \item Hệ thống hoạt động theo nguyên tắc Hỗ trợ Ra Quyết định (Decision Support Only), không tự động điều khiển thiết bị hiện trường.
+\end{itemize}
+
+\subsection{Hướng Phát triển Tiếp theo}
+Sau giai đoạn MVP, các hướng nâng cấp tiềm năng bao gồm: thử nghiệm pilot với luồng dữ liệu giao thông thực tế tại TP.HCM, mở rộng không gian kịch bản SUMO, đánh giá khả năng chuyển vùng sang các mạng lưới nút giao khác, hoàn thiện hệ thống quản trị dữ liệu và kiểm định an toàn độc lập trước khi tích hợp vào trung tâm điều hành.

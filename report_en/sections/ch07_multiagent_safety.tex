@@ -1,0 +1,59 @@
+\chapter{Tier 4: Multi-Agent Orchestrator and Safety Loop}
+\label{chapter:tier4}
+
+\section{Agentic Workflow Architecture with LangGraph}
+Tier 4 represents the central cognitive coordinator of STWI. Built upon **LangGraph**, **Celery**, and **Redis**, the multi-agent orchestrator directs the end-to-end evaluation pipeline through stateful graph execution.
+
+\subsection{State Graph Nodes and Responsibilities}
+The orchestration state graph comprises five sequential functional nodes:
+\begin{enumerate}[leftmargin=1.5cm, label=\textbf{\arabic*.}]
+  \item \textbf{\texttt{node\_validate}:} Validates API authorization, tenant scope, and node boundary allowlists against \texttt{project\_contract.json}.
+  \item \textbf{\texttt{node\_baseline}:} Retrieves recent observations $(X, M, A)$ and runs the GCN--LSTM model to establish the 30-minute baseline.
+  \item \textbf{\texttt{node\_rag}:} Performs semantic retrieval across Qdrant to obtain structured statutory citations.
+  \item \textbf{\texttt{node\_scenario}:} Executes the Counterfactual Safety Loop (CSL) with the Surrogate Ensemble.
+  \item \textbf{\texttt{node\_routing}:} Evaluates candidate diversion routes across the 20-node topology, ensuring alternative paths do not cause spillover congestion.
+\end{enumerate}
+
+\section{The Counterfactual Safety Loop (CSL)}
+The Counterfactual Safety Loop (Algorithm \ref{alg:csl}) iteratively tests and refines candidate traffic interventions to ensure strict adherence to safety thresholds.
+
+\begin{algorithm}[H]
+\caption{Counterfactual Safety Verification Loop}
+\label{alg:csl}
+\DontPrintSemicolon
+\Input{Baseline Forecast $Y$, Incident $\mathbf{v}_{\text{inc}}$, Initial Candidate Action $a_0$, Max Iterations $K=3$, Threshold $\tau_{\text{VC}}=0.90$}
+\Output{Verified Recommended Action $a^*$ OR Rejection with Candidate Action}
+
+$a \leftarrow a_0$; \quad $\text{iteration} \leftarrow 1$\;
+\While{$\text{iteration} \le K$}{
+    $\hat{Y}_{\text{scenario}}, \, \sigma_{\text{unc}}, \, S_{\text{ood}} \leftarrow \text{SurrogateEnsemble}(Y, \mathbf{v}_{\text{inc}}, a)$\;
+    $(V/C)_{\max} \leftarrow \max_{n, t} \left( \hat{Y}_{\text{scenario}}[t, n, \text{vol}] / \text{Capacity}_n \right)$\;
+    
+    \If{$(V/C)_{\max} \le \tau_{\text{VC}}$ \textbf{and} $\sigma_{\text{unc}} \le 0.70$ \textbf{and} $S_{\text{ood}} \le 0.50$ \textbf{and} $\text{HasLegalCitations}$}{
+        $a^* \leftarrow a$\;
+        $a^*. \texttt{executable} \leftarrow \text{False}$\;
+        $a^*. \texttt{requires\_operator\_approval} \leftarrow \text{True}$\;
+        $a^*. \texttt{applied\_by\_system} \leftarrow \text{False}$\;
+        \Return{\texttt{Status: succeeded}, $a^*$, $\hat{Y}_{\text{scenario}}$}\;
+    }
+    \Else{
+        $a \leftarrow \text{RefineCandidateAction}(a, (V/C)_{\max}, \text{iteration})$\;
+        $\text{iteration} \leftarrow \text{iteration} + 1$\;
+    }
+}
+\Return{\texttt{Status: needs\_review}, $\text{Candidate: } a$, \texttt{Recommended: None}}\;
+\end{algorithm}
+
+\subsection{Multi-Objective Diversion Routing}
+When an incident induces significant capacity reductions (e.g., lane closures), the routing sub-agent executes a multi-objective Dijkstra search to identify alternative detour corridors. Candidate paths are evaluated across three criteria: (1) Maximum bottleneck $V/C \le 0.90$, (2) Average speed $> 25\text{ km/h}$, and (3) Expected trip delay delta $< 120\text{ s}$.
+
+Only routes that pass all safety gates are ranked and appended to the final response payload.
+
+\section{Operator Dashboard and Decision Governance}
+The Operator Dashboard provides an intuitive web interface for traffic controllers. Key visual elements include:
+\begin{itemize}[leftmargin=1.5cm, label=$\bullet$]
+  \item \textbf{20-Node Grid Heatmap:} Displays real-time and predicted $V/C$ ratios across 6 forecast horizons (5 to 30 minutes).
+  \item \textbf{Network Impact Panel:} Highlights the incident node in bold red, 1-hop adjacent nodes in orange, and outer network nodes in blue.
+  \item \textbf{Legal Evidence Drawer:} Shows exact statutory citations with direct links to legal articles.
+  \item \textbf{Decision Modal:} Requires explicit human operator authorization (Approve / Reject / Request Modification) before any plan is recorded.
+\end{itemize}

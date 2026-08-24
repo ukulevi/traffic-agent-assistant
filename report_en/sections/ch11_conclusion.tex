@@ -1,0 +1,35 @@
+\chapter{Conclusion, Learned Competencies, and Future Work}
+\label{chapter:conclusion}
+
+\section{Summary of Key Achievements}
+The \textbf{SmartTraffic What-If (STWI)} system successfully delivers a robust, production-grade decision-support platform for urban traffic operators. Over the 13-week engineering lifecycle, the project accomplished several major technical milestones:
+\begin{itemize}[leftmargin=1.5cm, label=$\bullet$]
+  \item \textbf{High-Speed Simulation:} Developed ratio-sensitive Neural Surrogate Ensembles achieving inference times under $150\text{ ms}$ ($> 300\times$ faster than microscopic simulation).
+  \item \textbf{Spatial-Temporal Accuracy:} Built a PyTorch GCN--LSTM model achieving $R^2 \ge 0.86$ across 20 canonical intersections.
+  \item \textbf{Legal Grounding:} Integrated Qdrant and BGE-M3 vector retrieval over Vietnamese Road Traffic Laws No. 35 \& 36/2024/QH15, eliminating hallucinated interventions.
+  \item \textbf{Guaranteed Safety:} Designed a 3-round Counterfactual Safety Loop enforcing $V/C \le 0.90$ capacity limits and $100\%$ fail-closed protection.
+  \item \textbf{Industrial Quality:} Verified through 30 end-to-end test scenarios, automated CI/CD pipelines, and an interactive real-time Operator Dashboard.
+\end{itemize}
+
+\section{Acquired Knowledge and Engineering Competencies}
+Through the execution of this capstone project, the student gained substantial theoretical and practical proficiencies:
+\begin{enumerate}[leftmargin=1.5cm, label=\textbf{\arabic*.}]
+  \item \textbf{Advanced Machine Learning and Graph Theory:} In-depth mastery of non-Euclidean graph convolutions, recurrent sequence modeling, causal counterfactual reasoning, and surrogate model calibration.
+  \item \textbf{Distributed Software Architecture:} Advanced experience in designing asynchronous microservices using FastAPI, Celery, Redis, TimescaleDB, and Docker containerization.
+  \item \textbf{Information Retrieval and NLP:} Practical skills in semantic vector indexing, dense multilingual embeddings (BGE-M3), and prompt engineering for structured query translation.
+  \item \textbf{Professional Engineering Practice:} Hands-on experience working in an Agile/Scrum corporate environment, rigorous code reviews, automated CI testing, and technical documentation.
+\end{enumerate}
+
+\section{Personal Reflections on the Internship and Host Company}
+The capstone project and industrial internship provided an exceptional learning experience. Collaborating with seasoned AI engineers and software architects at the Host Company demonstrated how complex mathematical formulations transition into reliable, mission-critical systems. The emphasis on data privacy (Zero Raw-Video Retention) and defensive safety engineering (Fail-Closed mechanisms) profoundly shaped the student's perspective on responsible AI development. The guidance from both the Academic Advisor at HCMUT and the Industrial Mentor at the Host Company was instrumental in achieving these outcomes.
+
+\section{Limitations and Future Roadmap}
+\subsection{Current Limitations}
+\begin{itemize}[leftmargin=1.5cm, label=--]
+  \item The physical deployment is currently evaluated on a 20-node urban arterial grid; full municipal rollout requires continuous topology expansion.
+  \item The surrogate ensemble's high accuracy is bounded by the calibration manifold of the offline SUMO simulation dataset.
+  \item The system acts exclusively as a decision-support advisory tool and does not directly actuate field traffic controllers.
+\end{itemize}
+
+\subsection{Future Research Directions}
+Future extensions include: (1) live pilot integration with municipal traffic camera feeds in Ho Chi Minh City, (2) expanding SUMO scenario coverage to include multimodal transit (bus rapid transit and metro feeder lines), (3) cross-city domain adaptation, and (4) formal security auditing for connected traffic control systems.

@@ -1,0 +1,118 @@
+\chapter{System Architecture and Data Contracts}
+\label{chapter:architecture}
+
+\section{Overall 4-Tier Architecture}
+STWI is architected as a modular, 4-tier decision-support system designed for high reliability, strict legal compliance, and sub-second simulation response. Figure \ref{fig:stwi_architecture} illustrates the high-level interaction between the four functional tiers:
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=1.2cm and 1.5cm, auto]
+  % Tier 1
+  \node (t1) [sysbox=tier1col] {Tier 1: Data Pipeline\\{\small CCTV Ingestion \& Tensor Builder}};
+  % Tier 2
+  \node (t2) [sysbox=tier2col, right=of t1] {Tier 2: ML \& Simulation\\{\small GCN-LSTM \& Surrogate Ensemble}};
+  % Tier 3
+  \node (t3) [sysbox=tier3col, below=of t1] {Tier 3: Knowledge Base\\{\small Qdrant Vector DB \& Legal RAG}};
+  % Tier 4
+  \node (t4) [sysbox=tier4col, right=of t3] {Tier 4: Multi-Agent\\{\small LangGraph \& Safety Loop (CSL)}};
+
+  % Arrows
+  \draw[arrow] (t1) -- node[above]{\small $X, M, A$} (t2);
+  \draw[arrow] (t1) -- node[left]{\small TimescaleDB} (t3);
+  \draw[arrow] (t2) -- node[right]{\small Forecasts} (t4);
+  \draw[arrow] (t3) -- node[above]{\small Citations} (t4);
+
+  % UI Boundary
+  \node (ui) [startend, below=1.2cm of t4] {Operator Dashboard\\{\small Human-in-the-Loop Review}};
+  \draw[arrow] (t4) -- node[right]{\small Non-executable Advice} (ui);
+\end{tikzpicture}
+\caption{The 4-Tier Architectural Diagram of SmartTraffic What-If (STWI).}
+\label{fig:stwi_architecture}
+\end{figure}
+
+\begin{enumerate}[leftmargin=1.5cm, label=\textbf{Tier \arabic*:}]
+  \item \textbf{CCTV Ingestion \& Tensor Builder:} Consumes aggregated traffic metadata from camera sensors at the edge, constructs 5-minute spatial-temporal tensors, and enforces the \textit{Zero Raw-Video Retention} privacy policy.
+  \item \textbf{Forecasting \& Neural Surrogate:} Executes GCN--LSTM models to produce 30-minute baseline forecasts ($Y$) and leverages ratio-sensitive Surrogate Ensembles to predict incident impacts within $< 500\text{ ms}$.
+  \item \textbf{Knowledge Base \& Legal RAG:} Indexes Vietnamese statutory provisions in Qdrant, translates user natural language into \texttt{SimulationQuery}, and cross-checks legal grounding.
+  \item \textbf{Multi-Agent Orchestrator \& Safety Loop:} Orchestrates the iterative Counterfactual Safety Loop (CSL) via LangGraph, Celery, and Redis, evaluating $V/C \le 0.90$ thresholds and diversion routing before presenting results to human supervisors.
+\end{enumerate}
+
+\section{Immutable Data Contracts and Tensor Schema}
+To guarantee mathematical consistency and eliminate interface mismatches across the four tiers, all inter-service payloads adhere strictly to machine-readable schemas defined in \texttt{project\_contract.json}.
+
+\subsection{Input Tensors and Feature Ordering}
+The primary input to the predictive models comprises three synchronized tensors:
+\begin{itemize}[leftmargin=1.5cm, label=$\bullet$]
+  \item \textbf{Input Tensor $X \in \mathbb{R}^{B \times 12 \times N \times 16}$:} Historical observations over 12 consecutive 5-minute timesteps (60 minutes) across $N=20$ nodes with 16 standardized features ($F_1$ to $F_{16}$).
+  \item \textbf{Missing Mask Tensor $M \in \{0, 1\}^{B \times 12 \times N \times 16}$:} Binary mask where $M_{b,t,n,f} = 0$ designates a missing sensor metric requiring imputation.
+  \item \textbf{Adjacency Matrix $A \in \mathbb{R}^{N \times N}$:} Static directed connectivity matrix weighted by inverse road distance.
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\caption{Standardized 16-Feature Input Specification ($F_1$ to $F_{16}$).}
+\label{tab:features}
+\begin{tabular}{|c|l|c|l|}
+\hline
+\rowcolor{blue!10}
+\textbf{Index} & \textbf{Feature Name} & \textbf{Unit} & \textbf{Description} \\
+\hline
+$F_1$ & \texttt{flow\_rate} & veh/5min & Total aggregate vehicular volume \\
+$F_2$ & \texttt{avg\_speed} & km/h & Mean harmonic vehicular velocity \\
+$F_3$ & \texttt{occupancy} & \% & Roadway sensor time occupancy \\
+$F_4$ & \texttt{queue\_length} & m & Estimated queue length at approach \\
+$F_5$ & \texttt{car\_count} & count & Passenger cars \\
+$F_6$ & \texttt{motorcycle\_count} & count & Motorcycles / Two-wheelers \\
+$F_7$ & \texttt{bus\_count} & count & Public buses \\
+$F_8$ & \texttt{truck\_count} & count & Heavy trucks and commercial vehicles \\
+$F_9$ & \texttt{rain\_intensity} & mm/h & Precipitation intensity \\
+$F_{10}$ & \texttt{visibility} & m & Atmospheric visibility distance \\
+$F_{11}$ & \texttt{temperature} & $^\circ\text{C}$ & Ambient air temperature \\
+$F_{12}$ & \texttt{wind\_speed} & m/s & Wind velocity \\
+$F_{13}$ & \texttt{is\_holiday} & binary & Flag for national holidays \\
+$F_{14}$ & \texttt{is\_peak\_hour} & binary & Flag for morning/evening peak hours \\
+$F_{15}$ & \texttt{day\_of\_week} & integer & Day index (0=Monday, 6=Sunday) \\
+$F_{16}$ & \texttt{green\_time\_ratio} & ratio [0, 1] & Active green time split fraction \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Output Prediction Tensor}
+The baseline prediction target is tensor $Y \in \mathbb{R}^{B \times 6 \times N \times 2}$, spanning 6 future timesteps (5, 10, 15, 20, 25, 30 minutes). For each node $n$ and horizon $h$, $Y$ outputs two core physical metrics:
+\begin{equation}
+  Y_{b,h,n} = \big[ \text{traffic\_volume\_5m}_{b,h,n}, \, \text{avg\_speed\_kmh}_{b,h,n} \big]
+\end{equation}
+The Volume-to-Capacity ratio is derived deterministically from the versioned capacity registry:
+\begin{equation}
+  (V/C)_{b,h,n} = \frac{\text{traffic\_volume\_5m}_{b,h,n}}{\text{Capacity}_{n}}
+\end{equation}
+
+\section{Asynchronous Job Lifecycle and State Machine}
+All simulation requests are handled asynchronously through the REST endpoint \texttt{POST /api/v1/what-if-jobs}, returning HTTP 202 Accepted immediately with a unique \texttt{job\_id} and \texttt{trace\_id}. Job execution progresses through the strict deterministic state machine shown in Figure \ref{fig:job_states}:
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=1.8cm, auto]
+  \node (queued) [procnode] {\texttt{queued}};
+  \node (running) [procnode, right=of queued] {\texttt{running}};
+  \node (succeeded) [startend, right=of running] {\texttt{succeeded}};
+  \node (needs_review) [decnode, below=of running] {\texttt{needs\_review}};
+  \node (failed) [procnode, below=of queued] {\texttt{failed}};
+  \node (expired) [procnode, right=of needs_review] {\texttt{expired}};
+
+  \draw[arrow] (queued) -- (running);
+  \draw[arrow] (running) -- node[above]{\small $V/C \le 0.90$, Valid} (succeeded);
+  \draw[arrow] (running) -- node[right]{\small Safety / RAG fail} (needs_review);
+  \draw[arrow] (running) -- node[left]{\small Internal error} (failed);
+  \draw[arrow] (running) -- node[above]{\small Timeout ($>180\text{s}$)} (expired);
+\end{tikzpicture}
+\caption{Deterministic Job State Transitions in STWI.}
+\label{fig:job_states}
+\end{figure}
+
+\begin{itemize}[leftmargin=1.5cm, label=--]
+  \item \textbf{\texttt{succeeded}:} Both the baseline forecast and counterfactual scenario passed legal grounding and safety verification. The payload contains a verified \texttt{recommended\_action} with \texttt{applied\_by\_system=false}.
+  \item \textbf{\texttt{needs\_review}:} Triggered by fail-closed protection when $V/C > 0.90$, high uncertainty, or missing legal grounding is detected. The payload locks recommended actions and only yields an advisory \texttt{candidate\_action}.
+  \item \textbf{\texttt{failed}:} Unhandled dependency failure or invalid schema input.
+  \item \textbf{\texttt{expired}:} Job execution exceeded the hard deadline of 180 seconds.
+\end{itemize}

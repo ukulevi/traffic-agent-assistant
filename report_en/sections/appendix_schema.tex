@@ -1,0 +1,47 @@
+\chapter{Data Contracts and Docker Deployment}
+\label{appendix:schema}
+
+\section{Core Pydantic Schema Definitions}
+The primary state contracts are implemented as immutable Pydantic models:
+
+\begin{lstlisting}[language=Python]
+class IncidentVector(BaseModel):
+    event_type: IncidentType
+    affected_node_ids: tuple[str, ...]
+    severity: SeverityLevel
+    duration_minutes: int
+    description: str
+    lane_closure_ratio: float | None = None
+    demand_multiplier: float | None = None
+    signal_plan_delta: dict[str, Any] | None = None
+
+class CandidateAction(BaseModel):
+    node_id: str
+    green_time_ratio: float
+    action_kind: str = "candidate_action"
+    executable: bool = False
+    requires_operator_approval: bool = True
+    applied_by_system: bool = False
+
+class WhatIfJobResult(BaseModel):
+    job_id: str
+    trace_id: str
+    baseline_summary: dict[str, Any]
+    scenario_summary: dict[str, Any]
+    safety_iterations: int
+    recommended_action: CandidateAction | None = None
+    candidate_action: CandidateAction | None = None
+    citations: list[dict[str, Any]] = []
+    network_impact: dict[str, Any] | None = None
+    audit_record: dict[str, Any]
+\end{lstlisting}
+
+\section{Docker Infrastructure}
+The microservices stack is provisioned via Docker Compose:
+\begin{itemize}[leftmargin=1.5cm, label=$\bullet$]
+  \item \textbf{\texttt{gateway}:} FastAPI web server running Uvicorn on port 8000.
+  \item \textbf{\texttt{worker}:} Distributed Celery task consumers processing LangGraph state machines.
+  \item \textbf{\texttt{redis}:} Task broker and pub/sub message bus on port 6379.
+  \item \textbf{\texttt{timescaledb}:} Time-series traffic database on port 5432.
+  \item \textbf{\texttt{qdrant}:} Vector database on port 6333.
+\end{itemize}

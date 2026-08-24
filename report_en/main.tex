@@ -1,0 +1,378 @@
+\documentclass[12pt,a4paper]{report}
+
+% ============ PACKAGES ============
+\usepackage{geometry}
+\usepackage{fontspec}
+
+% Math
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+
+% Colors
+\usepackage[dvipsnames,svgnames,x11names]{xcolor}
+
+% Graphics and diagrams
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{tikz}
+\usepackage{eso-pic}
+\usepackage{pdflscape}
+
+% Tables
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{colortbl}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{makecell}
+
+% Code and algorithms
+\usepackage{listings}
+\usepackage[ruled,vlined,linesnumbered]{algorithm2e}
+\SetAlgoLined
+\SetKwInOut{Input}{Input}
+\SetKwInOut{Output}{Output}
+\SetKwComment{Comment}{/* }{ */}
+
+% Boxes
+\usepackage[most]{tcolorbox}
+
+% Layout and typography
+\usepackage{titlesec}
+\usepackage{setspace}
+\usepackage{indentfirst}
+\usepackage[shortlabels]{enumitem}
+\usepackage{fancyhdr}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{chngcntr}
+
+% hyperref (LAST)
+\usepackage{hyperref}
+
+% TikZ libraries
+\usetikzlibrary{
+  arrows.meta,
+  positioning,
+  shapes.geometric,
+  shapes.misc,
+  fit,
+  backgrounds,
+  calc,
+  shadows
+}
+
+% ============ FONTS ============
+\IfFontExistsTF{Times New Roman}
+  {\setmainfont[Ligatures=TeX]{Times New Roman}}
+  {\IfFontExistsTF{TeX Gyre Termes}
+    {\setmainfont[Ligatures=TeX]{TeX Gyre Termes}}
+    {\setmainfont[Ligatures=TeX]{Latin Modern Roman}}}
+
+\IfFontExistsTF{Courier New}
+  {\setmonofont[Scale=0.85]{Courier New}}
+  {\setmonofont[Scale=0.85]{Latin Modern Mono}}
+
+% ============ COLORS ============
+\definecolor{bkblue}{RGB}{0,82,165}
+\definecolor{bklightblue}{RGB}{219,234,254}
+\definecolor{tier1col}{RGB}{30,58,95}
+\definecolor{tier2col}{RGB}{59,31,110}
+\definecolor{tier3col}{RGB}{26,77,26}
+\definecolor{tier4col}{RGB}{92,45,0}
+\definecolor{accentorange}{RGB}{234,88,12}
+\definecolor{codegreen}{rgb}{0,0.55,0}
+\definecolor{codegray}{rgb}{0.45,0.45,0.45}
+\definecolor{codeblue}{rgb}{0.1,0.1,0.75}
+\definecolor{codeback}{RGB}{248,248,252}
+
+% ============ LISTINGS (Python) ============
+\lstdefinestyle{pythonstyle}{
+    backgroundcolor=\color{codeback},
+    commentstyle=\color{codegreen}\itshape,
+    keywordstyle=\color{codeblue}\bfseries,
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{orange!80!black},
+    basicstyle=\ttfamily\small,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=6pt,
+    showspaces=false,
+    showstringspaces=false,
+    tabsize=4,
+    frame=single,
+    framerule=0.5pt,
+    rulecolor=\color{gray!40},
+    language=Python
+}
+\lstset{style=pythonstyle}
+
+% ============ GEOMETRY (HCMUT standard) ============
+\geometry{
+    a4paper,
+    left=3.5cm,
+    right=2.0cm,
+    top=2.5cm,
+    bottom=2.5cm,
+}
+
+% ============ FONT SIZE & SPACING ============
+\renewcommand{\normalsize}{\fontsize{13pt}{16pt}\selectfont}
+\normalsize
+\setlength{\parindent}{1.27cm}
+\setlength{\parskip}{6pt}
+\linespread{1.35}
+
+% ============ CHAPTER / SECTION TITLES ============
+\titleformat{\chapter}[display]
+    {\centering\normalfont\fontsize{15}{18}\bfseries}
+    {CHAPTER \thechapter}
+    {6pt}
+    {\fontsize{16}{20}\selectfont\color{bkblue}}
+\titlespacing*{\chapter}{0pt}{-10pt}{20pt}
+
+\titleformat{\section}
+    {\normalfont\fontsize{13}{16}\bfseries}
+    {\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{12pt}{6pt}
+
+\titleformat{\subsection}
+    {\normalfont\fontsize{13}{16}\bfseries\itshape}
+    {\thesubsection}{0.5em}{}
+\titlespacing*{\subsection}{0pt}{10pt}{4pt}
+
+% ============ COUNTERS ============
+\counterwithin{figure}{chapter}
+\counterwithin{table}{chapter}
+
+% ============ PAGE STYLE ============
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\itshape Ho Chi Minh City University of Technology -- VNU-HCM}
+\fancyhead[R]{\small\itshape STWI Technical Report}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\setlength{\headheight}{16pt}
+
+\fancypagestyle{plain}{
+  \fancyhf{}
+  \fancyfoot[C]{\thepage}
+  \renewcommand{\headrulewidth}{0pt}
+}
+
+% ============ HYPERREF ============
+\hypersetup{
+    colorlinks=true,
+    linkcolor=bkblue,
+    citecolor=bkblue,
+    urlcolor=codeblue,
+    pdftitle={SmartTraffic What-If (STWI) Technical Report},
+    pdfauthor={STWI Project Engineering Team},
+    bookmarksnumbered=true,
+}
+
+% ============ TIKZ GLOBAL STYLES ============
+\tikzset{
+  sysbox/.style={rectangle, rounded corners=4pt, draw=#1!70, fill=#1!15,
+    text width=3.5cm, align=center, minimum height=1.2cm, font=\small\bfseries, text=#1!80!black},
+  arrow/.style={-{Stealth[length=6pt]}, thick},
+  decnode/.style={diamond, draw=accentorange!80, fill=yellow!20, aspect=2.2,
+    text width=2.8cm, align=center, font=\small\bfseries},
+  procnode/.style={rectangle, rounded corners=3pt, draw=codeblue!70, fill=blue!10,
+    text width=3.2cm, align=center, minimum height=0.9cm, font=\small},
+  startend/.style={ellipse, draw=bkblue!70, fill=bklightblue!60,
+    minimum width=2.2cm, minimum height=0.8cm, align=center, font=\small\bfseries},
+}
+
+\begin{document}
+
+% ============================================================
+% 1. COVER PAGE (OFFICIAL DOUBLE BORDER)
+% ============================================================
+\input{sections/cover-page}
+
+% ============================================================
+% 2. PRELIMINARY PAGES
+% ============================================================
+\clearpage
+\pagenumbering{roman}
+
+\input{sections/ins-signature}
+\newpage
+
+\input{sections/decl-of-authen}
+\newpage
+
+\input{sections/ack}
+\newpage
+
+\input{sections/abstract}
+\newpage
+
+\tableofcontents
+\newpage
+
+\listoffigures
+\addcontentsline{toc}{chapter}{List of Figures}
+\newpage
+
+\listoftables
+\addcontentsline{toc}{chapter}{List of Tables}
+\newpage
+
+\input{sections/list-of-abbreviations}
+\newpage
+
+\input{sections/table-of-glossary}
+\newpage
+
+% ============================================================
+% 3. MAIN TECHNICAL CHAPTERS
+% ============================================================
+\clearpage
+\pagenumbering{arabic}
+
+\input{sections/ch01_introduction}
+\newpage
+
+\input{sections/ch02_theoretical_background}
+\newpage
+
+\input{sections/ch03_system_architecture}
+\newpage
+
+\input{sections/ch04_cctv_pipeline}
+\newpage
+
+\input{sections/ch05_ml_simulation}
+\newpage
+
+\input{sections/ch06_legal_rag}
+\newpage
+
+\input{sections/ch07_multiagent_safety}
+\newpage
+
+\input{sections/ch08_implementation_company}
+\newpage
+
+\input{sections/ch09_evaluation_benchmark}
+\newpage
+
+\input{sections/ch10_risk_analysis}
+\newpage
+
+\input{sections/ch11_conclusion}
+\newpage
+
+\input{sections/ch12_confidentiality_nda}
+\newpage
+
+% ============================================================
+% 4. BIBLIOGRAPHY
+% ============================================================
+\addcontentsline{toc}{chapter}{References}
+\begin{thebibliography}{99}
+
+\bibitem{yu2018stgcn}
+\textbf{B. Yu, H. Yin, Z. Zhu} (2018).
+\textit{Spatio-Temporal Graph Convolutional Networks: A Deep Learning Framework for Traffic Forecasting}.
+Proceedings of IJCAI 2018, pp.~3634--3640.
+
+\bibitem{hochreiter1997lstm}
+\textbf{S. Hochreiter, J. Schmidhuber} (1997).
+\textit{Long Short-Term Memory}.
+Neural Computation, 9(8), pp.~1735--1780.
+
+\bibitem{li2018diffusion}
+\textbf{Y. Li et al.} (2018).
+\textit{Diffusion Convolutional Recurrent Neural Network: Data-Driven Traffic Forecasting}.
+Proceedings of ICLR 2018.
+
+\bibitem{kipf2017gcn}
+\textbf{T. N. Kipf, M. Welling} (2017).
+\textit{Semi-Supervised Classification with Graph Convolutional Networks}.
+Proceedings of ICLR 2017.
+
+\bibitem{wen2023surrogate}
+\textbf{J. Wen et al.} (2023).
+\textit{Neural Surrogate Models for Urban Traffic Simulation: A Comparative Study}.
+Transportation Research Part C: Emerging Technologies, 150.
+
+\bibitem{lakshminarayanan2017ade}
+\textbf{B. Lakshminarayanan, A. Pritzel, C. Blundell} (2017).
+\textit{Simple and Scalable Predictive Uncertainty Estimation using Deep Ensembles}.
+Advances in NeurIPS 2017.
+
+\bibitem{lewis2020rag}
+\textbf{P. Lewis et al.} (2020).
+\textit{Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks}.
+Advances in NeurIPS 2020.
+
+\bibitem{chen2023bge}
+\textbf{J. Chen et al.} (2023).
+\textit{BGE M3-Embedding: Multi-Lingual, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation}.
+arXiv:2309.07597.
+
+\bibitem{guo2023xiyansql}
+\textbf{Y. Guo et al.} (2023).
+\textit{XiYan-SQL: A Multi-Generator Ensemble Framework for Text-to-SQL}.
+arXiv:2411.08599.
+
+\bibitem{wooldridge2009multiagent}
+\textbf{M. Wooldridge} (2009).
+\textit{An Introduction to MultiAgent Systems}.
+John Wiley \& Sons, 2nd edition.
+
+\bibitem{pearl2018why}
+\textbf{J. Pearl, D. Mackenzie} (2018).
+\textit{The Book of Why: The New Science of Cause and Effect}.
+Basic Books.
+
+\bibitem{bjoern2021counterfactual}
+\textbf{S. Beckers, J. Y. Halpern} (2021).
+\textit{Causal Sufficiency and Actual Causation}.
+Journal of Artificial Intelligence Research, 70, pp.~1--40.
+
+\bibitem{zhang2020bytetrack}
+\textbf{Y. Zhang et al.} (2022).
+\textit{ByteTrack: Multi-Object Tracking by Associating Every Detection Box}.
+Proceedings of ECCV 2022.
+
+\bibitem{luong2019traffic}
+\textbf{Q. T. Luong et al.} (2019).
+\textit{Traffic Congestion Analysis and Simulation for Ho Chi Minh City}.
+Journal of Transportation Engineering, 145(2).
+
+\bibitem{krajzewicz2012sumo}
+\textbf{D. Krajzewicz et al.} (2012).
+\textit{Recent Development and Applications of SUMO - Simulation of Urban MObility}.
+International Journal On Advances in Systems and Measurements, 5(3\&4).
+
+\bibitem{vietnamlaw2024road}
+\textbf{National Assembly of Vietnam} (2024).
+\textit{Law on Road Traffic Order and Safety No. 36/2024/QH15 and Road Law No. 35/2024/QH15}.
+Effective January 1, 2025.
+
+\end{thebibliography}
+
+% ============================================================
+% 5. APPENDICES
+% ============================================================
+\appendix
+
+\newpage
+\input{sections/appendix_api}
+
+\newpage
+\input{sections/appendix_schema}
+
+\newpage
+\input{sections/appendix_testcases}
+
+\end{document}

@@ -1,0 +1,45 @@
+\chapter{Risk Analysis and Mitigation Strategies}
+\label{chapter:risk}
+
+\section{Risk Identification and Governance Strategy}
+Deploying AI-driven decision-support systems into municipal transportation networks involves technical, legal, privacy, and operational risks. STWI maintains a proactive risk governance framework centered around the principle of **Fail-Closed Safety**.
+
+\section{The 14-Item Comprehensive Risk Register}
+Table \ref{tab:risk_register} details the 14 identified project risks, severity assessments, and concrete mitigation measures implemented:
+
+\begin{longtable}{|c|p{4.2cm}|c|c|p{6.2cm}|}
+\hline
+\rowcolor{blue!10}
+\textbf{ID} & \textbf{Risk Description} & \textbf{Likelihood} & \textbf{Impact} & \textbf{Enforced Mitigation Mechanism} \\
+\hline
+\endhead
+
+$R_1$ & Video privacy breach / facial identification & Low & Critical & Enforce Zero Raw-Video Retention. Process strictly in volatile memory. \\
+\hline
+$R_2$ & GCN--LSTM gradient divergence / NaN losses & Low & High & Gradient clipping at 1.0, layer normalization, masked loss ignoring missing entries. \\
+\hline
+$R_3$ & Surrogate out-of-distribution (OOD) extrapolation & Medium & High & Mahalanobis distance OOD detector gates uncalibrated scenarios into \texttt{needs\_review}. \\
+\hline
+$R_4$ & Legal hallucination / invalid statutory citations & Medium & High & Qdrant vector retrieval with BGE-M3, effective date filtering, fail-closed on missing citations. \\
+\hline
+$R_5$ & Prompt injection attacking query parser & Medium & High & Typed \texttt{SimulationQuery} Pydantic schema validation; reject unstructured inputs. \\
+\hline
+$R_6$ & Infinite loop in Counterfactual Safety Loop & Low & High & Hard iteration cap at $K=3$. Automatic fallback to \texttt{needs\_review}. \\
+\hline
+$R_7$ & Unauthorized automated signal actuation & Low & Critical & Invariant policy: \texttt{applied\_by\_system=false}; require manual operator confirmation. \\
+\hline
+$R_8$ & Missing camera stream data (packet loss) & High & Medium & Mask tensor $M$ tracking with spatial-temporal interpolation and historical imputation. \\
+\hline
+$R_9$ & Excessive end-to-end latency ($> 30\text{ s}$) & Medium & Medium & Asynchronous Celery workers, Redis message broker, and LightGBM surrogate acceleration. \\
+\hline
+$R_{10}$ & Celery worker crash or job starvation & Low & High & Distributed Redis heartbeat, automatic retry backoff, and 180s hard expiration timeout. \\
+\hline
+$R_{11}$ & Database connection pool exhaustion & Medium & Medium & Bounded connection pooling via SQLAlchemy, async I/O in FastAPI. \\
+\hline
+$R_{12}$ & Misinterpretation of $V/C \le 0.90$ threshold & Medium & Low & Clearly document in UI that 0.90 is a configurable safety policy, not a legal statute. \\
+\hline
+$R_{13}$ & Uncalibrated multi-objective diversion routing & Low & High & Mandatory capacity verification on all detour links before rank assignment. \\
+\hline
+$R_{14}$ & Data leakage across training/test splits & Low & High & Strict chronological data partitioning; zero overlap between scenario families. \\
+\hline
+\end{longtable}

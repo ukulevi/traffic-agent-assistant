@@ -1,0 +1,38 @@
+\chapter{Full REST API Specification}
+\label{appendix:api}
+
+\section{Overview and Authentication}
+The STWI HTTP Gateway exposes an OpenAPI 3.1 compliant asynchronous REST API. All endpoints enforce bearer token authentication and tenant boundary isolation.
+
+\subsection{Endpoint Summary}
+\begin{itemize}[leftmargin=1.5cm, label=$\bullet$]
+  \item \textbf{\texttt{POST /api/v1/what-if-jobs}:} Ingests a new simulation job. Returns HTTP 202 Accepted.
+  \item \textbf{\texttt{GET /api/v1/what-if-jobs/\{job\_id\}}:} Retrieves current job status and full result payload.
+  \item \textbf{\texttt{GET /api/v1/what-if-jobs/\{job\_id\}/events}:} Server-Sent Events (SSE) stream broadcasting real-time progress events.
+  \item \textbf{\texttt{GET /api/v1/health}:} Health check endpoint returning service status.
+\end{itemize}
+
+\section{Request Payload Schema}
+\begin{lstlisting}[language=Python]
+{
+  "tenant_id": "tenant_default",
+  "scenario_time": "2026-08-17T08:00:00Z",
+  "node_ids": ["node_00", "node_01", "node_05", "node_06"],
+  "candidate_action": {
+    "node_id": "node_05",
+    "green_time_ratio": 0.70
+  },
+  "incident": {
+    "event_type": "signal_change",
+    "affected_node_ids": ["node_05"],
+    "severity": "medium",
+    "duration_minutes": 30,
+    "description": "Signal adjustment under localized congestion",
+    "signal_plan_delta": {
+      "green_time_ratio_delta": 0.15
+    }
+  },
+  "jurisdiction": "VN",
+  "scenario_query": "Evaluate signal adjustment at node_05 under congestion."
+}
+\end{lstlisting}

@@ -1,0 +1,66 @@
+\chapter{Tier 3: Legal RAG and Typed Query Service}
+\label{chapter:tier3}
+
+\section{Legal Grounding Motivation in Traffic Operations}
+In municipal transportation operations, executing traffic interventions (such as extending signal green phases, designating emergency detour corridors, or closing specific lanes) involves legal responsibilities. Interventions that lack statutory grounding or violate the priority rights of emergency vehicles create severe institutional liabilities.
+
+Tier 3 integrates a dedicated \textbf{Legal Knowledge Base} and a \textbf{Typed Simulation Query} parsing engine that enforces statutory grounding before any candidate action can be considered by the safety loop.
+
+\section{Vector Knowledge Base and Statutory Corpus}
+The legal corpus contains the complete statutory provisions of:
+\begin{enumerate}[leftmargin=1.5cm, label=\textbf{\arabic*.}]
+  \item \textbf{Law on Road Traffic Order and Safety No. 36/2024/QH15:} Governing traffic signaling standards, rights-of-way, priority vehicle lanes, and speed regulations.
+  \item \textbf{Road Law No. 35/2024/QH15:} Governing infrastructure management, emergency lane closures, and roadway maintenance responsibilities.
+\end{enumerate}
+
+\subsection{Document Chunking and Vector Indexing}
+Legal texts are pre-processed into semantic chunks preserving legal hierarchy (Chapter $\rightarrow$ Section $\rightarrow$ Article $\rightarrow$ Clause). Each chunk is embedded using the multilingual **BGE-M3** model (1024-dimensional dense vectors) and indexed in **Qdrant** vector database with scalar metadata filtering on effective dates ($\ge \text{2025-01-01}$) and jurisdiction codes (\texttt{"VN"}).
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=1.5cm, auto]
+  \node (query) [procnode] {Natural Language Query\\{\small ``Signal change at node\_05''}};
+  \node (parser) [sysbox=tier3col, right=1.2cm of query] {Typed Query Parser\\{\small Pydantic Schema Validator}};
+  \node (embed) [procnode, below=of parser] {BGE-M3 Embedding\\{\small 1024-dim Dense Vector}};
+  \node (qdrant) [sysbox=tier3col, left=1.2cm of embed] {Qdrant Vector DB\\{\small Cosine Similarity Search}};
+  \node (filter) [decnode, below=of embed] {Legal Gate Filter\\{\small Score $\ge 0.75$, Valid Date}};
+  \node (result) [startend, below=of filter] {Structured Citations\\{\small (Law 36, Art. 12, Cl. 2)}};
+
+  \draw[arrow] (query) -- (parser);
+  \draw[arrow] (parser) -- (embed);
+  \draw[arrow] (embed) -- (qdrant);
+  \draw[arrow] (qdrant) -- (filter);
+  \draw[arrow] (filter) -- node[right]{\small Pass} (result);
+\end{tikzpicture}
+\caption{Legal RAG Grounding and Citation Verification Flow.}
+\label{fig:legal_rag_flow}
+\end{figure}
+
+\section{Typed Simulation Query Interface}
+To prevent prompt injection, SQL injection, and ambiguous requests, user inputs are parsed into a strictly typed Pydantic data structure: \texttt{SimulationQuery}:
+\begin{lstlisting}[language=Python]
+class SimulationQuery(BaseModel):
+    tenant_id: str
+    scenario_time: datetime
+    node_ids: list[str]
+    candidate_action: CandidateAction
+    incident: IncidentVector | None = None
+    jurisdiction: str = "VN"
+    scenario_query: str
+
+    @field_validator("jurisdiction")
+    def validate_jurisdiction(cls, v: str) -> str:
+        if v not in ("VN", "VN-HCM"):
+            raise ValueError("Unsupported jurisdiction")
+        return v
+\end{lstlisting}
+
+\section{Fail-Closed Legal Grounding Policy}
+If the RAG engine returns no relevant legal provisions with cosine similarity $\ge 0.75$, or if the referenced statute has expired, the system initiates a \textbf{Fail-Closed} transition:
+\begin{itemize}[leftmargin=1.5cm, label=--]
+  \item The job immediately aborts further optimization loops.
+  \item The job status is transitioned to \texttt{needs\_review}.
+  \item The \texttt{recommended\_action} field is set to \texttt{None}.
+  \item An explicit audit reason (\texttt{"missing\_legal\_evidence"}) is attached to the audit record.
+\end{itemize}
+This mechanism guarantees that no unverified or illegal traffic signal adjustments are ever suggested to human operators.

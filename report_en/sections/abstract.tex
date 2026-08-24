@@ -1,0 +1,13 @@
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+
+\noindent Urban traffic management in metropolitan areas such as Ho Chi Minh City faces severe congestion and unexpected incident cascades that overwhelm conventional fixed-timing signal controllers. While data-driven deep learning models and microscopic simulations offer powerful predictive capabilities, deploying them into mission-critical urban traffic control centers requires strict safety guarantees, legal compliance, real-time inference latency, and human-in-the-loop governance.
+
+\vspace{0.3cm}
+\noindent This capstone project introduces \textbf{SmartTraffic What-If (STWI)}, an agentic AI decision-support architecture developed during an intensive 13-week engineering lifecycle. STWI combines four tightly coupled tiers: (1) an aggregate-only CCTV edge pipeline enforcing a strict \textit{Zero Raw-Video Retention} policy with structured input tensors $X[B,12,N,16]$, missing masks $M[B,12,N,16]$, and adjacency matrices $A[N,N]$; (2) a spatial-temporal GCN--LSTM neural network for 30-minute rolling baseline forecasts alongside ratio-sensitive Surrogate Ensembles pre-trained on offline SUMO microsimulations; (3) a Legal Knowledge Retrieval-Augmented Generation (RAG) subsystem backed by Qdrant and BGE-M3 embedding, cross-verifying Vietnamese Road Traffic Laws (No. 35 \& 36/2024/QH15) with typed simulation queries; and (4) a Multi-Agent Orchestrator implemented via LangGraph, Celery, and Redis, governing an iterative \textbf{Counterfactual Safety Loop (CSL)} that guarantees \textit{fail-closed} behavior when traffic density ($V/C > 0.90$), out-of-distribution (OOD) uncertainty, or legal invalidity is detected.
+
+\vspace{0.3cm}
+\noindent Experimental evaluation on a versioned 20-node synthetic traffic grid confirms that STWI satisfies all strict engineering Service Level Agreements (SLAs): Surrogate Ensemble inference P99 $< 500\text{ ms}$, End-to-End decision turnaround P95 $\le 30\text{ s}$ (hard deadline $\le 180\text{ s}$), and $100\%$ fail-closed protection across 30 verification test scenarios. All generated mitigation plans are marked as non-executable candidate actions requiring explicit operator authorization (\texttt{applied\_by\_system=false}), establishing a reliable, legally grounded foundation for next-generation intelligent transportation systems.
+
+\vspace{0.8cm}
+\noindent \textbf{Keywords:} Intelligent Transportation Systems, Spatio-Temporal Forecasting, GCN--LSTM, Neural Surrogate Ensemble, Retrieval-Augmented Generation, Counterfactual Safety Loop, LangGraph, Decision Support System.

@@ -1,0 +1,275 @@
+\documentclass[12pt,a4paper]{report}
+
+\usepackage{geometry}
+\usepackage{fontspec}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{needspace}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{microtype}
+\usepackage{tikz}
+
+\geometry{left=3.5cm,right=2cm,top=2.5cm,bottom=3cm}
+\IfFontExistsTF{Times New Roman}
+  {\setmainfont{Times New Roman}}
+  {\setmainfont{TeX Gyre Termes}}
+\IfFontExistsTF{Courier New}
+  {\setmonofont[Scale=0.85]{Courier New}}
+  {\setmonofont[Scale=0.85]{Latin Modern Mono}}
+\definecolor{bkblue}{RGB}{0,82,165}
+\setlength{\parindent}{1.27cm}
+\setlength{\parskip}{4pt}
+\linespread{1.25}
+\setlength{\emergencystretch}{2em}
+\hypersetup{colorlinks=true,linkcolor=bkblue,urlcolor=bkblue,pdftitle={External Internship Report - SmartTraffic What-If},pdfauthor={Le Hoang Chi Vi}}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Ho Chi Minh City University of Technology}
+\fancyhead[R]{\small External Internship -- HK253}
+\fancyfoot[C]{\thepage}
+\setlength{\headheight}{15pt}
+
+\newcommand{\enterpriseMentor}{Vo Tan Phat (VNPT-IT)}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\begin{document}
+
+\begin{titlepage}
+\newgeometry{left=2cm,right=2cm,top=1.6cm,bottom=1.8cm}
+\centering
+\begin{tikzpicture}[remember picture,overlay]
+  \draw[line width=1pt] ([xshift=1.1cm,yshift=-1.1cm]current page.north west)
+    rectangle ([xshift=-1.1cm,yshift=1.1cm]current page.south east);
+\end{tikzpicture}
+{\fontsize{15}{18}\selectfont\bfseries VIETNAM NATIONAL UNIVERSITY HO CHI MINH CITY}\\[0.12cm]
+{\fontsize{15}{18}\selectfont\bfseries HO CHI MINH CITY UNIVERSITY OF TECHNOLOGY}\\[0.12cm]
+{\fontsize{14}{17}\selectfont\bfseries FACULTY OF COMPUTER SCIENCE AND ENGINEERING}
+
+\vspace{0.45cm}
+\includegraphics[width=3.1cm]{figures/M2_Logo_BK.png}
+
+\vspace{0.35cm}
+{\fontsize{18}{22}\selectfont\bfseries REPORT FOR THE EXTERNAL INTERNSHIP COURSE}\\[0.15cm]
+{\fontsize{13}{16}\selectfont\bfseries (Course code: CO3335)}\\[0.12cm]
+{\fontsize{13}{16}\selectfont\bfseries Semester 3, Academic Year 2025--2026 (HK253)}\\[0.08cm]
+{\fontsize{11}{13}\selectfont\itshape (Successful course registration)}
+
+\vspace{0.35cm}
+{\fontsize{15}{18}\selectfont\bfseries SMARTTRAFFIC WHAT-IF (STWI)}\\[0.12cm]
+{\fontsize{12.5}{15}\selectfont\bfseries An AI-Agent Decision-Support System for Traffic What-If Analysis}
+
+\vspace{0.5cm}
+\renewcommand{\arraystretch}{1.35}
+\begin{tabular}{>{\bfseries}p{5.3cm}p{8.3cm}}
+Major: & Computer Science\\
+Training programme: & English-taught programme (CC)\\
+Host company / enterprise: & Multidisciplinary Digital Data Solutions Center -- Branch of VNPT Information Technology Company\\
+Company address: & 42 Pham Ngoc Thach Street, Xuan Hoa Ward, Ho Chi Minh City, Vietnam\\
+Industrial mentor: & \enterpriseMentor\\
+Faculty support staff: & Tran Huy (Staff ID: 4141)\\
+Student author: & Le Hoang Chi Vi\\
+Student ID: & 2353336\\
+Internship period: & 15 June 2026 -- 14 August 2026\\
+\end{tabular}
+
+\vfill
+{\fontsize{13}{16}\selectfont\bfseries HO CHI MINH CITY, AUGUST 2026}
+\restoregeometry
+\end{titlepage}
+
+\pagenumbering{roman}
+\chapter*{Acknowledgements}
+\addcontentsline{toc}{chapter}{Acknowledgements}
+
+I sincerely thank the Multidisciplinary Digital Data Solutions Center, VNPT-IT, for providing the professional environment in which this internship was conducted. I am grateful to the enterprise supervisor and the engineering team for their technical guidance, review, and feedback. I also thank Tran Huy (Faculty ID: 4141) and the Faculty of Computer Science and Engineering for supervising the academic requirements of the internship.
+
+\chapter*{Executive Summary}
+\addcontentsline{toc}{chapter}{Executive Summary}
+
+This report presents SmartTraffic What-If (STWI), an AI-agent application developed within the approved internship scope of AI-agent integration and governed data-platform development. STWI supports traffic operators in evaluating hypothetical incidents without automatically controlling field devices. It combines aggregate traffic data, a 30-minute GCN--LSTM baseline forecast, an offline-SUMO-trained surrogate ensemble, typed simulation queries, legal retrieval with structured citations, asynchronous jobs, and a fail-closed Counterfactual Safety Loop.
+
+The product is deliberately positioned as decision support. It does not retain raw video, does not issue traffic-control commands, and requires human approval. Its machine-readable contract fixes the functional network at 20 nodes, the online tensors at \texttt{X[B,12,N,16]}, \texttt{M[B,12,N,16]}, and \texttt{A[N,N]}, and the forecast output at \texttt{Y[B,6,N,2]}. These constraints make the system testable and provide the data-governance and auditability needed for an AI-agent application.
+
+The internship strengthened practical skills in requirements analysis, typed API design, AI-agent orchestration, data provenance, uncertainty handling, safety engineering, testing, technical documentation, and continuous integration. The resulting repository contains the implementation, contract tests, documentation, a technical report, presentation materials, and an operator-facing demonstration dashboard.
+
+{\linespread{1.0}\selectfont
+\setlength{\parskip}{0pt}
+\tableofcontents
+}
+\clearpage
+\pagenumbering{arabic}
+
+\chapter{Host Organisation and Internship Programme}
+
+\section{Host organisation}
+
+The host organisation is the Multidisciplinary Digital Data Solutions Center, a branch of VNPT Information Technology Company (VNPT-IT), located at 42 Pham Ngoc Thach Street, Xuan Hoa Ward, Ho Chi Minh City. VNPT-IT researches, develops, and integrates information-technology products and services for VNPT and external customers. The approved internship programme emphasised AI agents, backend APIs, local or hosted large language models, data-platform integration, metadata governance, testing, documentation, and an end-of-internship demonstration.
+
+\subsection{Internship setting and programme}
+
+The approved programme placed the internship in a professional data-solutions context where a technical product had to be traceable, reviewable, and suitable for a final demonstration. The work therefore connected AI-agent integration with governed data handling, backend delivery, testing, documentation, and evidence-based communication. This setting provided a practical boundary for STWI: it is an AI-agent product within the approved programme scope, while its traffic-domain decisions remain subject to human review and enterprise confidentiality requirements.
+
+\paragraph{Internship objectives.} The objectives were to apply computer-science knowledge in a production-oriented setting; design an AI-agent system with explicit data and safety contracts; implement a demonstrable backend and operator interface; evaluate the solution using reproducible tests; and document the resulting product in a form that can be reviewed by both technical and non-technical stakeholders.
+
+\section{Approved scope and STWI product}
+
+The D2 programme identifies the umbrella topic ``AI Coding Assistant (Code Intelligence) -- AI Agent integrated with data governance.'' With enterprise-supervisor approval, STWI was accepted as an application product within that scope. The direct correspondence is shown below.
+
+\Needspace{12\baselineskip}
+\begin{longtable}{L{5.2cm}L{8.4cm}}
+\toprule
+\textbf{Approved programme capability} & \textbf{STWI implementation evidence}\\
+\midrule
+\endhead
+AI-agent and multi-step reasoning & LangGraph orchestration and a bounded Counterfactual Safety Loop coordinate typed tools and evaluate candidate actions.\\
+RESTful backend module & FastAPI exposes typed asynchronous job, status, event, UI-context, and network-context endpoints.\\
+Data-platform integration & Versioned aggregate traffic observations, topology, capacity, model, and legal-corpus metadata are carried through the workflow.\\
+Metadata and data governance & The machine-readable project contract controls tensor shapes, feature order, model boundaries, API status values, provenance, privacy, and safety invariants.\\
+Tool integration & Forecasting, scenario estimation, retrieval, simulation-query validation, route generation, and safety evaluation are separated into bounded tools.\\
+Logging, error handling, and tests & The implementation uses typed failures, fail-closed states, contract tests, unit tests, documentation validation, and CI checks.\\
+Documentation and demonstration & The repository includes technical specifications, API appendices, a report, slides, a dashboard, and reproducible demonstration scripts.\\
+\bottomrule
+\end{longtable}
+
+\chapter{Work Process During the Internship}
+
+The official internship period covered eight continuous weeks from 15 June to 14 August 2026. The work packages below summarise the STWI activities performed within that period. They describe the internship execution rather than changing the separate 13-week MVP delivery roadmap used by the technical project plan.
+
+\begin{longtable}{L{1.2cm}L{3.5cm}L{8.7cm}}
+\toprule
+\textbf{Week} & \textbf{Work package} & \textbf{Main activities and outputs}\\
+\midrule
+\endhead
+1 & Onboarding and requirements & Reviewed the approved programme, repository structure, traffic decision-support problem, privacy boundary, legal grounding, and project contract. Prepared the development and validation environment.\\
+2 & Architecture and contracts & Defined the four-tier architecture, stable node ordering, tensor contracts, typed incident schema, asynchronous job lifecycle, and fail-closed safety requirements.\\
+3 & Data pipeline & Implemented and reviewed aggregate camera/sensor ingestion, missing-data handling, feature ordering, topology validation, and the zero-raw-video-retention boundary.\\
+4 & Forecast and scenario models & Integrated the GCN--LSTM baseline interface and the separate surrogate-ensemble interface trained from offline SUMO scenarios. Preserved chronological splits and calibrated uncertainty requirements.\\
+5 & Knowledge and typed tools & Developed legal/SOP retrieval boundaries, structured citations, effective-date checks, and typed simulation-query validation with parameterised, allowlisted access.\\
+6 & AI-agent orchestration & Integrated LangGraph, Celery, Redis, asynchronous API jobs, progress events, OOD handling, and the bounded Counterfactual Safety Loop.\\
+7 & Dashboard and evidence & Built and refined the operator dashboard, network-impact view, route evidence, job-state presentation, human-approval boundary, and demonstration workflow.\\
+8 & Verification and handover & Ran contract, unit, JavaScript, documentation, and PDF checks; reviewed limitations; prepared the technical report, internship report, demonstration material, and handover package.\\
+\bottomrule
+\end{longtable}
+
+\chapter{Technical Product}
+
+\section{Problem definition}
+
+Traffic operators need to compare the likely effects of incidents such as accidents, floods, lane closures, demand surges, and signal changes. A useful tool must provide a baseline, estimate scenario impact, expose uncertainty, cite applicable legal or procedural evidence, and clearly distinguish a candidate from an approved operational action. STWI addresses this need as a human-in-the-loop what-if analysis system.
+
+\section{System architecture}
+
+STWI is organised into four tiers:
+
+\begin{enumerate}[leftmargin=1.2cm]
+  \item \textbf{Data tier:} aggregate camera and sensor evidence is converted into five-minute features without retaining raw video.
+  \item \textbf{Forecast and simulation tier:} a GCN--LSTM produces the no-intervention baseline, while a separate surrogate ensemble estimates incident effects using offline SUMO training data.
+  \item \textbf{Knowledge tier:} Qdrant and BGE-m3 support legal/SOP retrieval, structured citations, and typed simulation queries.
+  \item \textbf{Agent and safety tier:} LangGraph coordinates bounded tools, Celery and Redis manage asynchronous work, FastAPI and SSE expose progress, and the Counterfactual Safety Loop applies fail-closed checks.
+\end{enumerate}
+
+\section{Data and API contracts}
+
+The online model input is \texttt{X[B,12,N,16]} with a missing mask of the same shape and adjacency matrix \texttt{A[N,N]}. The baseline output is \texttt{Y[B,6,N,2]}, representing traffic volume and average speed for six five-minute forecast steps. Feature order, units, normalisation rules, topology version, model version, and data version are controlled centrally.
+
+The job API accepts a typed incident and returns HTTP 202. Jobs move only through \texttt{queued}, \texttt{running}, \texttt{succeeded}, \texttt{needs\_review}, \texttt{failed}, or \texttt{expired}. Only \texttt{succeeded} can contain \nolinkurl{recommended_action}; \texttt{needs\_review} can contain only a non-executable \nolinkurl{candidate_action}.
+
+\section{Safety, privacy, and legal grounding}
+
+The system is fail-closed. High uncertainty, OOD inputs, invalid topology, missing valid legal evidence, authorisation errors, and timeouts prevent an executable recommendation. The Counterfactual Safety Loop is bounded to three iterations and always requires operator approval. The default V/C threshold of 0.9 is documented as configurable project policy, not law. Camera detections are used only as evidence for aggregate features; raw video is neither retained nor released.
+
+\section{Operator experience}
+
+The dashboard presents job state, timestamps, trace identifiers, model and data versions, incident context, network impact, uncertainty/OOD indicators, citations, candidate routes, and the reason for any fail-closed result. Visual prominence is given to review-required, failed, expired, high-uncertainty, and missing-evidence states. The interface does not imply automatic traffic control.
+
+\chapter{Results and Verification Evidence}
+
+\section{Delivered outputs}
+
+The internship produced the following auditable outputs:
+
+\begin{itemize}[leftmargin=1.2cm]
+  \item a typed Python implementation under \texttt{src/stwi};
+  \item command-line and demonstration entry points under \texttt{scripts};
+  \item unit, contract, frontend, and demonstration tests;
+  \item canonical architecture, ML/simulation, RAG, agent, and implementation documents;
+  \item an operator dashboard and network-impact evidence view;
+  \item a LaTeX technical report and presentation materials; and
+  \item CI workflows for documentation validation, contract tests, JavaScript checks, and PDF compilation.
+\end{itemize}
+
+\section{Verification approach}
+
+Verification is evidence-based. Contract tests check invariants such as tensor shapes, feature order, API statuses, performance targets, safety policy, and the mandatory legal corpus. Documentation validation detects contract drift and prohibited legacy architecture. Runtime and frontend tests exercise typed validation, orchestration, dashboard state, and demonstration behaviour. PDF and JavaScript build checks ensure that presentation artifacts remain usable.
+
+No field-deployment or production-accuracy claim is made. Synthetic traffic producers do not represent one thousand decoded video streams, and the simulation-first demonstration does not claim real sensor observations or field calibration.
+
+\chapter{Knowledge and Skills Acquired}
+
+\section{Technical knowledge}
+
+The internship deepened my understanding of graph-based spatiotemporal forecasting, recurrent sequence modelling, offline traffic simulation, surrogate modelling, uncertainty calibration, OOD detection, retrieval-augmented generation, structured legal citations, typed tool use, and multi-step AI-agent orchestration.
+
+\section{Engineering skills}
+
+I gained practical experience in converting ambiguous requirements into machine-readable contracts; designing typed REST APIs and asynchronous jobs; separating pure logic from I/O; enforcing data provenance and privacy boundaries; writing unit and contract tests; reviewing failure modes; and maintaining synchronised code, documentation, reports, and presentation artifacts through Git and CI.
+
+\section{Professional skills}
+
+The work strengthened technical communication, task decomposition, evidence-based reporting, iterative review, and responsible handling of uncertainty. It also reinforced the importance of asking for human approval when a system cannot establish sufficient safety or legal evidence.
+
+\chapter{Personal Reflection}
+
+The internship provided an opportunity to apply computer-science foundations to a complex interdisciplinary problem involving AI, software architecture, transport operations, privacy, and legal constraints. Working within a professional data-solutions environment encouraged a disciplined approach: requirements had to be explicit, technical claims had to be testable, and every automated output had to remain reviewable by a responsible human operator.
+
+The most valuable lesson was that an AI-agent product is not defined only by its model. Reliable behaviour depends on contracts, validation boundaries, provenance, calibrated uncertainty, operational user experience, and clear escalation paths. The guidance from the enterprise and Faculty supervisors helped turn these principles into concrete engineering decisions.
+
+The internship programme also clarified the value of working in a professional data-solutions environment. Reviewing the product against the approved programme made the connection between technical delivery, documentation quality, confidentiality, and responsible human oversight concrete. This experience strengthened my appreciation for iterative review and for presenting a system in a form that both an enterprise supervisor and an academic reviewer can assess.
+
+\chapter{Limitations and Future Work}
+
+STWI remains a 13-week MVP and has not been deployed as a production traffic-control system. Its functional graph contains 20 nodes; the camera path is limited to recorded or RTSP demonstrations; the surrogate is reliable only within its calibrated scenario space; and legal retrieval cannot replace a qualified legal reviewer. The system never applies a field action automatically.
+
+Future work should include a governed pilot with authorised aggregate field data, broader calibrated SUMO coverage, transfer evaluation across network topologies, high-availability infrastructure, stronger model and corpus governance, accessibility testing with operators, and independent safety and legal review before any field integration.
+
+\chapter*{Student Declaration and Company Confirmation}
+\addcontentsline{toc}{chapter}{Student Declaration and Company Confirmation}
+
+I declare that this report accurately represents my internship work and that sources, models, software, and external materials have been identified appropriately. I have not included raw video, confidential company data, secrets, or unpublished internal information.
+
+\vspace{0.8cm}
+\noindent
+\begin{minipage}[t]{0.46\textwidth}
+\centering
+\textbf{STUDENT}\\[0.1cm]
+\textit{Sign in blue ink and write full name}\\[2.7cm]
+\textbf{Le Hoang Chi Vi}\\
+Student ID: 2353336
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.46\textwidth}
+\centering
+\textbf{AUTHORISED COMPANY REPRESENTATIVE}\\[0.1cm]
+\textit{The company confirms that the report has been reviewed for scope and confidentiality and may be submitted to the University.}\\[0.2cm]
+\textit{Sign, write full name and title, and affix the company stamp}\\[2.7cm]
+\textbf{\enterpriseMentor}
+\end{minipage}
+
+\chapter*{References}
+\addcontentsline{toc}{chapter}{References}
+
+\begin{enumerate}[leftmargin=1.2cm]
+  \item STWI, \textit{project\_contract.json}, machine-readable project contract, version 1.0.0.
+  \item STWI, \textit{Summary and Guidelines}, canonical architecture and safety guidance.
+  \item Faculty of Computer Science and Engineering, \textit{External Internship Instructions and Forms}, HK253.
+  \item Law No. 35/2024/QH15 on Roads, effective 1 January 2025.
+  \item Law No. 36/2024/QH15 on Road Traffic Order and Safety, effective 1 January 2025.
+\end{enumerate}
+
+\end{document}

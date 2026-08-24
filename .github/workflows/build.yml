@@ -5,6 +5,7 @@ on:
     branches: [ main ]
     paths:
       - "report/**"
+      - "report_en/**"
       - "docs/**"
       - "project_contract.json"
       - "scripts/validation/**"
@@ -14,6 +15,7 @@ on:
     branches: [ main ]
     paths:
       - "report/**"
+      - "report_en/**"
       - "docs/**"
       - "project_contract.json"
       - "scripts/validation/**"
@@ -53,10 +55,10 @@ jobs:
           echo "  Date: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
           echo "=========================================="
           ls -la
-          echo "--- Chapter files ---"
+          echo "--- Chapter files (Vietnamese) ---"
           ls report/chapters/ 2>/dev/null || echo "(no chapters dir yet)"
-          echo "--- Docs files ---"
-          ls docs/*.md 2>/dev/null || echo "(no md files)"
+          echo "--- Chapter files (English) ---"
+          ls report_en/sections/ 2>/dev/null || echo "(no sections dir yet)"
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
@@ -68,11 +70,24 @@ jobs:
           python scripts/validation/validate_docs.py
           python -m unittest tests.contracts.test_project_contract
 
-      - name: Compile LaTeX to PDF (XeLaTeX via latexmk)
+      - name: Compile Vietnamese Technical Report (report/main.tex)
         uses: xu-cheng/latex-action@v3
         with:
           root_file: main.tex
           working_directory: report
+          latexmk_use_xelatex: true
+          latexmk_shell_escape: true
+          args: >-
+            -xelatex
+            -interaction=nonstopmode
+            -halt-on-error
+            -file-line-error
+
+      - name: Compile English Capstone Report (report_en/main.tex)
+        uses: xu-cheng/latex-action@v3
+        with:
+          root_file: main.tex
+          working_directory: report_en
           latexmk_use_xelatex: true
           latexmk_shell_escape: true
           args: >-
@@ -89,42 +104,38 @@ jobs:
             echo "SHA: ${GITHUB_SHA:0:8} | $(date -u)"
             echo ""
             echo "## Fatal Errors (lines with !)"
-            grep -n "^!" report/main.log 2>/dev/null | head -50 || echo "(no ! lines)"
+            grep -n "^!" report/main.log report_en/main.log 2>/dev/null | head -50 || echo "(no ! lines)"
             echo ""
             echo "## Error keywords"
-            grep -n "Error\|Undefined\|undefined\|Missing\|Emergency stop\|Fatal" report/main.log 2>/dev/null | head -60 || echo "(none)"
+            grep -n "Error\|Undefined\|undefined\|Missing\|Emergency stop\|Fatal" report/main.log report_en/main.log 2>/dev/null | head -60 || echo "(none)"
             echo ""
             echo "## Last 200 lines of main.log"
-            tail -200 report/main.log 2>/dev/null || echo "(main.log not found)"
+            tail -200 report/main.log report_en/main.log 2>/dev/null || echo "(main.log not found)"
           } > latex_errors.md
 
-      - name: Verify PDF was created
+      - name: Verify PDFs were created
         run: |
-          if [ -f report/main.pdf ]; then
-            echo "[OK] report/main.pdf generated successfully"
-            ls -lh report/main.pdf
-            # Get page count if pdfinfo is available
-            if command -v pdfinfo &>/dev/null; then
-              pdfinfo report/main.pdf | grep Pages || true
-            fi
+          if [ -f report/main.pdf ] && [ -f report_en/main.pdf ]; then
+            echo "[OK] Both report/main.pdf and report_en/main.pdf generated successfully"
+            ls -lh report/main.pdf report_en/main.pdf
           else
-            echo "[ERROR] report/main.pdf NOT found!"
-            echo "--- LaTeX log (last 100 lines) ---"
-            tail -100 report/main.log || true
+            echo "[ERROR] PDFs NOT found!"
             exit 1
           fi
 
-      - name: Rename PDF for Release
+      - name: Name and Package Build Artifacts
         run: |
+          pip install pypdf
           VERSION="v$(date -u +'%Y%m%d')-build${{ github.run_number }}"
-          cp report/main.pdf "STWI_Technical_Report_${VERSION}.pdf"
-          echo "REPORT_NAME=STWI_Technical_Report_${VERSION}" >> $GITHUB_ENV
-          echo "Renamed to: STWI_Technical_Report_${VERSION}.pdf"
+          python scripts/report/assemble_internship_report.py --main-pdf report/main.pdf --output "STWI_Technical_Report_VI_${VERSION}.pdf" --allow-missing-d2
+          python scripts/report/assemble_internship_report.py --main-pdf report_en/main.pdf --output "STWI_Capstone_Report_EN_${VERSION}.pdf" --allow-missing-d2
+          echo "REPORT_NAME=STWI_Capstone_Report_EN_${VERSION}" >> $GITHUB_ENV
+          echo "Built Vietnamese and English reports successfully."
 
-      - name: Upload PDF Artifact
+      - name: Upload PDF Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: stwi-technical-report-pdf
+          name: stwi-technical-reports-pdf
           path: "*.pdf"
           retention-days: 14
 
@@ -135,10 +146,7 @@ jobs:
           name: latex-build-logs
           path: |
             report/main.log
-            report/main.aux
-            report/main.toc
-            report/main.lof
-            report/main.lot
+            report_en/main.log
             latex_errors.md
           retention-days: 3
 
@@ -166,48 +174,28 @@ jobs:
           fi
 
           {
-            echo "## Bao cao Ky thuat STWI v2.0 -- Build ${{ github.run_number }}"
+            echo "## STWI Technical & Capstone Reports v2.0 -- Build ${{ github.run_number }}"
             echo ""
-            echo "**SmartTraffic What-If (STWI)** -- He thong dieu phoi giao thong thong minh"
-            echo "su dung AI Da tac tu, Counterfactual Safety Loop va RAG."
+            echo "**SmartTraffic What-If (STWI)** -- Intelligent Urban Traffic Control Decision-Support System"
+            echo "using Multi-Agent AI, Counterfactual Safety Verification, and Legal RAG."
             echo ""
-            echo "### Noi dung bao cao"
+            echo "### Included Technical Reports"
             echo ""
-            echo "| Chuong | Noi dung |"
-            echo "|--------|----------|"
-            echo "| Chuong 1 | Gioi thieu va Dong luc Nghien cuu |"
-            echo "| Chuong 2 | Co so Ly thuyet (GCN, LSTM, RAG, CF) |"
-            echo "| Chuong 3 | Kien truc He thong 4 Tang tong the |"
-            echo "| Chuong 4 | Tang 1: CCTV Pipeline + Tensor Builder |"
-            echo "| Chuong 5 | Tang 2: GCN–LSTM + Surrogate Ensemble |"
-            echo "| Chuong 6 | Tang 3: Vector DB + Typed Query Service + Case Retrieval |"
-            echo "| Chuong 7 | Tang 4: Multi-Agent + Counterfactual Safety Loop |"
-            echo "| Chuong 8 | Ke hoach Trien khai MVP 13 tuan |"
-            echo "| Chuong 9 | Phuong phap Danh gia va Kiem thu |"
-            echo "| Chuong 10 | Phan tich Rui ro (Risk Register 14 rui ro) |"
-            echo "| Phu luc A | Dac ta REST API day du |"
-            echo "| Phu luc B | Data Contract, Docker, Project Structure |"
-            echo "| Phu luc C | 30 kich ban kiem thu + Acceptance Criteria |"
-            echo ""
-            echo "### Cac Rang buoc Ky thuat Chinh (KPI)"
-            echo ""
-            echo "- TTP Surrogate Ensemble: P99 < 500ms"
-            echo "- E2E Latency: P95 <= 30s; P99/hard deadline <= 180s"
-            echo "- Safety failures: fail closed + operator review"
-            echo "- Legal evidence: structured citations + effective-date validation"
-            echo "- V/C 0.9: default configurable policy, not a legal threshold"
-            echo "- Scope: 20-node demo; 1,000 synthetic aggregate producers"
+            echo "| Document | Language | Description |"
+            echo "|----------|----------|-------------|"
+            echo "| STWI Technical Report | Vietnamese (Tiếng Việt) | Báo cáo đặc tả kỹ thuật và hồ sơ thực tập tốt nghiệp chuẩn M1 |"
+            echo "| STWI Capstone Report | English (Tiếng Anh) | Full English Capstone & Graduating Thesis Report (HCMUT CSE standard) |"
             echo ""
             echo "### Commit Changelog"
             echo ""
             if [ -n "$LAST_TAG" ]; then
               git log "${LAST_TAG}..HEAD" --no-merges \
                 --pretty=format:"- **%s** (%h) -- %ad" \
-                --date=short 2>/dev/null || echo "- (khong co commit moi)"
+                --date=short 2>/dev/null || echo "- (no new commits)"
             else
               git log --no-merges -20 \
                 --pretty=format:"- **%s** (%h) -- %ad" \
-                --date=short 2>/dev/null || echo "- (khong co commit)"
+                --date=short 2>/dev/null || echo "- (no commits)"
             fi
             echo ""
             echo ""
@@ -221,17 +209,17 @@ jobs:
       - name: Download PDF Artifact
         uses: actions/download-artifact@v4
         with:
-          name: stwi-technical-report-pdf
+          name: stwi-technical-reports-pdf
           path: dist
 
       - name: List downloaded files
         run: ls -lh dist/
 
-      - name: Create GitHub Release with PDF
+      - name: Create GitHub Release with PDFs
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "build-${{ github.run_number }}"
-          name: "Bao cao Ky thuat STWI v2.0 (Build ${{ github.run_number }})"
+          name: "Báo cáo Kỹ thuật & Capstone STWI v2.0 (Build ${{ github.run_number }})"
           body_path: release_notes.md
           files: dist/*.pdf
           draft: false

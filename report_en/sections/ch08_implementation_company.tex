@@ -1,0 +1,87 @@
+\chapter{Implementation Plan and Host Company Environment}
+\label{chapter:implementation}
+
+\section{Host Company and Industrial Environment}
+
+\subsection{Company Overview and Core Competencies}
+The capstone project and technical development were conducted within the **Multi-disciplinary Digital Data Solutions Center** at **VNPT Information Technology Company (VNPT-IT)** -- a core technology enterprise of the Vietnam Posts and Telecommunications Group (VNPT). The center specializes in enterprise data platforms, intelligent multi-agent assistants (Code Intelligence / AI Agents), large-scale data analytics, and Intelligent Transportation Systems (ITS) for metropolitan traffic management.
+
+\begin{itemize}[leftmargin=1.5cm, label=--]
+  \item \textbf{Host Unit:} Multi-disciplinary Digital Data Solutions Center -- VNPT Information Technology Company (VNPT-IT).
+  \item \textbf{Operating Location:} 42 Pham Ngoc Thach Street, Xuan Hoa Ward, Ho Chi Minh City, Vietnam.
+  \item \textbf{Tax Code / Enterprise ID:} 0108212803-022 | \textbf{Phone:} 0243.553.3388 | \textbf{Email:} \texttt{vnptit@vnpt.vn} | \textbf{Website:} \url{https://vnptit.vn/}
+  \item \textbf{Student Researcher:} Lê Hoàng Chí Vĩ (Student ID: \textbf{2353336}).
+  \item \textbf{Academic Affiliation:} Class \textbf{CC23KHM6} -- Group \textbf{CC30} (Team \textbf{A}) -- Course Code: \textbf{CO3335} (2.0 Credits).
+  \item \textbf{Major / Training Program:} Computer Science -- High Quality / English-Taught Program (CC).
+  \item \textbf{Academic Supervision:} Supervised by \textbf{Trần Huy} (Faculty ID / MSCB: \textbf{4141}), Faculty of Computer Science and Engineering, Ho Chi Minh City University of Technology (VNU-HCM).
+  \item \textbf{Industrial Mentorship:} Mentored by \textbf{Võ Tấn Phát} (Chief AI Engineer / VNPT-IT Technical Lead, Email: \texttt{votanphat@vnpt.vn}, Tel: 0915.315.466).
+  \item \textbf{Key Focus Areas:} Spatial-temporal graph learning, high-concurrency microservices, automated safety governance, and video edge analytics.
+\end{itemize}
+
+\subsection{Engineering Culture and Quality Assurance}
+The engineering division adheres to high professional standards:
+\begin{itemize}[leftmargin=1.5cm, label=$\bullet$]
+  \item \textbf{Agile/Scrum Framework:} Bi-weekly sprints, daily 15-minute standup meetings, sprint planning, and retrospective reviews.
+  \item \textbf{Mandatory Code Review \& CI Gates:} Every code change is submitted via Pull Request and must pass automated unit tests, linting (PEP 8, ESLint), and architectural invariant checks before merging.
+  \item \textbf{Cloud \& On-Premise Infrastructure:} VNPT Cloud ecosystem combined with on-premise GPU clusters, real-time telemetry, and Docker Compose containerization.
+  \item \textbf{Data Privacy \& Compliance:} Strict adherence to NDA agreements, data anonymization, and the Zero Raw-Video Retention principle.
+\end{itemize}
+
+\section{13-Week Sprint Roadmap and Task Distribution}
+The STWI engineering lifecycle was executed across six distinct phases over 13 weeks:
+
+\begin{longtable}{|c|p{3.8cm}|p{8.0cm}|c|}
+\hline
+\rowcolor{blue!10}
+\textbf{Sprint} & \textbf{Phase / Milestone} & \textbf{Detailed Engineering Tasks Executed} & \textbf{Status} \\
+\hline
+\endhead
+
+\textbf{Weeks 1--2} & 
+Contract \& Architecture Specification & 
+- Surveyed Ho Chi Minh City camera infrastructure and legal statutes.\\
+- Authored machine-readable \texttt{project\_contract.json} and tensor schemas. & \textbf{Done} \\
+\hline
+
+\textbf{Weeks 3--4} & 
+Tier 1: Video Pipeline \& Tensor Builder & 
+- Built edge video stream ingestion and aggregate feature extractor.\\
+- Structured $X[B,12,N,16]$, $M[B,12,N,16]$, and adjacency $A[N,N]$.\\
+- Enforced zero raw-video retention in volatile memory. & \textbf{Done} \\
+\hline
+
+\textbf{Weeks 5--6} & 
+Tier 2: GCN--LSTM Baseline Forecasting & 
+- Implemented spatial-temporal GCN--LSTM network in PyTorch.\\
+- Trained and calibrated baseline model on 20-node synthetic traffic grid.\\
+- Verified inference latency P99 $< 500\text{ ms}$. & \textbf{Done} \\
+\hline
+
+\textbf{Weeks 7--8} & 
+Tier 2: SUMO \& Surrogate Ensemble & 
+- Generated 10,000 offline SUMO incident simulation scenarios.\\
+- Trained LightGBM and MLP Neural Surrogate Ensembles.\\
+- Integrated epistemic uncertainty and OOD detection gates. & \textbf{Done} \\
+\hline
+
+\textbf{Weeks 9--10} & 
+Tier 3: Legal RAG \& Typed Query & 
+- Indexed Vietnamese Road Traffic Laws (35 \& 36/2024) in Qdrant with BGE-M3.\\
+- Implemented \texttt{SimulationQuery} Pydantic schema validation.\\
+- Enforced fail-closed policy upon missing legal evidence. & \textbf{Done} \\
+\hline
+
+\textbf{Weeks 11--12} & 
+Tier 4: Multi-Agent \& Safety Loop & 
+- Built LangGraph workflow with Counterfactual Safety Loop (max 3 loops).\\
+- Implemented multi-objective Dijkstra detour routing.\\
+- Developed async REST API (FastAPI, Celery, Redis, SSE). & \textbf{Done} \\
+\hline
+
+\textbf{Week 13} & 
+Dashboard Integration \& Verification & 
+- Developed interactive web Operator Dashboard with 20-node heatmap.\\
+- Executed 30 verification test matrix scenarios.\\
+- Compiled final technical report and handoff documentation. & \textbf{Done} \\
+\hline
+\end{longtable}

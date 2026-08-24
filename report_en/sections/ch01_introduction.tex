@@ -1,0 +1,48 @@
+\chapter{Introduction}
+\label{chapter:introduction}
+
+\section{Background and Motivation}
+Rapid urban expansion in major metropolitan areas, particularly in developing economies such as Ho Chi Minh City, has led to severe roadway congestion, excessive vehicular emissions, and substantial economic losses. Traditional urban traffic control systems predominantly rely on static time-of-day signal schedules or isolated rule-based actuators (e.g., SCATS or SCOOT). These legacy systems struggle when confronting sudden traffic incidents, extreme weather anomalies (such as localized flooding), or unexpected demand surges.
+
+To address these dynamic disruptions, modern traffic management centers require the capability to evaluate hypothetical mitigation strategies before deploying them onto physical road networks. This analytical paradigm is known as \textbf{What-If Simulation}. However, traditional microscopic simulation platforms (such as SUMO, VISSIM, or AIMSUN) require several minutes or even hours to simulate complex metropolitan networks. This high computational latency renders them unsuitable for real-time emergency response, where operational decisions must be dispatched within seconds.
+
+Furthermore, integrating data-driven deep learning models and generative Artificial Intelligence into municipal traffic control introduces serious safety, legal, and operational risks:
+\begin{enumerate}[leftmargin=1.5cm, label=(\roman*)]
+  \item \textbf{Safety Failures and Hallucinations:} Black-box models may produce ungrounded or hazardous traffic signal plans that worsen network bottlenecks.
+  \item \textbf{Legal and Regulatory Non-Compliance:} Traffic interventions must strictly conform to national road transport laws and jurisdictional bylaws.
+  \item \textbf{Privacy and Data Governance:} Continuous monitoring via hundreds of municipal CCTV cameras presents privacy risks, requiring stringent protection of video streams.
+  \item \textbf{Operational Latency SLA:} Mitigation proposals must undergo complete safety evaluation within a sub-30-second window to remain actionable during unfolding incidents.
+\end{enumerate}
+
+\section{Research Objectives and Goals}
+The primary objective of the \textbf{SmartTraffic What-If (STWI)} system is to design, develop, and benchmark an intelligent, agentic decision-support framework that bridges the gap between high-fidelity simulation and real-time operational requirements. Specifically, STWI accomplishes the following core engineering goals:
+\begin{itemize}[leftmargin=1.5cm, label=$\bullet$]
+  \item \textbf{Sub-Second Incident Impact Forecasting:} Replace heavy online microscopic simulation with ratio-sensitive \textbf{Neural Surrogate Ensembles} calibrated on offline SUMO scenarios, reducing inference time to $P99 < 500\text{ ms}$.
+  \item \textbf{Spatial-Temporal Baseline Forecasting:} Deploy a spatial-temporal \textbf{GCN--LSTM} network to forecast baseline traffic flow and average speeds over a rolling 30-minute horizon across 20 canonical intersections.
+  \item \textbf{Legally Grounded Retrieval-Augmented Generation (RAG):} Ground all intervention queries against official statutory corpuses (specifically Vietnamese Road Traffic Laws No. 35/2024/QH15 and 36/2024/QH15) via Qdrant vector database and BGE-M3 embeddings, enforcing a \textit{fail-closed} policy when valid legal citations are absent.
+  \item \textbf{Counterfactual Safety Verification Loop (CSL):} Establish an automated multi-round verification workflow inspired by counterfactual causal reasoning (maximum 3 iterations) that rigorously rejects any proposal causing intersection saturation ($V/C > 0.90$) or out-of-distribution (OOD) uncertainty.
+  \item \textbf{Decision Support and Human Governance:} Enforce the invariant that all system outputs are non-executable candidate plans requiring explicit operator authorization (\texttt{applied\_by\_system=false}).
+\end{itemize}
+
+\section{Project Scope and Boundary Constraints}
+The project scope is standardized as an industrial-grade Minimum Viable Product (MVP) delivered over a 13-week engineering schedule. The concrete technical boundaries include:
+\begin{itemize}[leftmargin=1.5cm, label=--]
+  \item \textbf{Network Topology:} A versioned 20-node directed urban traffic graph ($N=20$) with canonical adjacency matrix $A[20,20]$ representing core arterial intersections.
+  \item \textbf{Video Ingestion Scope:} Maximum 20 simultaneous camera streams for the functional network; load benchmarks evaluate up to 1,000 synthetic aggregate data producers.
+  \item \textbf{Privacy Constraint:} Strict \textbf{Zero Raw-Video Retention}. Video frames are decoded in volatile memory, object counts and speeds are aggregated into 5-minute bins, and raw frames are immediately discarded.
+  \item \textbf{Deployment Stack:} TimescaleDB (time-series storage), Qdrant (vector index), LangGraph (agent state graphs), Celery \& Redis (asynchronous task execution), FastAPI (OpenAPI compliant gateway), and Server-Sent Events (SSE) for real-time progress streaming.
+\end{itemize}
+
+\section{Report Organization}
+The remainder of this report is organized as follows:
+\begin{itemize}[leftmargin=1.5cm, label=--]
+  \item \textbf{Chapter 2} reviews the theoretical background and related work across spatial-temporal graph neural networks, neural surrogates, legal RAG, and counterfactual safety mechanisms.
+  \item \textbf{Chapter 3} presents the overall 4-Tier system architecture and immutable data contracts.
+  \item \textbf{Chapters 4--7} provide in-depth specifications of Tiers 1 through 4 (CCTV Pipeline, Forecasting \& Surrogates, Legal RAG, and Multi-Agent Safety Loop).
+  \item \textbf{Chapter 8} outlines the 13-week implementation lifecycle, host company environment, and Agile/Scrum engineering milestones.
+  \item \textbf{Chapter 9} presents comprehensive experimental evaluations, latency benchmarks, and the 30-scenario test matrix.
+  \item \textbf{Chapter 10} analyzes the 14-item operational risk register and mitigation strategies.
+  \item \textbf{Chapter 11} concludes the report with key achievements, acquired competencies, personal reflections, and future work.
+  \item \textbf{Chapter 12} provides the formal NDA and corporate confidentiality approval.
+  \item \textbf{Appendices} detail the complete REST API specification, database schemas, and verification test cases.
+\end{itemize}

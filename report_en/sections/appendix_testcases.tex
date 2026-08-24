@@ -1,0 +1,74 @@
+\chapter{The 30-Scenario Verification Test Matrix}
+\label{appendix:testcases}
+
+\section{Summary of Verification Matrix}
+The STWI test suite comprises 30 deterministic verification scenarios validating boundary conditions, edge cases, and safety assertions:
+
+\begin{longtable}{|c|p{4.2cm}|p{4.8cm}|c|}
+\hline
+\rowcolor{blue!10}
+\textbf{Case} & \textbf{Scenario Category} & \textbf{Injected Condition / Fault} & \textbf{Expected Status} \\
+\hline
+\endhead
+
+TC-01 & Nominal Baseline & Regular peak hour traffic, no incident & \texttt{succeeded} \\
+\hline
+TC-02 & Minor Signal Change & Ratio adjusted from 0.70 to 0.75 & \texttt{succeeded} \\
+\hline
+TC-03 & 2-Loop Signal Refinement & Initial ratio caused $V/C=0.94$; loop 2 pass & \texttt{succeeded} \\
+\hline
+TC-04 & Moderate Lane Closure & 25\% lane closure, detour routes active & \texttt{succeeded} \\
+\hline
+TC-05 & Severe Lane Closure & 50\% lane closure, persistent $V/C > 0.90$ & \texttt{needs\_review} \\
+\hline
+TC-06 & Critical Blockage & 100\% approach closure, safety loop maxed & \texttt{needs\_review} \\
+\hline
+TC-07 & Event Demand Surge & Multiplier $1.8\times$, queue spillover & \texttt{needs\_review} \\
+\hline
+TC-08 & Localized Flooding & Heavy rain + 50\% capacity drop & \texttt{needs\_review} \\
+\hline
+TC-09 & Missing Legal Evidence & Jurisdiction \texttt{"DEMO-NONE"} & \texttt{needs\_review} \\
+\hline
+TC-10 & Expired Statute Reference & Statute dated prior to 2025-01-01 & \texttt{needs\_review} \\
+\hline
+TC-11 & High Epistemic Uncertainty & Surrogate variance $> 0.70$ & \texttt{needs\_review} \\
+\hline
+TC-12 & Out-of-Distribution Input & Mahalanobis distance $> 0.50$ & \texttt{needs\_review} \\
+\hline
+TC-13 & Missing Sensor Stream & 50\% missing mask tensor $M$ & \texttt{succeeded} \\
+\hline
+TC-14 & 100\% Missing Camera Feed & Node unobserved for 60 min & \texttt{needs\_review} \\
+\hline
+TC-15 & Unauthorized Tenant Scope & Tenant requesting unassigned node & \texttt{failed} (403) \\
+\hline
+TC-16 & Malformed JSON Schema & Invalid field types in candidate action & \texttt{failed} (422) \\
+\hline
+TC-17 & SQL / Prompt Injection & Malicious payload in query string & \texttt{failed} (422) \\
+\hline
+TC-18 & Execution Timeout & Worker simulation $> 180\text{ s}$ & \texttt{expired} \\
+\hline
+TC-19 & Redis Broker Disconnect & Transient network partition & \texttt{failed} \\
+\hline
+TC-20 & Qdrant Service Offline & Vector database unavailable & \texttt{needs\_review} \\
+\hline
+TC-21 & Multi-Node Incident & Simultaneous incidents at 3 nodes & \texttt{needs\_review} \\
+\hline
+TC-22 & Diversion Route No Capacity & All alternate corridors saturated & \texttt{needs\_review} \\
+\hline
+TC-23 & Single Detour Available & Exactly 1 alternative path valid & \texttt{succeeded} \\
+\hline
+TC-24 & Three Detours Ranked & 3 detour corridors ranked by cost & \texttt{succeeded} \\
+\hline
+TC-25 & Boundary Exit Node Occluded & Detour exit node blocked & \texttt{needs\_review} \\
+\hline
+TC-26 & Zero Green Time Edge Case & Green time ratio = 0.0 & \texttt{failed} (422) \\
+\hline
+TC-27 & Ratio Exceeds 1.0 & Green time ratio = 1.2 & \texttt{failed} (422) \\
+\hline
+TC-28 & SSE Event Stream Reconnect & Client reconnects to active stream & \texttt{succeeded} \\
+\hline
+TC-29 & Concurrent Job Ingestion & 20 simultaneous job submissions & \texttt{succeeded} \\
+\hline
+TC-30 & Full Pipeline End-to-End & Live camera feed + RAG + CSL + UI & \textbf{\texttt{succeeded}} \\
+\hline
+\end{longtable}

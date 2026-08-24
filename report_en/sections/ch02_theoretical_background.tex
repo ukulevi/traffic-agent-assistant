@@ -1,0 +1,58 @@
+\chapter{Theoretical Background and Related Work}
+\label{chapter:theory}
+
+\section{Spatial-Temporal Traffic Modeling}
+Urban traffic networks exhibit complex dual dependencies: (1) \textbf{spatial dependencies} governed by the physical topology of connected road segments, and (2) \textbf{temporal dependencies} driven by historical flow patterns and periodic commuting rhythms.
+
+\subsection{Graph Convolutional Networks (GCN)}
+Traditional convolutional neural networks (CNNs) operate strictly on Euclidean grids (e.g., standard image matrices). Urban traffic networks, however, reside in non-Euclidean graph domains represented as $G = (V, E, A)$, where $V$ is the set of $N$ intersection nodes, $E$ is the set of directed road links, and $A \in \mathbb{R}^{N \times N}$ is the weighted adjacency matrix. 
+
+Following Kipf and Welling \cite{kipf2017gcn} and Yu et al. \cite{yu2018stgcn}, first-order spectral graph convolution computes localized spatial feature representations across neighboring intersections as:
+\begin{equation}
+  H^{(l+1)} = \sigma \left( \tilde{D}^{-\frac{1}{2}} \tilde{A} \tilde{D}^{-\frac{1}{2}} H^{(l)} W^{(l)} \right)
+\end{equation}
+where $\tilde{A} = A + I_N$ represents the adjacency matrix with added self-loops, $\tilde{D}_{ii} = \sum_j \tilde{A}_{ij}$ is the corresponding diagonal degree matrix, $W^{(l)}$ denotes the layer trainable weight matrix, and $\sigma(\cdot)$ is a non-linear activation function (e.g., ReLU).
+
+\subsection{Recurrent Neural Networks and LSTM}
+To capture temporal dynamics across continuous 5-minute aggregation intervals, Long Short-Term Memory (LSTM) cells \cite{hochreiter1997lstm} maintain internal memory states $C_t$ governed by input, forget, and output gating mechanisms:
+\begin{align}
+  f_t &= \sigma(W_f \cdot [h_{t-1}, x_t] + b_f) \\
+  i_t &= \sigma(W_i \cdot [h_{t-1}, x_t] + b_i) \\
+  \tilde{C}_t &= \tanh(W_c \cdot [h_{t-1}, x_t] + b_c) \\
+  C_t &= f_t \odot C_{t-1} + i_t \odot \tilde{C}_t \\
+  o_t &= \sigma(W_o \cdot [h_{t-1}, x_t] + b_o) \\
+  h_t &= o_t \odot \tanh(C_t)
+\end{align}
+In STWI, spatial GCN embeddings and temporal LSTM sequences are stacked hierarchically to map input tensor histories $X[B, 12, N, 16]$ (spanning 60 minutes) to baseline rolling forecasts $Y[B, 6, N, 2]$ (spanning 30 minutes into the future).
+
+\section{Neural Surrogate Models for Microscopic Simulation}
+Microscopic traffic simulators such as SUMO \cite{krajzewicz2012sumo} model individual vehicular kinematics (car-following, lane-changing). While SUMO produces high physical fidelity, computing full network equilibria during severe incidents requires several minutes.
+
+To achieve sub-second execution, STWI employs \textbf{Neural Surrogate Ensembles} \cite{wen2023surrogate}. A surrogate ensemble $\mathcal{M}_{\text{surr}}$ is trained offline on thousands of structured SUMO simulation trajectories covering varied incident types (lane closures, signal changes, accidents, localized flooding). The ensemble combines Gradient Boosted Decision Trees (LightGBM) and Multi-Layer Perceptrons (MLPs), mapping an incident vector $\mathbf{v}_{\text{inc}}$ and candidate signal delta $\Delta \mathbf{u}$ directly to network impact vectors:
+\begin{equation}
+  \hat{\mathbf{y}}_{\text{scenario}} = \frac{1}{K} \sum_{k=1}^K \mathcal{M}_k(\mathbf{x}_{\text{baseline}}, \mathbf{v}_{\text{inc}}, \Delta \mathbf{u})
+\end{equation}
+
+\subsection{Uncertainty Estimation and Out-of-Distribution (OOD) Gating}
+Following Deep Ensembles methodology \cite{lakshminarayanan2017ade}, predictive epistemic uncertainty is quantified by the variance across ensemble members:
+\begin{equation}
+  \sigma^2(\hat{y}) = \frac{1}{K} \sum_{k=1}^K (\mathcal{M}_k(\mathbf{x}) - \hat{y})^2
+\end{equation}
+Additionally, a Mahalanobis distance / density estimator evaluates whether an input scenario falls outside the surrogate calibration manifold (OOD). If $\sigma^2(\hat{y}) > \tau_{\text{unc}}$ or $\text{OOD\_Score} > \tau_{\text{ood}}$, the surrogate gate immediately triggers a \textit{fail-closed} transition, preventing ungrounded extrapolations.
+
+\section{Legal Retrieval-Augmented Generation (RAG)}
+Generative AI and Large Language Models (LLMs) frequently hallucinate unsupported claims. In municipal traffic management, all signal alterations, road diversions, and emergency priority lanes must be strictly authorized by national statutory provisions.
+
+STWI incorporates structured RAG \cite{lewis2020rag} over the authoritative corpus of Vietnamese road legislation, specifically:
+\begin{itemize}[leftmargin=1.5cm, label=$\bullet$]
+  \item \textbf{Law on Road Traffic Order and Safety No. 36/2024/QH15} (Effective Jan 1, 2025).
+  \item \textbf{Road Law No. 35/2024/QH15} (Effective Jan 1, 2025).
+\end{itemize}
+Documents are chunked into hierarchical legal articles, embedded via the multilingual **BGE-M3** model \cite{chen2023bge}, and indexed in **Qdrant**. The retrieval pipeline validates effective dates and jurisdiction codes, returning structured citations $(\text{Law\_ID}, \text{Article}, \text{Clause})$ with semantic confidence scores.
+
+\section{Counterfactual Safety Loop (CSL)}
+Inspired by Pearl's causal inference hierarchy \cite{pearl2018why} and counterfactual verification mechanisms \cite{bjoern2021counterfactual}, the Counterfactual Safety Loop (CSL) verifies hypothetical interventions prior to presentation. The system evaluates whether a candidate action $a \in \mathcal{A}$ satisfies all invariant safety predicates:
+\begin{equation}
+  \text{Safety}(a) \iff \left( \max_{n, t} (V/C)_{n,t} \le 0.90 \right) \land \left( \text{Uncertainty} \le \tau \right) \land \left( \text{LegalCitations} \neq \emptyset \right)
+\end{equation}
+If any predicate fails, the agentic loop iteratively refines the proposal (up to 3 rounds). If safety cannot be guaranteed after 3 rounds, the job fails closed to status \texttt{needs\_review}, locking executable actions and demanding human supervisor intervention.

@@ -1,0 +1,85 @@
+\chapter*{THÔNG TIN DOANH NGHIỆP VÀ QUÁ TRÌNH THỰC TẬP}
+\addcontentsline{toc}{chapter}{Thông tin Doanh nghiệp và Quá trình Thực tập}
+
+\section*{1. Giới thiệu Đơn vị / Doanh nghiệp Tiếp nhận Thực tập}
+
+\begin{itemize}[leftmargin=1.5cm, label=--]
+  \item \textbf{Tên Doanh nghiệp:} TRUNG TÂM GIẢI PHÁP DỮ LIỆU SỐ ĐA NGÀNH -- CHI NHÁNH CÔNG TY CÔNG NGHỆ THÔNG TIN VNPT (VNPT-IT).
+  \item \textbf{Lĩnh vực hoạt động:} Nghiên cứu và phát triển giải pháp Trí tuệ nhân tạo (AI), Hệ sinh thái Dữ liệu lớn (Big Data / Data Platform), Trợ lý thông minh (AI Agent / Code Intelligence), và Hệ thống Giao thông Thông minh (ITS).
+  \item \textbf{Địa chỉ cơ quan:} 42 đường Phạm Ngọc Thạch, Phường Xuân Hòa, TP. Hồ Chí Minh, Việt Nam.
+  \item \textbf{Mã số thuế:} 0108212803-022 | \textbf{Điện thoại:} 0243.553.3388 | \textbf{Email:} vnptit@vnpt.vn | \textbf{Website:} https://vnptit.vn/
+  \item \textbf{Sinh viên thực hiện:} Lê Hoàng Chí Vĩ -- \textbf{MSSV:} 2353336.
+  \item \textbf{Lớp / Phân nhóm / Tổ:} Lớp \textbf{CC23KHM6} -- Phân nhóm \textbf{CC30} (Tổ \textbf{A}) -- Mã môn học: \textbf{CO3335} (2.0 Tín chỉ).
+  \item \textbf{Ngành / Chương trình đào tạo:} Khoa học Máy tính -- Chương trình Chính quy Chất lượng cao / Tiếng Anh (CC).
+  \item \textbf{Cán bộ hướng dẫn chuyên môn trực tiếp tại DN:} \textbf{Võ Tấn Phát} (Email: \texttt{votanphat@vnpt.vn}, ĐT: 0915.315.466) -- Kỹ sư Trưởng / Phụ trách Chương trình TTNT phía VNPT-IT.
+  \item \textbf{Cán bộ hướng dẫn của Khoa (CBHD):} \textbf{Trần Huy} (Mã số Cán bộ: \textbf{4141}) -- Giảng viên Khoa KH\&KT Máy tính, Trường Đại học Bách Khoa -- ĐHQG TP.HCM.
+  \item \textbf{Thời gian thực tập chính thức:} 15/06/2026 -- 14/08/2026 (Học kỳ 3 Năm học 2025--2026 / HK253).
+\end{itemize}
+
+\subsection*{1.1. Cơ cấu tổ chức và Môi trường làm việc}
+Trung tâm hoạt động theo mô hình linh hoạt với các nhóm kỹ thuật liên chức năng (Cross-functional Squads), áp dụng chặt chẽ quy trình phát triển phần mềm chuẩn Agile/Scrum:
+\begin{itemize}[leftmargin=1.5cm, label=$\bullet$]
+  \item \textbf{Quy trình làm việc:} Sprint định kỳ 2 tuần, Daily Standup 15 phút, Sprint Planning, Code Review bắt buộc qua Pull Request và kiểm thử tự động với Continuous Integration (CI).
+  \item \textbf{Môi trường công nghệ:} Hạ tầng điện toán đám mây VNPT Cloud kết hợp on-premise, hệ thống giám sát thời gian thực, quản lý phiên bản với Git/GitHub, container hóa toàn bộ ứng dụng bằng Docker và Docker Compose.
+  \item \textbf{Văn hóa kỹ thuật:} Đề cao tính minh bạch, an toàn dữ liệu (Data Privacy, Zero Raw-Video Retention), tuân thủ nghiêm ngặt các quy định pháp lý và quy chuẩn an toàn trước khi tích hợp vào hệ thống.
+\end{itemize}
+
+\section*{2. Kế hoạch và Nhật ký Quá trình Thực tập (13 Tuần)}
+
+Trong suốt kỳ thực tập, sinh viên được giao nhiệm vụ nghiên cứu, thiết kế kiến trúc và trực tiếp phát triển hệ thống \textbf{SmartTraffic What-If (STWI)} -- Hệ thống AI hỗ trợ ra quyết định điều phối giao thông thông minh thông qua 4 tầng kiến trúc chính:
+
+\begin{longtable}{|c|p{3.2cm}|p{8.5cm}|c|}
+\hline
+\rowcolor{bklightblue!50}
+\textbf{Tuần} & \textbf{Giai đoạn / Hạng mục} & \textbf{Nội dung Công việc Cụ thể Được giao} & \textbf{Kết quả} \\
+\hline
+\endhead
+
+\textbf{Tuần 1--2} & 
+Khảo sát \& Đặc tả Hợp đồng Hệ thống & 
+- Khảo sát hạ tầng camera giao thông TP.HCM, quy chế pháp lý đường bộ.\\
+- Thiết lập hợp đồng kỹ thuật máy đọc được \texttt{project\_contract.json}. & Đạt \\
+\hline
+
+\textbf{Tuần 3--4} & 
+Tầng 1: Camera Pipeline \& Tensor Builder & 
+- Xây dựng pipeline xử lý luồng camera/cảm biến tổng hợp.\\
+- Chuẩn hóa tensor đầu vào $X[B,12,N,16]$, missing mask $M$ và ma trận kề $A$.\\
+- Triển khai cơ chế bảo mật Zero Raw-Video Retention. & Đạt \\
+\hline
+
+\textbf{Tuần 5--6} & 
+Tầng 2: GCN--LSTM Baseline Forecasting & 
+- Xây dựng mạng học sâu không gian - thời gian GCN--LSTM dự báo 30 phút.\\
+- Xử lý bài toán thiếu dữ liệu cục bộ, bảo đảm độ trễ suy luận $< 500\text{ ms}$.\\
+- Huấn luyện và hiệu chuẩn mô hình trên dữ liệu synthetic 20 nút. & Đạt \\
+\hline
+
+\textbf{Tuần 7--8} & 
+Tầng 2: SUMO \& Surrogate Ensemble & 
+- Xây dựng pipeline mô phỏng vi mô SUMO offline tạo dataset kịch bản sự cố.\\
+- Huấn luyện Surrogate Ensemble (LightGBM/MLP) ước lượng tác động sự cố.\\
+- Tích hợp Uncertainty Calibration và bộ phát hiện Out-of-Distribution (OOD). & Đạt \\
+\hline
+
+\textbf{Tuần 9--10} & 
+Tầng 3: Pháp lý RAG \& Typed Query & 
+- Xây dựng Vector DB Qdrant với embedding BGE-M3 cho Luật Giao thông 35\&36/2024.\\
+- Thiết kế Typed Simulation Query phân tích cú pháp có kiểu an toàn.\\
+- Hiện thực cơ chế Fail-Closed: từ chối đề xuất khi thiếu căn cứ pháp lý. & Đạt \\
+\hline
+
+\textbf{Tuần 11--12} & 
+Tầng 4: Multi-Agent \& Safety Loop & 
+- Xây dựng workflow LangGraph với Counterfactual Safety Loop (tối đa 3 vòng).\\
+- Tích hợp thuật toán điều phối đa tuyến (Dijkstra đa mục tiêu $V/C \le 0.90$).\\
+- Xây dựng REST API không đồng bộ (FastAPI, SSE, Celery, Redis). & Đạt \\
+\hline
+
+\textbf{Tuần 13} & 
+Tích hợp Dashboard \& Đánh giá Tổng thể & 
+- Hoàn thiện Operator Dashboard tương tác web, bản đồ mạng lưới 20 nút.\\
+- Chạy toàn diện 30 kịch bản kiểm thử (Phụ lục C) và đo lường KPI.\\
+- Viết báo cáo kỹ thuật hoàn chỉnh và bàn giao mã nguồn. & Đạt \\
+\hline
+\end{longtable}

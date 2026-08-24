@@ -1,0 +1,197 @@
+\documentclass[12pt,a4paper]{report}
+
+\usepackage{geometry}
+\usepackage{fontspec}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{microtype}
+\usepackage{tikz}
+
+\geometry{left=3.5cm,right=2cm,top=2.5cm,bottom=3cm}
+\IfFontExistsTF{Times New Roman}
+  {\setmainfont{Times New Roman}}
+  {\setmainfont{TeX Gyre Termes}}
+\IfFontExistsTF{Courier New}
+  {\setmonofont[Scale=0.85]{Courier New}}
+  {\setmonofont[Scale=0.85]{Latin Modern Mono}}
+\definecolor{bkblue}{RGB}{0,82,165}
+\setlength{\parindent}{1.27cm}
+\setlength{\parskip}{4pt}
+\linespread{1.25}
+\setlength{\emergencystretch}{2em}
+\hypersetup{colorlinks=true,linkcolor=bkblue,urlcolor=bkblue,pdftitle={Ban doi chieu Bao cao Thuc tap ngoai truong - STWI},pdfauthor={Le Hoang Chi Vi}}
+\renewcommand{\contentsname}{Mục lục}
+\renewcommand{\chaptername}{Chương}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Trường Đại học Bách Khoa -- ĐHQG-HCM}
+\fancyhead[R]{\small Thực tập ngoài trường -- HK253}
+\fancyfoot[C]{\thepage}
+\setlength{\headheight}{15pt}
+\newcommand{\enterpriseMentor}{Võ Tấn Phát (VNPT-IT)}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\begin{document}
+
+\begin{titlepage}
+\newgeometry{left=2cm,right=2cm,top=1.6cm,bottom=1.8cm}
+\centering
+\begin{tikzpicture}[remember picture,overlay]
+  \draw[line width=1pt] ([xshift=1.1cm,yshift=-1.1cm]current page.north west)
+    rectangle ([xshift=-1.1cm,yshift=1.1cm]current page.south east);
+\end{tikzpicture}
+{\fontsize{15}{18}\selectfont\bfseries ĐẠI HỌC QUỐC GIA THÀNH PHỐ HỒ CHÍ MINH}\\[0.12cm]
+{\fontsize{15}{18}\selectfont\bfseries TRƯỜNG ĐẠI HỌC BÁCH KHOA}\\[0.12cm]
+{\fontsize{14}{17}\selectfont\bfseries KHOA KHOA HỌC VÀ KỸ THUẬT MÁY TÍNH}
+
+\vspace{0.4cm}
+\includegraphics[width=3.1cm]{figures/M2_Logo_BK.png}
+
+\vspace{0.22cm}
+{\fontsize{13}{16}\selectfont\bfseries BẢN ĐỐI CHIẾU -- KHÔNG NỘP CHÍNH THỨC}\\[0.26cm]
+{\fontsize{18}{22}\selectfont\bfseries BÁO CÁO MÔN HỌC THỰC TẬP NGOÀI TRƯỜNG}\\[0.15cm]
+{\fontsize{13}{16}\selectfont\bfseries (Mã số môn học: CO3335)}\\[0.12cm]
+{\fontsize{13}{16}\selectfont\bfseries Học kỳ 3, năm học 2025--2026 (HK253)}\\[0.08cm]
+{\fontsize{11}{13}\selectfont\itshape (Đăng ký môn học thành công)}
+
+\vspace{0.28cm}
+{\fontsize{15}{18}\selectfont\bfseries SMARTTRAFFIC WHAT-IF (STWI)}\\[0.1cm]
+{\fontsize{12.5}{15}\selectfont\bfseries Hệ thống hỗ trợ ra quyết định cho phân tích tình huống giao thông giả định}
+
+\vspace{0.35cm}
+\renewcommand{\arraystretch}{1.28}
+\begin{tabular}{>{\bfseries}p{5.3cm}p{8.3cm}}
+Ngành: & Khoa học Máy tính\\
+Chương trình đào tạo: & Chương trình giảng dạy bằng tiếng Anh (CC)\\
+Đơn vị / doanh nghiệp nhận thực tập: & Trung tâm Giải pháp Dữ liệu số Đa ngành -- Chi nhánh Công ty Công nghệ Thông tin VNPT\\
+Địa chỉ doanh nghiệp: & 42 Phạm Ngọc Thạch, Phường Xuân Hòa, Thành phố Hồ Chí Minh, Việt Nam\\
+Cán bộ hướng dẫn chuyên môn (DN): & \enterpriseMentor\\
+Cán bộ hỗ trợ của Khoa: & Trần Huy (Mã số CB: 4141)\\
+Sinh viên thực hiện: & Lê Hoàng Chí Vĩ\\
+MSSV: & 2353336\\
+Thời gian thực tập: & 15/06/2026 -- 14/08/2026\\
+\end{tabular}
+
+\vfill
+{\fontsize{13}{16}\selectfont\bfseries THÀNH PHỐ HỒ CHÍ MINH, THÁNG 08 NĂM 2026}
+\restoregeometry
+\end{titlepage}
+
+\pagenumbering{roman}
+\chapter*{Lời cảm ơn}
+\addcontentsline{toc}{chapter}{Lời cảm ơn}
+Tôi chân thành cảm ơn Trung tâm Giải pháp Dữ liệu số Đa ngành, VNPT-IT, đã tạo điều kiện chuyên môn cho kỳ thực tập. Tôi cảm ơn \enterpriseMentor, đội ngũ kỹ thuật, thầy Trần Huy và Khoa Khoa học và Kỹ thuật Máy tính vì các góp ý về kỹ thuật, học thuật và trách nhiệm bảo mật.
+
+\chapter*{Tóm tắt}
+\addcontentsline{toc}{chapter}{Tóm tắt}
+Báo cáo trình bày SmartTraffic What-If (STWI), một ứng dụng AI-agent hỗ trợ đánh giá tình huống giao thông giả định trong phạm vi chương trình thực tập đã được phê duyệt. Hệ thống sử dụng dữ liệu giao thông đã tổng hợp, dự báo nền GCN-LSTM trong 30 phút, surrogate ensemble huấn luyện từ SUMO ngoại tuyến, truy xuất pháp lý có citation, tác vụ bất đồng bộ và Counterfactual Safety Loop fail-closed.
+
+STWI chỉ hỗ trợ con người ra quyết định: không lưu video thô, không phát lệnh điều khiển thiết bị hiện trường và luôn yêu cầu người vận hành phê duyệt. Các giới hạn này giúp sản phẩm có thể kiểm thử, truy vết và phù hợp với bối cảnh bảo mật dữ liệu doanh nghiệp.
+
+\tableofcontents
+\clearpage
+\pagenumbering{arabic}
+
+\chapter{Đơn vị và chương trình thực tập}
+\section{Đơn vị tiếp nhận}
+Đơn vị tiếp nhận là Trung tâm Giải pháp Dữ liệu số Đa ngành, chi nhánh của Công ty Công nghệ Thông tin VNPT (VNPT-IT), tại 42 Phạm Ngọc Thạch, Phường Xuân Hòa, Thành phố Hồ Chí Minh. Chương trình thực tập tập trung vào AI agent, backend API, tích hợp nền tảng dữ liệu, quản trị metadata, kiểm thử, tài liệu kỹ thuật và trình diễn cuối kỳ.
+
+\section{Bối cảnh và mục tiêu}
+Môi trường thực tập yêu cầu sản phẩm kỹ thuật có thể truy vết, review và trình diễn. Mục tiêu là vận dụng kiến thức khoa học máy tính để thiết kế một hệ thống AI-agent có ràng buộc dữ liệu và an toàn rõ ràng; hiện thực backend và giao diện có thể kiểm thử; đánh giá bằng kiểm thử tái lập; và trình bày kết quả cho cả người xem kỹ thuật lẫn không chuyên.
+
+\section{Phạm vi được phê duyệt và sản phẩm STWI}
+Chương trình D2 xác định chủ đề bao quát là ``AI Coding Assistant (Code Intelligence) -- AI Agent tích hợp quản trị dữ liệu''. Với sự xác nhận của cán bộ hướng dẫn doanh nghiệp, STWI là sản phẩm ứng dụng trong phạm vi này.
+
+\begin{longtable}{L{4.8cm}L{8.2cm}}
+\toprule
+\textbf{Năng lực chương trình} & \textbf{Bằng chứng trong STWI}\\
+\midrule
+AI-agent và suy luận nhiều bước & LangGraph điều phối các công cụ có ranh giới và Counterfactual Safety Loop đánh giá hành động ứng viên.\\
+Backend RESTful & FastAPI cung cấp job bất đồng bộ, trạng thái, sự kiện, UI context và network context có kiểu.\\
+Tích hợp nền tảng dữ liệu & Quan sát tổng hợp, topology, capacity, model và legal-corpus metadata có version được truyền qua workflow.\\
+Quản trị metadata và dữ liệu & Project contract quản lý tensor, thứ tự feature, biên mô hình, trạng thái API, provenance, privacy và safety.\\
+Tích hợp công cụ, logging và test & Forecast, scenario estimation, retrieval, validation, route generation và safety được tách thành công cụ; CI chạy contract test và kiểm tra tài liệu.\\
+\bottomrule
+\end{longtable}
+
+\chapter{Quá trình thực tập}
+Kỳ thực tập kéo dài tám tuần liên tục từ 15/06 đến 14/08/2026. Các công việc dưới đây tóm tắt hoạt động thực hiện trong kỳ thực tập, không thay đổi lộ trình MVP 13 tuần của kế hoạch kỹ thuật.
+
+\begin{longtable}{L{1.1cm}L{3.2cm}L{8.7cm}}
+\toprule
+\textbf{Tuần} & \textbf{Gói công việc} & \textbf{Hoạt động và đầu ra chính}\\
+\midrule
+1 & Làm quen và yêu cầu & Rà soát chương trình, cấu trúc repository, bài toán hỗ trợ quyết định giao thông, privacy boundary, legal grounding và project contract.\\
+2 & Kiến trúc và contract & Xác định kiến trúc bốn tầng, node ordering ổn định, tensor contract, incident schema, job lifecycle và safety fail-closed.\\
+3 & Data pipeline & Hiện thực và rà soát ingestion camera/sensor aggregate, missing-data handling, feature order, topology validation và zero raw-video retention.\\
+4 & Forecast và scenario & Tích hợp GCN-LSTM baseline và surrogate ensemble từ SUMO ngoại tuyến; bảo toàn chronological split và uncertainty calibration.\\
+5 & Knowledge và typed tools & Phát triển legal/SOP retrieval, structured citation, effective-date check và typed simulation-query validation.\\
+6 & Điều phối AI-agent & Tích hợp LangGraph, Celery, Redis, job API, progress event, OOD handling và Counterfactual Safety Loop.\\
+7 & Dashboard và bằng chứng & Hoàn thiện dashboard, network-impact view, route evidence, job-state presentation và human-approval boundary.\\
+8 & Kiểm thử và bàn giao & Chạy contract, unit, JavaScript, documentation và PDF checks; chuẩn bị báo cáo, tài liệu demo và gói bàn giao.\\
+\bottomrule
+\end{longtable}
+
+\chapter{Sản phẩm kỹ thuật}
+\section{Bài toán và kiến trúc}
+STWI hỗ trợ người vận hành so sánh tác động dự kiến của accident, flood, lane closure, demand surge và signal change. Hệ thống gồm bốn tầng: data tier chuyển bằng chứng thành feature năm phút; forecast and simulation tier tạo baseline và ước lượng scenario; knowledge tier xử lý retrieval và citation; agent and safety tier điều phối công cụ, tác vụ bất đồng bộ và kiểm tra fail-closed.
+
+\section{Data và API contract}
+Model online nhận $X[B,12,N,16]$, missing mask cùng shape và adjacency $A[N,N]$; baseline trả $Y[B,6,N,2]$. Job API nhận incident có kiểu và trả HTTP 202. Các trạng thái chỉ gồm \texttt{queued}, \texttt{running}, \texttt{succeeded}, \texttt{needs\_review}, \texttt{failed} hoặc \texttt{expired}; chỉ \texttt{succeeded} mới có \texttt{recommended\_action}.
+
+\section{An toàn, bảo mật và trải nghiệm người dùng}
+Hệ thống fail-closed khi uncertainty cao, OOD, topology không hợp lệ, thiếu căn cứ pháp lý, lỗi phân quyền hoặc timeout. Counterfactual Safety Loop tối đa ba vòng và luôn cần người vận hành phê duyệt. Detection camera chỉ là bằng chứng tạo aggregate feature; video thô không được lưu hoặc phát hành.
+
+\chapter{Kết quả, kiến thức và kỹ năng}
+\section{Sản phẩm và kiểm chứng}
+Đầu ra gồm implementation Python có kiểu, entry point demo, unit/contract/frontend test, đặc tả kiến trúc--ML--RAG--agent, dashboard operator-facing, báo cáo LaTeX, slide và CI. Việc kiểm chứng dựa trên contract test cho tensor/API/safety/legal corpus, kiểm tra tài liệu, runtime/frontend test và PDF/JavaScript build check. Không có tuyên bố triển khai hiện trường hoặc độ chính xác production.
+
+\section{Kiến thức và kỹ năng thu nhận}
+Tôi củng cố kiến thức về graph-based spatiotemporal forecasting, sequence modelling, SUMO ngoại tuyến, surrogate modelling, uncertainty calibration, OOD detection, RAG, structured citation và AI-agent orchestration. Kỹ năng kỹ thuật gồm chuyển yêu cầu thành machine-readable contract, thiết kế REST API có kiểu, tách pure logic khỏi I/O, quản lý provenance/privacy, viết test và đồng bộ code--tài liệu--presentation qua Git/CI.
+
+\section{Cảm nhận cá nhân}
+Kỳ thực tập giúp tôi gắn nền tảng khoa học máy tính với một bài toán liên ngành gồm AI, kiến trúc phần mềm, vận hành giao thông, privacy và pháp lý. Tôi nhận ra một sản phẩm AI-agent đáng tin cậy không chỉ phụ thuộc vào model mà còn vào contract, validation boundary, provenance, uncertainty calibration, trải nghiệm vận hành và đường escalatation rõ ràng. Việc làm việc trong môi trường giải pháp dữ liệu chuyên nghiệp cũng nhấn mạnh tầm quan trọng của tài liệu, bảo mật và giám sát có trách nhiệm của con người.
+
+\chapter{Giới hạn và hướng phát triển}
+STWI là MVP 13 tuần, chưa được triển khai như hệ thống điều khiển giao thông production. Functional graph có 20 node; camera path giới hạn ở recorded hoặc RTSP demonstration; surrogate chỉ đáng tin trong calibrated scenario space; legal retrieval không thay thế legal reviewer; và hệ thống không tự áp dụng hành động hiện trường. Hướng tiếp theo gồm pilot được quản trị với aggregate field data được phép sử dụng, SUMO coverage rộng hơn, accessibility test với operator và review an toàn/pháp lý độc lập.
+
+\chapter*{Cam kết của sinh viên và xác nhận doanh nghiệp}
+\addcontentsline{toc}{chapter}{Cam kết của sinh viên và xác nhận doanh nghiệp}
+Tôi cam kết báo cáo phản ánh đúng công việc thực tập; các nguồn, model, phần mềm và tài liệu bên ngoài đã được nhận diện phù hợp. Báo cáo không chứa video thô, dữ liệu doanh nghiệp mật, secret hoặc thông tin nội bộ chưa công bố.
+
+\vspace{0.7cm}
+\noindent
+\begin{minipage}[t]{0.46\textwidth}
+\centering
+\textbf{SINH VIÊN}\\[0.1cm]
+\textit{Ký bằng mực xanh và ghi rõ họ tên}\\[2.6cm]
+\textbf{Lê Hoàng Chí Vĩ}\\
+MSSV: 2353336
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.46\textwidth}
+\centering
+\textbf{ĐẠI DIỆN DOANH NGHIỆP}\\[0.1cm]
+\textit{Xác nhận báo cáo đã được kiểm tra về phạm vi và bảo mật.}\\[0.2cm]
+\textit{Ký, ghi rõ họ tên/chức danh và đóng dấu doanh nghiệp}\\[2.0cm]
+\textbf{\enterpriseMentor}
+\end{minipage}
+
+\chapter*{Tài liệu tham khảo}
+\addcontentsline{toc}{chapter}{Tài liệu tham khảo}
+\begin{enumerate}[leftmargin=1.2cm]
+  \item STWI, \textit{project\_contract.json}, version 1.0.0.
+  \item STWI, \textit{Summary and Guidelines}, tài liệu kiến trúc và safety chuẩn.
+  \item Khoa Khoa học và Kỹ thuật Máy tính, \textit{Hướng dẫn và biểu mẫu Thực tập ngoài trường}, HK253.
+  \item Luật số 35/2024/QH15 về Đường bộ, hiệu lực từ 01/01/2025.
+  \item Luật số 36/2024/QH15 về Trật tự, an toàn giao thông đường bộ, hiệu lực từ 01/01/2025.
+\end{enumerate}
+
+\end{document}
