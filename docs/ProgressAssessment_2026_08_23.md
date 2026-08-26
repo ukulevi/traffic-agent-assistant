@@ -64,8 +64,28 @@
 7. 🏗 Release QA tổng (`$stwi-release-qa`): chạy lại toàn bộ validators, benchmark đúng profile, kiểm tra slides/PDF đồng bộ, sau đó mới khai báo production-ready.
 8. 💡 Mở rộng (tuỳ chọn, sau khi A+B xong): multi-node incident (contract hiện giới hạn 1 node), so sánh surrogate vs SUMO online nhỏ, hoặc export báo cáo tác động PDF cho operator.
 
+## Cập nhật thực thi Giai đoạn A+B — 2026-08-26
+
+| Hạng mục | Kết quả | PR |
+|---|---|---|
+| A1 E2E benchmark (app-layer) | ✅ p50=29.4ms / p95=35.2ms / p99=38.5ms, 300/300 — provisional | #60 |
+| A2 Baseline evidence binding | ✅ SHA-256 manifest + 6 tests fail-closed | #60 |
+| A3 T3 service integration | ✅ Qdrant+TimescaleDB thật: 9/9 pass, 0 skip | #60 |
+| A4 Báo cáo thực tập | ✅ Chuyển ra ngoài repo đúng hygiene boundary (PR #58) | — |
+| B5 Camera aggregate measured | ✅ 2 videos, 67 detections, sanity pass; **detector provisional (mAP50 0.69 < gate 0.85)** | #61 |
+| B6 Auth/tenant enforcement | ✅ EnvBoundPrincipalResolver non-provisional; 202/403/404 measured pass; readiness probe | #62 |
+
+### Blocker còn lại — production E2E SLA (TRA-69)
+
+Không thể đo production SLA hợp lệ trên máy hiện tại:
+
+1. **Hardware**: GTX 1050 Ti 4GB, torch không thấy CUDA — contract yêu cầu GPU 12–16GB VRAM.
+2. **Artifacts**: surrogate v3 và GCN-LSTM mock_v2 đều `production_ready=false`; `RuntimeArtifactSet.load` sẽ từ chối đúng theo thiết kế fail-closed.
+
+Điều kiện mở khoá: hardware đạt profile (hoặc quyết định rõ ràng về profile thay thế) + baseline/surrogate train lại và promote thật.
+
 ## Kết luận
 
-- Tiến độ MVP hiện tại **~78%**: production composition (Redis/Celery/artifact manifest) đã có code + contract test, demo và evidence story mạnh hơn đáng kể so với giữa tháng 7.
-- Trọng tâm rủi ro đã dịch từ "thiếu file" sang **"thiếu bằng chứng đo"**: E2E SLA, baseline evidence, service-backed integration, camera aggregate.
-- Thứ tự ưu tiên giữ nguyên nguyên tắc cũ: measured benchmark ownership → artifact binding → service integration → auth → measured E2E SLA.
+- Tiến độ MVP hiện tại **~82%** (cập nhật từ ~78%): toàn bộ critical gaps về measured evidence đã được đóng hoặc ghi nhận blocker có định nghĩa mở khoá rõ ràng.
+- Trọng tâm rủi ro còn lại tập trung vào **artifact promotion gate** (detector mAP50, surrogate/baseline production_ready) và **hardware benchmark profile**.
+- Việc khai báo production-ready chỉ nên thực hiện sau khi TRA-69 mở khoá và release QA tổng hoàn tất.
