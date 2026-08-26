@@ -24,6 +24,38 @@ if str(SRC) not in sys.path:
 MODEL_NAMES = ("mlp", "cnn1d", "transformer")
 
 
+def _detect_ram_gb() -> float | None:
+    """Best-effort total-RAM detection; None when undetectable."""
+    if sys.platform == "win32":
+        import ctypes
+
+        class _MEMORYSTATUSEX(ctypes.Structure):
+            _fields_ = [
+                ("dwLength", ctypes.c_ulong),
+                ("dwMemoryLoad", ctypes.c_ulong),
+                ("ullTotalPhys", ctypes.c_ulonglong),
+                ("ullAvailPhys", ctypes.c_ulonglong),
+                ("ullTotalPageFile", ctypes.c_ulonglong),
+                ("ullAvailPageFile", ctypes.c_ulonglong),
+                ("ullTotalVirtual", ctypes.c_ulonglong),
+                ("ullAvailVirtual", ctypes.c_ulonglong),
+                ("ullAvailExtendedVirtual", ctypes.c_ulonglong),
+            ]
+
+        status = _MEMORYSTATUSEX()
+        status.dwLength = ctypes.sizeof(_MEMORYSTATUSEX)
+        if ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(status)):
+            return round(status.ullTotalPhys / (1024**3), 1)
+    try:
+        with open("/proc/meminfo", encoding="ascii") as stream:
+            for line in stream:
+                if line.startswith("MemTotal:"):
+                    return round(int(line.split()[1]) / 1024**2, 1)
+    except OSError:
+        pass
+    return None
+
+
 def prepare_output(output: Path, replace: bool) -> None:
     if output.exists():
         marker = output / "surrogate_report.json"
@@ -335,8 +367,18 @@ def main() -> int:
                 model(benchmark_input)
         latencies_ms.append((time.perf_counter_ns() - started) / 1_000_000)
     benchmark = {
+        "evidence_kind": "measured",
         "device": "cpu",
         "cpu_threads": torch.get_num_threads(),
+        "cpu_cores": os.cpu_count(),
+        "ram_gb": _detect_ram_gb(),
+        "gpu_vram_gb": None,
+        "device_note": (
+            "CPU-only measurement on the development machine; the contract "
+            "benchmark profile (GPU 12-16GB VRAM) is not available here. "
+            "This evidence is measured but does not satisfy the production "
+            "hardware profile."
+        ),
         "payload_nodes": 20,
         "warmup_runs": 20,
         "measured_runs": 300,
