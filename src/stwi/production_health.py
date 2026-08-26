@@ -30,7 +30,8 @@ def validate_static_configuration(
     settings = ProductionSettings.from_environ(environ)
     factory = load_component_factory(settings.component_factory)
     try:
-        validate_components(factory(settings))
+        components = factory(settings)
+        validate_components(components)
     except ProductionConfigurationError:
         raise
     except Exception as exc:
@@ -39,7 +40,33 @@ def validate_static_configuration(
         baseline_manifest=settings.baseline_manifest,
         surrogate_manifest=settings.surrogate_manifest,
     )
+    _probe_principal_resolver(components)
     return settings
+
+
+def _probe_principal_resolver(components: Any) -> None:
+    """Fail closed when the deployed resolver cannot produce a principal.
+
+    The probe verifies that the non-provisional deployment identity resolves
+    to a usable principal. Identity values themselves are never logged.
+    """
+    resolver = getattr(components, "principal_resolver", None)
+    if resolver is None:
+        raise RuntimeError("principal resolver missing")
+    if any(
+        bool(getattr(resolver, marker, False))
+        for marker in ("is_provisional_resolver", "is_provisional_adapter")
+    ):
+        raise RuntimeError("provisional principal resolver rejected")
+    try:
+        principal = resolver.resolve()
+    except Exception as exc:
+        raise RuntimeError("principal resolution failed") from exc
+    tenant_id = str(getattr(principal, "tenant_id", "")).strip()
+    operator_id = str(getattr(principal, "operator_id", "")).strip()
+    roles = getattr(principal, "roles", frozenset())
+    if not tenant_id or not operator_id or not roles:
+        raise RuntimeError("resolved principal is incomplete")
 
 
 def _probe_redis(settings: ProductionSettings) -> None:

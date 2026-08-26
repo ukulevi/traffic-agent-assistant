@@ -76,7 +76,47 @@ node --check slides/js/presentation-tools.js
 git diff --check
 ```
 
-## 6. Acceptance Criteria
+## 6. Auth/Tenant Enforcement Verification (TRA-68)
+
+The production composition requires a non-provisional principal resolver.
+`EnvBoundPrincipalResolver` reads the deployment identity from server-side
+environment at container start (`STWI_DEPLOYMENT_TENANT_ID`,
+`STWI_DEPLOYMENT_OPERATOR_ID`, `STWI_DEPLOYMENT_ROLES`) and deliberately
+ignores tenant/operator hints from request payloads.
+
+Step-by-step verification:
+
+1. Configure the deployment identity (never commit real values):
+
+   ```bash
+   export STWI_DEPLOYMENT_TENANT_ID="<deployment-tenant>"
+   export STWI_DEPLOYMENT_OPERATOR_ID="<deployment-operator>"
+   export STWI_DEPLOYMENT_ROLES="operator,analyst"
+   ```
+
+2. Confirm resolver construction fails closed without identity:
+
+   ```bash
+   python -c "from stwi.t4_orchestrator.auth import EnvBoundPrincipalResolver as R; R({})"
+   ```
+   Expected: `PrincipalResolutionError`.
+
+3. Record measured enforcement evidence (redacted report):
+
+   ```bash
+   python scripts/validation/record_auth_enforcement_evidence.py
+   ```
+   Expected: `status: pass` with checks — deployment identity accepted (202),
+   cross-tenant body rejected (403 `AUTH_TENANT_DENIED`), unknown job 404.
+
+4. Production readiness now includes a principal-resolver probe; a
+   provisional or broken resolver fails the configuration check with a
+   redacted code only.
+
+Evidence location: `data/derived/private/phase4_orchestrator/auth_enforcement_report.json`.
+Identity values are never written to logs or reports.
+
+## 7. Acceptance Criteria
 
 - `STWI_RUNTIME_MODE=production` rejects auto-wired fake adapters.
 - Real adapters have documented required environment variables.
