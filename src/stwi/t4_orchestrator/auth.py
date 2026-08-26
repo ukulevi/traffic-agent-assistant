@@ -7,6 +7,7 @@ development, test, and demo flows.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import Enum
 from typing import Protocol
@@ -87,7 +88,57 @@ class ProvisionalBodyPrincipalResolver:
         )
 
 
+class EnvBoundPrincipalResolver:
+    """Deployment-bound principal resolver for the production profile.
+
+    Identity comes from server-side deployment configuration (environment
+    bound at container start), never from request payloads. The deployment
+    owns exactly one trusted service identity; requests inherit it, so
+    tenant hints from callers cannot cross tenant boundaries.
+
+    Not provisional: production composition accepts this resolver.
+    """
+
+    def __init__(self, environ: Mapping[str, str]) -> None:
+        tenant_id = environ.get("STWI_DEPLOYMENT_TENANT_ID", "").strip()
+        operator_id = environ.get("STWI_DEPLOYMENT_OPERATOR_ID", "").strip()
+        roles_raw = environ.get("STWI_DEPLOYMENT_ROLES", "").strip()
+        if not tenant_id or not operator_id:
+            raise PrincipalResolutionError(
+                "deployment identity requires STWI_DEPLOYMENT_TENANT_ID "
+                "and STWI_DEPLOYMENT_OPERATOR_ID"
+            )
+        try:
+            roles = frozenset(
+                PrincipalRole(role.strip())
+                for role in roles_raw.split(",")
+                if role.strip()
+            )
+        except ValueError as exc:
+            raise PrincipalResolutionError(
+                "deployment roles contain an unknown role name"
+            ) from exc
+        if not roles:
+            raise PrincipalResolutionError("deployment identity requires a role")
+        self._principal = ServerPrincipal(
+            tenant_id=tenant_id,
+            operator_id=operator_id,
+            roles=roles,
+        )
+
+    def resolve(
+        self,
+        *,
+        tenant_hint: str | None = None,
+        operator_hint: str | None = None,
+    ) -> ServerPrincipal:
+        # Hints are deliberately ignored: only the deployment-bound identity
+        # is authoritative. Callers cannot elevate or switch tenants.
+        return self._principal
+
+
 __all__ = [
+    "EnvBoundPrincipalResolver",
     "PrincipalResolutionError",
     "PrincipalResolver",
     "PrincipalRole",
